@@ -2,7 +2,7 @@
 
 Every project has different requirements and principles. This should result in a different engineering philosophy per project, with each philosophy focusing on what really matters for the project at hand. Whether or not this happens on other projects, it is happening here.
 
-In order to contribute to ioIntegrator, you must buy into this engineering philosophy entirely.
+In order to contribute to ioFabric, you must buy into this engineering philosophy entirely.
 
 ###Philosophy Statements (in no particular order)
 

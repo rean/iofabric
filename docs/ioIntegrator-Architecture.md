@@ -1,2 +1,0 @@
-# ioIntegrator Architecture
-
