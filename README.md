@@ -8,6 +8,19 @@ There should be an ioIntegrator code base for every processing platform that bec
 
 ###Principles of an ioIntegrator:
 
-* Do not
+* Never go down
+* Respond immediately to the fabric controller
+* Operate flawlessly when offline
+* Report status frequently and reliably
+* Execute instructions with no understanding of the bigger picture
+* Provide a high-performance message bus and local API
+* Enforce the configured resource consumption constraints strictly
+* Allow the most flexible and powerful processing element model possible
+* Be able to instantiate processing elements from any available source
+* Be able to communicate with any reachable fabric controller
+* Allow processing elements to implement security and connectivity as they would natively
+* Ensure that complying with the local API is the only requirement placed on a processing element
+* Only shutdown or restart processing elements when requested or when absolutely necessary
+
 
 See the docs folder in this repository for architecture, engineering philosophy, functional specifications, and more.
