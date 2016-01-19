@@ -21,6 +21,10 @@ There should be an ioIntegrator code base for every processing platform that bec
 * Allow processing elements to implement security and connectivity as they would natively
 * Ensure that complying with the local API is the only requirement placed on a processing element
 * Only shutdown or restart processing elements when requested or when absolutely necessary
+* Run only processing elements with verified source and integrity
+* Never allow a message to reach unauthorized processing elements
+* Only allow messages of the proper registered type to reach processing elements
+* Guarantee message source and order
 
 
 See the docs folder in this repository for architecture, engineering philosophy, functional specifications, and more.
