@@ -32,8 +32,17 @@ For each computing platform, a version of ioFabric must be built to fit the nati
 
 The following breakdown of functional modules gives detailed descriptions and functional requirements. Even though the functionality of ioFabric has been split into modules, that does not mean that the actual code should contain separate libraries or separately compiled components. In some cases it might, but this is not necessary. The goal is to keep the duties of the application clearly categorized so repeat code is minimized and so coding tasks are grouped.
 
-Implement the functional requirements for each module and across modules in a way that fits the underlying compute platform (such as x86 Linux) best.
+Implement the functional requirements for each module and across modules in a way that fits the underlying compute platform (such as x86 Linux) in the best way possible.
 
 ###Supervisor
 
-blah...
+The supervisor module is the root thread of the ioFabric application. It is repsonsible for launching the other modules and monitoring them to make sure they are always running. The supervisor module should never stop running unless the user stops the ioFabric application service. It should start when the system boots unless the user manually removes the automatic starting of the ioFabric service.
+
+The supervisor doesn't provide much of the actual ioFabric functionality but it does provide the key application features that are exposed to the user. Each ioFabric instance is tied to a particular fabric controller and user account through a provisioning process. The provisioning functionality is handled by the supervisor module, which then passes the information down to the field agent. Each ioFabric instance is also manually configurable through its configuration file located in the installation directory. The supervisor module is responsible for parsing the configuration file and passing the different pieces of configuration information to the other modules.
+
+The supervisor module exposes several command-line interactions that the Linux system user can use to set up, monitor, and control ioFabric.
+
+####Requirements
+
+abcd?
+
