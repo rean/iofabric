@@ -16,12 +16,12 @@ The root command keyword for the ioFabric product is "iofabric" in all lowercase
 
 #####Output
 
-`Usage: iofabric [OPTIONS]
+`Usage: iofabric [OPTIONS]`
 
-Option				GNU long option			Meaning
--h, -?				--help					Show this message
--d	<#GB Limit>		--disk=<#GB Limit>		Set the disk consumption limit
--dl <dir>			--disklocation=<dir>	Set the directory to use for disk storage`
+`Option				GNU long option			Meaning`
+`-h, -?				--help					Show this message`
+`-d	<#GB Limit>		--disk=<#GB Limit>		Set the disk consumption limit`
+`-dl <dir>			--disklocation=<dir>	Set the directory to use for disk storage`
 
 
 ####Status
