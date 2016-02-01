@@ -1,5 +1,7 @@
 # The iotracks ioFabric product
 
+Imagine a world where you can choose self-contained pieces of code (called microservices) and make them run anywhere you want at the push of a button. Where you can remotely control the code that is running on twenty iPhones in workers' pockets, thirty servers running in a factory building, and ten computers running in the trucks that ship your products... and you can do it all with the same single technology. Imagine a world where you move the processing close to where the data is happening, and where you can finally separate streams of information from the end applications that use them. This world will be brought to life by iotracks, and a big part of the vision is the ioFabric product that runs on the various computers.
+
 This repository is the production code base for the x86 Linux version of the ioFabric product.
 
 ioFabric is a service that runs constantly in the background on a Linux machine. It is the agent that turns a Linux computer into a piece of the iotracks I/O compute fabric.
@@ -27,4 +29,4 @@ There should be an ioFabric code base for every processing platform that becomes
 * Guarantee message source and order
 
 
-See the docs folder in this repository for architecture, engineering philosophy, functional specifications, and more.
+See the docs folder in this repository for architecture, project microculture, engineering philosophy, functional specifications, and more.
