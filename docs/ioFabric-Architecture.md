@@ -42,7 +42,33 @@ The supervisor doesn't provide much of the actual ioFabric functionality but it 
 
 The supervisor module exposes several command-line interactions that the Linux system user can use to set up, monitor, and control ioFabric.
 
-####Requirements
+####Functional Requirements
 
-abcd?
+* Be the main executable process of the ioFabric product (the main thread)
+* Parse the product's configuration XML file
+* Store the product's configuration in memory for use while the software is operational
+* Pass configuration information into the other modules of the software where needed
+* Write configuration changes to the configuration XML file as they occur during software operation
+* Pass updated configuration changes into the other modules of the software as needed as they occur
+* Store configuration changes in memory as they occur
+* Provide command-line interface functionality according to the command-line interface specification document
+* Parse and handle the configuration according to the configuration specification document
+* Monitor the status of the other modules
+* Make the status of itself (the supervisor module) and the other modules available via command-line and available to the status reporting module
+* Start the other modules and manage multi-threading as needed
+* Restart the other modules on a decreasing frequency basis when they fail (immediately, then after 10 seconds, then 30 seconds, then 1 minute, and so on)
+* Provide logging functionality to all other modules
+* Initiate and manage the software's log files
+* Log start-up and shut-down sequences
+* Log module starts, stops, and restarts
+* Log configuration XML file parsing
+* Log configuration changes
+
+
+####Performance Requirements
+
+* Start immediately (as fast as possible)
+* Use as little memory, disk space, and CPU time as possible
+* Monitor modules frequently enough to be performant but also keep CPU consumption to a minimum
+
 

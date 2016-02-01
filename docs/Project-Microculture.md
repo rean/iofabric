@@ -2,7 +2,7 @@
 
 Every project has different requirements and principles. This should result in a different engineering philosophy per project, with each philosophy focusing on what really matters for the project at hand. Whether or not this happens on other projects, it is definintely happening here.
 
-In addition an engineering philosophy, every project should have a set of rules, protocols, and expected behaviors for the people involved. These things, coupled with the engineering philosophy, form a tiny little culture (a microculture) that drives the way people interact with each other and with the project iteself.
+In addition to an engineering philosophy, every project should have a set of rules, protocols, and expected behaviors for the people involved. These things, coupled with the engineering philosophy, form a tiny little culture (a microculture) that drives the way people interact with each other and with the project iteself.
 
 In order to contribute to ioFabric, you must buy into the project's microculture entirely.
 
