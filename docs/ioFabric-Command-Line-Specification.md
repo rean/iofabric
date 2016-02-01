@@ -6,8 +6,6 @@ The root command is the executable keyword. When using a text editor such as "na
 
 The root command keyword for the ioFabric product is "iofabric" in all lowercase letters. If a user only types "iofabric" they should be presented with the help options displayed as if they typed "iofabric -h" or "iofabric --help" or "iofabric -?" to access the help menu.
 
-###Commands
-
 ####Help Menu
 
 #####Accepted Inputs
@@ -18,15 +16,15 @@ The root command keyword for the ioFabric product is "iofabric" in all lowercase
 
 #####Output
 
-Usage: iofabric [OPTIONS]
+`Usage: iofabric [OPTIONS]
 
 Option				GNU long option			Meaning
- -h, -?				--help					Show this message
- -d	<#GB Limit>		--disk=<#GB Limit>		Set the disk consumption limit
- -dl <dir>			--disklocation=<dir>	Set the directory to use for disk storage
+-h, -?				--help					Show this message
+-d	<#GB Limit>		--disk=<#GB Limit>		Set the disk consumption limit
+-dl <dir>			--disklocation=<dir>	Set the directory to use for disk storage`
 
 
- ####Status
+####Status
 
 #####Accepted Inputs
 
