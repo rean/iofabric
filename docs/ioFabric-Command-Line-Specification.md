@@ -24,14 +24,104 @@ The root command keyword for the ioFabric product is "iofabric" in all lowercase
 `-dl <dir>			--disklocation=<dir>	Set the directory to use for disk storage`
 
 
-####Status
+
+####Display ioFabric Status
 
 #####Accepted Inputs
 
-* iofabric --help
-* iofabric -h
-* iofabric -?
+* `iofabric status`
 
 #####Output
 
-Usage: iofabric [OPTIONS]
+`TBD`
+
+
+####Start ioFabric
+
+#####Accepted Inputs
+
+* `iofabric start`
+
+#####Output
+
+`TBD`
+
+
+####Stop ioFabric
+
+#####Accepted Inputs
+
+* `iofabric stop`
+
+#####Output
+
+`TBD`
+
+
+
+####Restart ioFabric
+
+#####Accepted Inputs
+
+* `iofabric restart`
+
+#####Output
+
+`TBD`
+
+
+
+####Provision this ioFabric instance to a controller 
+
+#####Accepted Inputs
+
+* `iofabric provision D98we4sd`
+* The provisioning key entered by the user takes the place of the D98we4sd above
+
+#####Output
+
+`TBD`
+
+
+
+####De-provision this ioFabric instance (removed from any controller)
+
+#####Accepted Inputs
+
+* `iofabric deprovision`
+
+#####Output
+
+`TBD`
+
+
+
+####Show ioFabric information
+
+#####Accepted Inputs
+
+* `iofabric info`
+
+#####Output
+
+`TBD`
+
+
+
+####Change ioFabric configuration
+
+#####Accepted Inputs
+
+* `iofabric config -d 17.5`
+* `iofabric config -dl ~/temp/spool/`
+* `iofabric config -m 568`
+* `iofabric config -p 82.0`
+* `iofabric config -a https://250.17.0.200/controllers/7/`
+* `iofabric config -ac ~/temp/certs/controller_identity_proof.crt`
+* `iofabric config -c unix:///var/run/docker.sock`
+* `iofabric config -n eth0`
+
+#####Output
+
+`TBD`
+
