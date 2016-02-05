@@ -15,3 +15,5 @@ ioFabric can also be configured using the command line or using the fabric contr
 * disk_directory - the directory that this ioFabric instance is allowed to use for storage
 * memory_consumption_limit - the limit, in mebibytes (MiB), of RAM that this ioFabric instance is allowed to use
 * processor_consumption_limit - the limit, in percentage, of CPU time that this ioFabric instance is allowed to use
+* log_disk_consumption_limit - the limit, in mebibytes (MiD), of disk space that this ioFabric instance is allowed ot use
+* log_disk_directory - the directory that this ioFabric instance is allowed to use for log files
