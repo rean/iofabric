@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<access_token>1111</access_token>
+	
+	<controller_url>2222</controller_url>
+	
+	<controller_cert>3333</controller_cert>
+	
+	<network_interface>4444</network_interface>
+	
+	<docker_url>5555</docker_url>
+	
+	<disk_consumption_limit>6666</disk_consumption_limit>
+	
+	<disk_directory>7777</disk_directory>
+	
+	<memory_consumption_limit>8888</memory_consumption_limit>
+	
+	<processor_consumption_limit>9999</processor_consumption_limit>
+	
+	<log_disk_consumption_limit>1.0</log_disk_consumption_limit>
+	
+	<log_disk_directory>/tmp</log_disk_directory>
+</config>
