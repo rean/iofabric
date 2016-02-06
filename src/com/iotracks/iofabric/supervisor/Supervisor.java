@@ -28,7 +28,7 @@ public class Supervisor implements Runnable {
 		logger.log(Level.INFO, MODULE_NAME, "checking modules status");
 		
 		long now = new Date().getTime();
-		if (Math.abs(now - modulesActivity.getModuleLastAvtiveTime(Constants.FIELD_AGENT)) > DEAD_MODULE_AGE_SECONDS * 1000) {
+		if (Math.abs(now - modulesActivity.getModuleLastActiveTime(Constants.FIELD_AGENT)) > DEAD_MODULE_AGE_SECONDS * 1000) {
 			logger.log(Level.WARNING, MODULE_NAME, "field_agent module is dead");
 			if (modulesThread[Constants.FIELD_AGENT].isAlive()) {
 				logger.log(Level.WARNING, MODULE_NAME, "interrupting field_agent");

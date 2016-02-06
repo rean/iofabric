@@ -28,11 +28,11 @@ public class ModulesActivity {
 	}
 	
 	
-	public long getModuleLastAvtiveTime(int module) {
+	public long getModuleLastActiveTime(int module) {
 		return modulesLastActiveTime[module];
 	}
 
-	public void setModuleLastAvtiveTime(int module) {
+	public void setModuleLastActiveTime(int module) {
 		modulesLastActiveTime[module] = new Date().getTime();
 	}
 

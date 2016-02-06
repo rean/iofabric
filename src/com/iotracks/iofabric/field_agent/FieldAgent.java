@@ -23,7 +23,7 @@ public class FieldAgent implements Runnable {
 		ModulesActivity modulesActivity = ModulesActivity.getInstance();
 		
 		// reports it's last active time
-		modulesActivity.setModuleLastAvtiveTime(Constants.FIELD_AGENT);
+		modulesActivity.setModuleLastActiveTime(Constants.FIELD_AGENT);
 		
 		// to simulate a runtime error (SUICIDE)
 		int counter = 0;
@@ -35,7 +35,7 @@ public class FieldAgent implements Runnable {
 				logger.log(Level.SEVERE, MODULE_NAME, e.getMessage());
 			}
 			logger.log(Level.INFO, MODULE_NAME, "works well!");
-			modulesActivity.setModuleLastAvtiveTime(Constants.FIELD_AGENT);
+			modulesActivity.setModuleLastActiveTime(Constants.FIELD_AGENT);
 
 			// testing for runtime error!
 			try {
