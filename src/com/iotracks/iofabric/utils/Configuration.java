@@ -20,6 +20,11 @@ public class Configuration {
 	private float cpuLimit;
 	private float logDiskLimit;
 	private String logDiskDirectory;
+	private int logFileCount;
+
+	public int getLogFileCount() {
+		return logFileCount;
+	}
 
 	public float getLogDiskLimit() {
 		return logDiskLimit;
@@ -59,6 +64,8 @@ public class Configuration {
 		logDiskDirectory = configElement.getElementsByTagName("log_disk_directory").item(0).getTextContent();
 		
 		logDiskLimit = Float.parseFloat(configElement.getElementsByTagName("log_disk_consumption_limit").item(0).getTextContent());
+		
+		logFileCount = Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent());
 		
 	}
 

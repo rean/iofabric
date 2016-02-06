@@ -8,8 +8,6 @@ import java.util.logging.Logger;
 
 public class LoggingService {
 	
-	private final int LOG_FILE_COUNT = 5;
-	
 	private static LoggingService instance = null;
 	private Logger logger;
 	
@@ -24,6 +22,7 @@ public class LoggingService {
 		}
 
 		int maxFileSize = (int) (cfg.getLogDiskLimit() * 1024 * 1024); // Convert MiB to bytes
+		int logFileCount = cfg.getLogFileCount();
 		
 		final File logDirectory = new File(cfg.getLogDiskDirectory());
 		try {
@@ -33,7 +32,7 @@ public class LoggingService {
 		}
 		
 		final String logFilePattern = logDirectory.getPath() + "/" + "iofabric.%g.log"; 
-		Handler logFileHandler = new FileHandler(logFilePattern, maxFileSize / LOG_FILE_COUNT, LOG_FILE_COUNT);
+		Handler logFileHandler = new FileHandler(logFilePattern, maxFileSize / logFileCount, logFileCount);
 		logFileHandler.setFormatter(new LogFormatter());
 
 		logger = Logger.getLogger("com.iotracks.iofabric");
