@@ -21,4 +21,6 @@
 	<log_disk_consumption_limit>1.0</log_disk_consumption_limit>
 	
 	<log_disk_directory>/tmp</log_disk_directory>
+
+	<log_file_count>5</log_file_count>
 </config>
