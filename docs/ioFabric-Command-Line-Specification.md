@@ -21,9 +21,9 @@ iofabric -?
 <pre>
 Usage: iofabric [OPTIONS]
 
-Option				GNU long option			Meaning
--h, -?				--help					Show this message
--d	&lt;#GB Limit&gt;		--disk=&lt;#GB Limit&gt;		Set the disk consumption limit
+Option					GNU long option				Meaning
+-h, -?					--help						Show this message
+-d	&lt;#GB Limit&gt;	--disk=&lt;#GB Limit&gt;	Set the disk consumption limit
 -dl &lt;dir&gt;			--disklocation=&lt;dir&gt;	Set the directory to use for disk storage
 </pre>
 
