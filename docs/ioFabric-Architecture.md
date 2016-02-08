@@ -28,6 +28,8 @@ To make the fabric work properly, it needs to span across many different process
 
 For each computing platform, a version of ioFabric must be built to fit the native system. It communicates with the fabric controller, manages the instantiation of dynamic processing elements, and exposes resources to those elements. When it is running on a device or a server, it makes sure that the fabric controller knows the health and status of the computing instance. It receives instructions for allocating or deallocating containers and must carry out those instructions. It hosts a local API that the containers use to send and receive information messages, communicate with each other, receive their configuration information, and perform other tasks. ioFabric also hosts the high-performance local message bus that moves information securely between containers.
 
+<img src="ioFabric-Architecture-Diagram.png" />
+
 ##Module Details
 
 The following breakdown of functional modules gives detailed descriptions and functional requirements. Even though the functionality of ioFabric has been split into modules, that does not mean that the actual code should contain separate libraries or separately compiled components. In some cases it might, but this is not necessary. The goal is to keep the duties of the application clearly categorized so repeat code is minimized and so coding tasks are grouped.
