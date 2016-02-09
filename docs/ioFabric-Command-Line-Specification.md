@@ -2,6 +2,8 @@
 
 As a service intended to run constantly in the background (also known as a daemon), the ioFabric software needs to respond to shell commands from the user. This document defines all of the commands that the software needs to accept and the exact structure of the commands and responses.
 
+We will follow the guidelines set forth in the <a href="http://www.gnu.org/prep/standards/standards.html#Command_002dLine-Interfaces">GNU Coding Standards document regarding command line interfaces</a>.
+
 The root command is the executable keyword. When using a text editor such as "nano" you simply type "nano xyz.xml" if you want to edit an XML file in the current directory. The executable keyword is "nano" and the parameter that follows is the file to open in the nano editor.
 
 The root command keyword for the ioFabric product is "iofabric" in all lowercase letters. If a user only types "iofabric" they should be presented with the help options displayed as if they typed "iofabric -h" or "iofabric --help" or "iofabric -?" to access the help menu.
@@ -11,6 +13,8 @@ The root command keyword for the ioFabric product is "iofabric" in all lowercase
 #####Accepted Inputs
 
 <pre>
+iofabric
+iofabric help
 iofabric --help
 iofabric -h
 iofabric -?
@@ -19,12 +23,30 @@ iofabric -?
 #####Output
 
 <pre>
-Usage: iofabric [OPTIONS]
+Usage: iofabric [OPTIONS] COMMAND [arg...]
 
 Option                   GNU long option              Meaning
 -h, -?                   --help                       Show this message
 -d	&lt;#GB Limit&gt;          --disk=&lt;#GB Limit&gt;           Set the disk consumption limit
 -dl &lt;dir&gt;                --disklocation=&lt;dir&gt;         Set the directory to use for disk storage
+</pre>
+
+
+
+####Display ioFabric Version
+
+#####Accepted Inputs
+
+<pre>
+iofabric version
+iofabric --version
+iofabric -v
+</pre>
+
+#####Output
+
+<pre>
+TBD
 </pre>
 
 
@@ -156,6 +178,9 @@ iofabric config -a https://250.17.0.200/controllers/7/
 iofabric config -ac ~/temp/certs/controller_identity_proof.crt
 iofabric config -c unix:///var/run/docker.sock
 iofabric config -n eth0
+
+* Any combination of parameters listed here can be entered on the command line simultaneously
+* for example, iofabric config -m 2048 -p 80.0 -n wlan0
 </pre>
 
 #####Output
