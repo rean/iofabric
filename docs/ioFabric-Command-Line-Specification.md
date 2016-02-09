@@ -74,7 +74,11 @@ iofabric -v
 #####Output
 
 <pre>
-TBD
+ioFabric 1.0
+Copyright (C) 2016 iotracks, inc.
+License ######### http://iotracks.com/license
+This is open-source software with a commercial license: your usage is free until you use it in production commercially.
+There is NO WARRANTY, to the extent permitted by law.
 </pre>
 
 
