@@ -4,6 +4,8 @@ As a service intended to run constantly in the background (also known as a daemo
 
 We will follow the guidelines set forth in the <a href="http://www.gnu.org/prep/standards/standards.html#Command_002dLine-Interfaces">GNU Coding Standards document regarding command line interfaces</a>.
 
+All command line outputs are sent to the "standard out" stream.
+
 The root command is the executable keyword. When using a text editor such as "nano" you simply type "nano xyz.xml" if you want to edit an XML file in the current directory. The executable keyword is "nano" and the parameter that follows is the file to open in the nano editor.
 
 The root command keyword for the ioFabric product is "iofabric" in all lowercase letters. If a user only types "iofabric" they should be presented with the help options displayed as if they typed "iofabric -h" or "iofabric --help" or "iofabric -?" to access the help menu.
@@ -43,8 +45,14 @@ provision                &lt;provisioning key&gt;           Attach this software
 deprovision                                           Detach this software from all ioFabric controllers
 info                                                  Display the current configuration and other information about the software
 config                   [OPTION] [VALUE]             Change the software configuration according to the options provided
-                         -d &lt;#GB Limit&gt;               Set the limit, in GB, of disk space that the software is allowed to use
+                         -d &lt;#GB Limit&gt;               Set the limit, in GiB, of disk space that the software is allowed to use
                          -dl &lt;dir&gt;                    Set the directory to use for disk storage
+                         -m &lt;#MB Limit&gt;               Set the limit, in MiB, of memory that the software is allowed to use
+                         -p &lt;#cpu % Limit&gt;            Set the limit, in percentage, of CPU time that the software is allowed to use
+                         -a &lt;uri&gt;                     Set the uri of the fabric controller to which this software connects
+                         -ac &lt;filepath&gt;               Set the file path of the SSL/TLS certificate for validating the fabric controller identity
+                         -c &lt;uri&gt;                     Set the UNIX socket or network address that the Docker daemon is using
+                         -n &lt;network adapter&gt;         Set the name of the network adapter that holds the correct IP address of this machine
 
 
 Report bugs to: kilton@iotracks.com
