@@ -26,9 +26,29 @@ iofabric -?
 Usage: iofabric [OPTIONS] COMMAND [arg...]
 
 Option                   GNU long option              Meaning
+======                   ===============              =======
 -h, -?                   --help                       Show this message
--d	&lt;#GB Limit&gt;          --disk=&lt;#GB Limit&gt;           Set the disk consumption limit
--dl &lt;dir&gt;                --disklocation=&lt;dir&gt;         Set the directory to use for disk storage
+-v                       --version                    Display the software version and license information
+
+
+Command                  Arguments                    Meaning
+=======                  =========                    =======
+help                                                  Show this message
+version                                               Display the software version and license information
+status                                                Display current status information about the software
+start                                                 Start the ioFabric daemon which runs in the background
+stop                                                  Stop the ioFabric daemon
+restart                                               Stop and then start the ioFabric daemon
+provision                &lt;provisioning key&gt;           Attach this software to the configured ioFabric controller
+deprovision                                           Detach this software from all ioFabric controllers
+info                                                  Display the current configuration and other information about the software
+config                   [OPTION] [VALUE]             Change the software configuration according to the options provided
+                         -d &lt;#GB Limit&gt;               Set the limit, in GB, of disk space that the software is allowed to use
+                         -dl &lt;dir&gt;                    Set the directory to use for disk storage
+
+
+Report bugs to: kilton@iotracks.com
+ioFabric home page: http://iotracks.com
 </pre>
 
 
