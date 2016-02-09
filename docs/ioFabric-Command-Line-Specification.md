@@ -120,6 +120,10 @@ iofabric start
 #####Output
 
 <pre>
+ioFabric daemon already started
+
+- OR -
+
 ioFabric daemon starting...
 ...
 ...
@@ -139,6 +143,10 @@ iofabric stop
 #####Output
 
 <pre>
+ioFabric daemon already stopped
+
+- OR -
+
 ioFabric daemon stopping...
 ...
 stopped
