@@ -53,6 +53,9 @@ config                   [OPTION] [VALUE]             Change the software config
                          -ac &lt;filepath&gt;               Set the file path of the SSL/TLS certificate for validating the fabric controller identity
                          -c &lt;uri&gt;                     Set the UNIX socket or network address that the Docker daemon is using
                          -n &lt;network adapter&gt;         Set the name of the network adapter that holds the correct IP address of this machine
+                         -l &lt;#MB Limit&gt;               Set the limit, in MiB, of disk space that the log files can consume
+                         -ld &lt;dir&gt;                    Set the directory to use for log file storage
+                         -lc &lt;#log files&gt;             Set the number of log files to evenly split the log storage limit
 
 
 Report bugs to: kilton@iotracks.com
@@ -94,7 +97,14 @@ iofabric status
 #####Output
 
 <pre>
-TBD
+ioFabric daemon             : [running][stopped]
+Memory Usage                : about 158.5 MiB
+Disk Usage                  : about 24.1 GiB
+CPU Usage                   : about 32.0%
+Running Elements            : 13
+Connection to Controller    : [ok][broken][not provisioned]
+Messages Processed          : about 1,583,323
+System Time                 : Feb 08 2016 20:14:32.873
 </pre>
 
 
@@ -110,7 +120,10 @@ iofabric start
 #####Output
 
 <pre>
-TBD
+ioFabric daemon starting...
+...
+...
+started
 </pre>
 
 
@@ -126,7 +139,9 @@ iofabric stop
 #####Output
 
 <pre>
-TBD
+ioFabric daemon stopping...
+...
+stopped
 </pre>
 
 
@@ -142,7 +157,12 @@ iofabric restart
 #####Output
 
 <pre>
-TBD
+ioFabric daemon restarting...
+...
+...
+...
+...
+restarted
 </pre>
 
 
@@ -160,7 +180,10 @@ iofabric provision D98we4sd
 #####Output
 
 <pre>
-TBD
+Provisioning with key s734sH9J...
+...
+[Success - instance ID is fw49hrSuh43SEFuihsdfw4wefuh]
+[Failure - &lt;error message from provisioning process&gt;]
 </pre>
 
 
@@ -176,7 +199,8 @@ iofabric deprovision
 #####Output
 
 <pre>
-TBD
+Deprovisioning from controller...
+Success - tokens and identifiers and keys removed
 </pre>
 
 
@@ -192,7 +216,19 @@ iofabric info
 #####Output
 
 <pre>
-TBD
+Instance ID               : sdfh43t9EFHSD98hwefiuwefkshd890she
+IP Address                : 201.43.0.88
+Network Adapter           : eth0
+ioFabric Controller       : http://iotracks.com/controllers/2398yef
+ioFabric Certificate      : ~/temp/certs/abc.crt
+Docker URI                : unix:///var/run/docker.sock
+Disk Limit                : 14.5 GiB
+Disk Directory            : ~/temp/spool/
+Memory Limit              : 720 MiB
+CPU Limit                 : 74.8%
+Log Limit                 : 2.0 GiB
+Log Directory             : ~/temp/logs/
+Log File Count            : 10
 </pre>
 
 
@@ -210,6 +246,9 @@ iofabric config -a https://250.17.0.200/controllers/7/
 iofabric config -ac ~/temp/certs/controller_identity_proof.crt
 iofabric config -c unix:///var/run/docker.sock
 iofabric config -n eth0
+iofabric config -l 2.0
+iofabric config -ld ~/temp/logs/
+iofabric config -lc 10
 
 * Any combination of parameters listed here can be entered on the command line simultaneously
 * for example, iofabric config -m 2048 -p 80.0 -n wlan0
@@ -218,6 +257,12 @@ iofabric config -n eth0
 #####Output
 
 <pre>
-TBD
+Invalid parameter &lt;-X&gt; &lt;VALUE&gt;
+
+- OR -
+
+Change accepted for &lt;parameter name&gt;
+Old value was &lt;prior value&gt;
+New value is &lt;input value&gt;
 </pre>
 
