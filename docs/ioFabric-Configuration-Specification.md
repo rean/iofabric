@@ -7,6 +7,7 @@ ioFabric can also be configured using the command line or using the fabric contr
 ####Configuration Items
 
 * access_token - the access token granted by a fabric controller to the ioFabric instance during the provisioning process
+* instance_id - the unique identifier given to this ioFabric instance by the fabric controller
 * controller_url - the root URL for the fabric controller from which this ioFabric instance should take its commands
 * controller_cert - the file path for the SSL certficate corresponding to the fabric controller (for proving its identity)
 * network_interface - the name of the network interface that should be used for determining the IP address of this ioFabric instance
