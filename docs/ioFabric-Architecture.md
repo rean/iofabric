@@ -103,15 +103,24 @@ In production systems, users will be expecting ioFabric to stay within certain r
 
 ###Status Reporter
 
-abc
+The Status Reporter is the central place for finding the program's status. It can be thought of as both a place to deposit status (if you are a module) and a place to get the status information you need. Some types of status are measurements of progress. Some types of status are boolean (we just need to know if something is running or not). By centralizing the management of status in the application, we simplify current usage across the code base and make it much easier to track more status in the future.
+
+Other than serving as the status repository, the only activity that the Status Reporter performs is to judge whether or not newly updated status information should be sent to the fabric controller. This happens via the Field Agent, so the Status Reporter is just repsonsible for juding the importance of the information and, if needed, telling the Field Agent to report new information to the fabric controller.
 
 ####Functional Requirements
 
-* 123
+* Store status information centrally for all modules and parts of the program
+* Allow all modules and parts of the program to update their status
+* Store status information according to the Status Information Specification Document
+* Check each status information change to see if it should be reported to the fabric controller
+* Tell the Field Agent to report changes to the fabric controller whenever there is a qualifying status information change
+* Allow the command line program to access the status information
+* Allow all modules and parts of the program to access the status information
 
 
 ####Performance Requirements
 
-* 456
+* Store status information quickly when changes are submitted
+* Access and deliver status information quickly when it is requested
 
 
