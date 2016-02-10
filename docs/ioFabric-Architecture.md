@@ -74,3 +74,23 @@ The supervisor module exposes several command-line interactions that the Linux s
 * Monitor modules frequently enough to be performant but also keep CPU consumption to a minimum
 
 
+###Resource Consumption Manager
+
+The Resource Consumption Manager is in charge of monitoring the usage behavior of the whole application. Timeliness and efficiency are more important than precision. It is easy to monitor resources with heavy code. The problem is, this precise monitoring drags on system performance and consumes significant resources itself.
+
+The Resource Consumption Manager in ioFabric should be checking frequently enough to be effective, but should only cause minimal drain on CPU time and other resources.
+
+In some cases, the Resource Consumption Manager needs to tell another module to "curb its behavior" and use less memory or curtail processing because the CPU usage is too high. In other cases, the modules themselves are supposed to keep their usage to a set limit (such as logging) and the job of Resource Consumption Manager is simply to monitor and report violations.
+
+In production systems, users will be expecting ioFabric to stay within certain resource consumption boundaries. The ioFabric product needs to be reliable in its self-management so it will operate peacefully with other software.
+
+####Functional Requirements
+
+* 1sdfasd
+
+
+####Performance Requirements
+
+* sfsd
+
+
