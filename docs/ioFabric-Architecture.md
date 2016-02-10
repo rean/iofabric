@@ -86,11 +86,32 @@ In production systems, users will be expecting ioFabric to stay within certain r
 
 ####Functional Requirements
 
-* 1sdfasd
+* Check how much RAM the program is using
+* Check what percentage of CPU time the program is using
+* Check how much disk space the logging functionality is using
+* Check how much disk space the Message Bus is using
+* Report usage violations to the Status Reporter
+* Tell the Process Manager to curtail its CPU and/or RAM usage
+* Tell the Message Bus to curtail its CPU and/or RAM usage
 
 
 ####Performance Requirements
 
-* sfsd
+* Use minimal resources to monitor resource consumption
+* Catch resource usage violations within a few seconds
+
+
+###Status Reporter
+
+abc
+
+####Functional Requirements
+
+* 123
+
+
+####Performance Requirements
+
+* 456
 
 
