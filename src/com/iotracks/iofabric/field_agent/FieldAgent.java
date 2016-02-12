@@ -2,25 +2,27 @@ package com.iotracks.iofabric.field_agent;
 
 import java.util.logging.Level;
 import com.iotracks.iofabric.utils.Constants;
-import com.iotracks.iofabric.utils.LoggingService;
 import com.iotracks.iofabric.utils.ModulesActivity;
+import com.iotracks.iofabric.utils.configuration.Configuration;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class FieldAgent implements Runnable {
 	
-	private final String MODULE_NAME = "field_agent";
-	
+	private final String MODULE_NAME = "Field Agent";
+	private ModulesActivity modulesActivity;
 	private LoggingService logger;
+	@SuppressWarnings("unused")
+	private Configuration cfg;
+	
+	public FieldAgent(LoggingService logger, Configuration cfg) {
+		this.logger = logger;
+		this.cfg = cfg;
+		modulesActivity = ModulesActivity.getInstance();
+	}
 	
 	@Override
 	public void run() {
-		try {
-			logger = LoggingService.getInstance();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
 		logger.log(Level.INFO, MODULE_NAME, "started");
-		ModulesActivity modulesActivity = ModulesActivity.getInstance();
 		
 		// reports it's last active time
 		modulesActivity.setModuleLastActiveTime(Constants.FIELD_AGENT);

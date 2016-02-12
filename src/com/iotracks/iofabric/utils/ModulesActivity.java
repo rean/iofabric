@@ -1,7 +1,5 @@
 package com.iotracks.iofabric.utils;
 
-import java.util.Date;
-
 // Singleton
 // each module reports it's last active time to the class
 public class ModulesActivity {
@@ -33,7 +31,7 @@ public class ModulesActivity {
 	}
 
 	public void setModuleLastActiveTime(int module) {
-		modulesLastActiveTime[module] = new Date().getTime();
+		modulesLastActiveTime[module] = System.currentTimeMillis();
 	}
 
 }

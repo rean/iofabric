@@ -12,4 +12,5 @@ public class Constants {
 	
 	public static final int STATUS_REPORT_FREQ_SECONDS = 5;
 
+	public static final String MEMORY_MAPPED_FILENAME = "iofabric.params";
 }
