@@ -1,0 +1,11 @@
+#!/bin/sh
+
+JAR_FILE_NAME=$PATH_TO_JAR/$SERVICE_NAME.jar
+PID_PATH_NAME=/var/run/$SERVICE_NAME-pid
+cd $PATH_TO_JAR
+if [ -f $PID_PATH_NAME ]; then
+	java -jar $JAR_FILE_NAME $@ 2>> /dev/null
+else
+	echo "$SERVICE_NAME is not running ..."
+fi
+

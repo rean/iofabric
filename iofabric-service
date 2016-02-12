@@ -1,0 +1,57 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          iofabric
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     true
+# Short-Description: Start/stop iofabric server
+### END INIT INFO
+ 
+JAR_FILE_NAME=$PATH_TO_JAR/$SERVICE_NAME.jar
+PID_PATH_NAME=/var/run/$SERVICE_NAME-pid
+
+case $1 in
+    start)
+        echo "Starting $SERVICE_NAME ..."
+        if [ ! -f $PID_PATH_NAME ]; then
+	    cd $PATH_TO_JAR
+            nohup java -jar $JAR_FILE_NAME 2>> /dev/null >> /tmp/$SERVICE_NAME-output &
+            echo $! > $PID_PATH_NAME
+            echo "$SERVICE_NAME started ..."
+        else
+            echo "$SERVICE_NAME is already running ..."
+        fi
+    ;;
+    stop)
+        if [ -f $PID_PATH_NAME ]; then
+            PID=$(cat $PID_PATH_NAME);
+            echo "Stopping $SERVICE_NAME ..."
+            kill $PID;
+            echo "$SERVICE_NAME stopped ..."
+            rm $PID_PATH_NAME
+        else
+            echo "$SERVICE_NAME is not running ..."
+        fi
+    ;;
+    restart)
+        if [ -f $PID_PATH_NAME ]; then
+            PID=$(cat $PID_PATH_NAME);
+            echo "Stopping $SERVICE_NAME ...";
+            kill $PID;
+            echo "$SERVICE_NAME stopped ...";
+            rm $PID_PATH_NAME
+ 
+            echo "Starting $SERVICE_NAME ..."
+	    cd $PATH_TO_JAR
+            nohup java -jar $JAR_FILE_NAME 2>> /dev/null >> /tmp/$SERVICE_NAME-output &
+            echo $! > $PID_PATH_NAME
+            echo "$SERVICE_NAME started ..."
+        else
+            echo "$SERVICE_NAME is not running ..."
+        fi
+    ;;
+esac
+
+
