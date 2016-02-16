@@ -6,9 +6,21 @@ That's why we are putting the challenge of creating a great installation experie
 
 The packaging mechanisms and install scripts can grow and change, but the requirements of a great product installation experience don't waver. If we follow these requirements from the start, we will be able to overcome the challenges.
 
+####Officially Supported Linux Versions
+* CentOS 7
+* RHEL (Red Hat Enterprise Linux) 7.0
+* RHEL (Red Hat Enterprise Linux) 7.1
+* RHEL (Red Hat Enterprise Linux) 7.2
+* Debian 7.7
+* Debian 8
+* Ubuntu 12.04
+* Ubuntu 14.04
+* Ubuntu 15.10
+
 ####Installation Requirements
 
 * Set up the ioFabric daemon to run as a service on system boot
+	* For Ubuntu use 
 * Install Docker 1.5+ as a dependency
 * Install Java 8+ as a dependency
 * Register the executable path so the command line functionality works from anywhere
