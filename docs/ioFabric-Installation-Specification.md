@@ -25,22 +25,29 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 	* For Debian - define the service as /etc/init.d/iofabric and register it using update-rc.d
 	* For CentOS - define the service as /etc/init.d/iofabric and register it using chkconfig
 	* For RHEL - define the service as /etc/init.d/iofabric and register it using chkconfig
+
 * Place all program files in the standard locations for each Linux version
 	* For all Linux versions the directory for the executable file is /usr/bin/
 	* For all Linux versions the directory for static configuration files is /etc/iofabric/
 	* For all Linux versions the default directory for log files is /var/log/iofabric/
 	* For all Linux versions the directory for dynamic files used during runtime is /var/lib/iofabric/
 	* For all Linux versions the directory for files associated with the running daemon is /var/run/iofabric/
+
 * Create the proper groups, users, and permissions
 	* Create a group called "iofabric"
 	* Create a user called "iofabric"
 	* Make the iofabric user a member of the iofabric group
 	* Give ownership of the installed files and directories to both the iofabric user and group
 	* Give the proper permissions to the installed files and directories
+
 * Register the executable path so the command line functionality works from anywhere
+
 * Minimize the amount of installation text the user sees
+
 * Clearly report the cause of installation errors on the screen if they are encountered
+
 * Install the software as a native package for each Linux version (as a PPA for Ubuntu Linux, for example)
+
 
 ####Convenience Installation Script Requirements
 
