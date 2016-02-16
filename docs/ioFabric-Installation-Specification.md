@@ -9,9 +9,7 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 ####Officially Supported Linux Versions
 
 * CentOS 7
-* RHEL (Red Hat Enterprise Linux) 7.0
-* RHEL (Red Hat Enterprise Linux) 7.1
-* RHEL (Red Hat Enterprise Linux) 7.2
+* RHEL (Red Hat Enterprise Linux) 7
 * Debian 7.7
 * Debian 8
 * Ubuntu 12.04
@@ -30,7 +28,7 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 	* For all Linux versions the directory for the executable file is /usr/bin/
 	* For all Linux versions the directory for static configuration files is /etc/iofabric/
 	* For all Linux versions the default directory for log files is /var/log/iofabric/
-	* For all Linux versions the directory for dynamic files used during runtime is /var/lib/iofabric/
+	* For all Linux versions the directory for files created by and used by the program (such as message bus archives) is /var/lib/iofabric/
 	* For all Linux versions the directory for files associated with the running daemon is /var/run/iofabric/
 
 * Create the proper groups, users, and permissions
@@ -46,8 +44,19 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 
 * Clearly report the cause of installation errors on the screen if they are encountered
 
-* Install the software as a native package for each Linux version (as a PPA for Ubuntu Linux, for example)
-
+* Provide the software as a native package for each Linux version
+	* For Ubuntu - provide iofabric as a Debian package (deb) so it can be installed using "apt-get"
+	* For Debian - provide iofabric as a Debian package (deb) so it can be installed using "apt-get"
+	* For CentOS - provide iofabric as an RPM package (rpm) so it can be installed using "yum"
+	* For RHEL - provide iofabric as an RPM package (rpm) so it can be installed using "yum"
+	* For all Linux versions - host a repository on the iotracks.com Web server
+	* For all Linux versions - host instructions for installation on the iotracks.com Web server
+	* In the instructions, show how to add our repository to the list, add our verification keys, etc.
+	* Follow Docker's instruction styles for the different Linux versions:
+		* [Docker CentOS installation](https://docs.docker.com/engine/installation/linux/centos/)
+		* [Docker RHEL installation](https://docs.docker.com/engine/installation/linux/rhel/)
+		* [Docker Ubuntu installation](https://docs.docker.com/engine/installation/linux/ubuntulinux/)
+		* [Docker Debian installation](https://docs.docker.com/engine/installation/linux/debian/)
 
 ####Convenience Installation Script Requirements
 
