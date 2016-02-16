@@ -39,6 +39,9 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 	* Give the proper permissions to the installed files and directories
 
 * Register the executable path so the command line functionality works from anywhere
+	* For all Linux versions, just create a symbolic link to the executable path
+	* Make the link into the /usr/local/bin/ directory because it is always in the pre-registered paths
+	* Use the command "ln -sf /usr/bin/iofabric /usr/local/bin/iofabric" to create the link (symbolic link with forced overwrite)
 
 * Minimize the amount of installation text the user sees
 
