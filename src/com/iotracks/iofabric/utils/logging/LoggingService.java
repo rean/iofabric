@@ -2,6 +2,9 @@ package com.iotracks.iofabric.utils.logging;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -37,6 +40,11 @@ public class LoggingService {
 			throw new Exception("Error creating log file directory\n" + e.getMessage());
 		}
 
+		Files.setPosixFilePermissions(logDirectory.toPath(),
+				EnumSet.of(PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.GROUP_READ,
+						PosixFilePermission.GROUP_WRITE, PosixFilePermission.OWNER_EXECUTE,
+						PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+		
 		final String logFilePattern = logDirectory.getPath() + "/iofabric.%g.log";
 		Handler logFileHandler = null;
 		try {
@@ -48,8 +56,8 @@ public class LoggingService {
 
 		logger = Logger.getLogger("com.iotracks.iofabric");
 		logger.addHandler(logFileHandler);
-//		logger.setUseParentHandlers(false);
-
+		logger.setUseParentHandlers(false);
+		
 		logger.info("logger started.");
 	}
 

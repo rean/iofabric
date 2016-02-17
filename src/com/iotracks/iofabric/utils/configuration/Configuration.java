@@ -40,7 +40,7 @@ public class Configuration {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
 
-		Document configFile = builder.parse("config/config.xml");
+		Document configFile = builder.parse("/etc/iofabric/config.xml");
 		configFile.getDocumentElement().normalize();
 		
 		NodeList nodes = configFile.getElementsByTagName("config");

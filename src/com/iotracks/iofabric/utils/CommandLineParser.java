@@ -1,8 +1,22 @@
 package com.iotracks.iofabric.utils;
 
-public class CommandLineUtil {
-	public static String parse(String... args) {
+public class CommandLineParser {
+	public static String parse(String command) {
+		if (command.equals(""))
+			command = "help";
+		String[] args = command.split(" ");
 		StringBuilder result = new StringBuilder();
+		
+		if (args[0].equals("stop")) {
+			System.setOut(Constants.systemOut);
+			System.out.println("Stopping iofabric service...");
+			System.exit(0);
+		}
+		
+		if (args[0].equals("start")) {
+			return "";
+		}
+		
 		if (args[0].equals("help") || args[0].equals("--help") || args[0].equals("-h") || args[0].equals("-?")) {
 			result.append(showHelp());
 			return result.toString();

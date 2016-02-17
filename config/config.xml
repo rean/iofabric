@@ -14,15 +14,15 @@
 	
 	<disk_consumption_limit>6666</disk_consumption_limit>
 	
-	<disk_directory>7777</disk_directory>
+	<disk_directory>/var/lib/iofabric</disk_directory>
 	
 	<memory_consumption_limit>8888</memory_consumption_limit>
 	
 	<processor_consumption_limit>9999</processor_consumption_limit>
 	
-	<log_disk_consumption_limit>100.0</log_disk_consumption_limit>
+	<log_disk_consumption_limit>1.0</log_disk_consumption_limit>
 	
-	<log_disk_directory>log</log_disk_directory>
+	<log_disk_directory>/var/log/iofabric</log_disk_directory>
 
 	<log_file_count>5</log_file_count>
 </config>

@@ -74,6 +74,8 @@ fi
 
 echo "Java setup is complete\n" 
 
+apt-get install acl >> /tmp/$SERVICE_NAME-install
+
 echo "Setting up iofabric to run as a service on boot..."
 
 SOURCE="$0"
@@ -87,10 +89,11 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 SERVICE_NAME=iofabric
 SERVICE_DIR=/etc/init.d
 BIN_DIR=/usr/bin
+CONFIG_DIR=/etc/$SERVICE_NAME
+LOG_DIR=/var/log/$SERVICE_NAME
+WORKING_DIR=/var/lib/$SERVICE_NAME
+DAEMON_DIR=/var/run/$SERVICE_NAME
 
-apt-get install acl
-
-LOG_PATH=$DIR/log
 GROUP_NAME=iofabric
 if grep -q "^${GROUP_NAME}:" /etc/group
 	then
@@ -98,31 +101,39 @@ if grep -q "^${GROUP_NAME}:" /etc/group
 fi
 groupadd $GROUP_NAME
 
-mkdir $LOG_PATH
-# SET LOG DIRECTORY PERMISSIONS
-chmod 774 -R $LOG_PATH
-chown -R :$GROUP_NAME $LOG_PATH
-chmod g+s -R $LOG_PATH
-setfacl -d -m g::rwx -R $LOG_PATH
+createDir() {
+	mkdir $1  >> /tmp/$SERVICE_NAME-install
+	# SET DIRECTORY PERMISSIONS
+	chmod 774 -R $1 >> /tmp/$SERVICE_NAME-install
+	chown -R :$GROUP_NAME $1 >> /tmp/$SERVICE_NAME-install
+	chmod g+s -R $1 >> /tmp/$SERVICE_NAME-install
+	setfacl -d -m g::rwx -R $1 >> /tmp/$SERVICE_NAME-install
+}
 
-# SET APP DIRECTORY PERMISSIONS
-chmod 774 -R $DIR
-chown -R :$GROUP_NAME $DIR
-chmod g+s -R $DIR
-setfacl -d -m g::rwx -R $DIR
+createDir $CONFIG_DIR
+createDir $LOG_DIR
+createDir $WORKING_DIR
+createDir $DAEMON_DIR
+
 
 cd $DIR >> /tmp/$SERVICE_NAME-install
+cp config/config.xml $CONFIG_DIR >> /tmp/$SERVICE_NAME-install
+cp iofabric.jar $BIN_DIR >> /tmp/$SERVICE_NAME-install
+
+mv /dev/random /dev/random.real
+ln -s /dev/urandom /dev/random
 
 echo "BLAH BLAH BLAH" >> $SERVICE_DIR/$SERVICE_NAME
 rm $SERVICE_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
-sed "11 a SERVICE_NAME=$SERVICE_NAME\nPATH_TO_JAR=$DIR" $SERVICE_NAME-service >> $SERVICE_DIR/$SERVICE_NAME
+sed "11 a SERVICE_NAME=$SERVICE_NAME\nPATH_TO_JAR=$BIN_DIR" $SERVICE_NAME-service >> $SERVICE_DIR/$SERVICE_NAME
 chmod 774 $SERVICE_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
 update-rc.d $SERVICE_NAME defaults >> /tmp/$SERVICE_NAME-install
 
 echo "BLAH BLAH BLAH" >> $BIN_DIR/$SERVICE_NAME
 rm $BIN_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
-sed "2 a SERVICE_NAME=$SERVICE_NAME\nPATH_TO_JAR=$DIR" $SERVICE_NAME-console >> $BIN_DIR/$SERVICE_NAME
+sed "2 a SERVICE_NAME=$SERVICE_NAME\nPATH_TO_JAR=$BIN_DIR" $SERVICE_NAME-console >> $BIN_DIR/$SERVICE_NAME
 chmod 774 $BIN_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
+ln -sf $BIN_DIR/$SERVICE_NAME /usr/local/bin/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
 
 echo "Done!"
 
