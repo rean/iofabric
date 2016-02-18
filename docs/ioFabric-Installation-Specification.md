@@ -30,6 +30,7 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 	* For all Linux versions the default directory for log files is /var/log/iofabric/
 	* For all Linux versions the directory for files created by and used by the program (such as message bus archives) is /var/lib/iofabric/
 	* For all Linux versions the directory for files associated with the running daemon is /var/run/iofabric/
+	* For all Linux versions the directory for auto-complete scripts is /etc/bash_completion.d/
 
 * Create the proper groups, users, and permissions
 	* Create a group called "iofabric"
@@ -60,6 +61,9 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 		* [Docker RHEL installation](https://docs.docker.com/engine/installation/linux/rhel/)
 		* [Docker Ubuntu installation](https://docs.docker.com/engine/installation/linux/ubuntulinux/)
 		* [Docker Debian installation](https://docs.docker.com/engine/installation/linux/debian/)
+
+* Register the ioFabric command line utility for auto-complete functionality
+	* For all Linux versions - make sure there is an auto-complete script copied into the /etc/bash_completion.d/ directory
 
 ####Convenience Installation Script Requirements
 
