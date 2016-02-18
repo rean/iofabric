@@ -124,3 +124,35 @@ Other than serving as the status repository, the only activity that the Status R
 * Access and deliver status information quickly when it is requested
 
 
+###Process Manager
+
+coming soon
+
+####Functional Requirements
+
+* Maintain a list of containers that are supposed to be running on this ioFabric instance
+* Add and remove containers from the list as updates to the list are provided
+* Shut down Docker containers when they are removed from the list
+* Start up Docker containers when they are added to the list
+* Make sure all Docker containers are started the system is rebooted (but do not restart them without need)
+* Restart Docker containers that are supposed to be running if they go down
+* Build Docker containers that are not yet created locally
+* Give Docker instructions in parallel in order to take advantage of its multi-threading and speed
+* Restart specific Docker containers with updated network port settings when port changes for a container are provided
+* Name each Docker container with the ioElement ID that is provided in the container list item details
+* Map a network host into each Docker container as "iofabric:#.#.#.#" where the actual IP address of the ioFabric instance is used in place of the # signs
+* When setting up a container with Docker, set the "restart policy" to restart 10 times
+* Map an environment variable into each Docker container as "SELFNAME=ABCDEFG" where the ioElement ID is used in place of the ABCDEFG
+* Maintain a list of Docker registries that are supposed to be used with this ioFabric instance
+* Make sure Docker verifies the signature and identity of every container image (requires Docker 1.8+ and may not require any effort on our part)
+* Rebuild specific Docker containers (fetching the image again from the correct registry) when instructed
+* Accept certificate files for Docker registries and associate them with the proper registry in the list and store them in the correct place for Docker to access them
+* Accept login credentials for Docker registries and associate them with the proper registry in the list
+* Make the Docker daemon login to registries as needed
+
+
+####Performance Requirements
+
+* coming soon
+
+
