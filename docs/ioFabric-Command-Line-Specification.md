@@ -10,6 +10,8 @@ The root command is the executable keyword. When using a text editor such as "na
 
 The root command keyword for the ioFabric product is "iofabric" in all lowercase letters. If a user only types "iofabric" they should be presented with the help options displayed as if they typed "iofabric -h" or "iofabric --help" or "iofabric -?" to access the help menu.
 
+The ioFabric command line should have auto-complete functionality. The user should be able to type the start of an ioFabric command and hit [TAB] to use the auto-complete.
+
 ####Help Menu
 
 #####Accepted Inputs
