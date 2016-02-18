@@ -1,9 +1,20 @@
 package com.iotracks.iofabric;
 
+import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.Set;
 import java.util.logging.Level;
-import com.iotracks.iofabric.command_line_communications.CommandLineClient;
+import com.iotracks.iofabric.command_line.CommandLineClient;
+import com.iotracks.iofabric.command_line.CommandLineServer;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -12,18 +23,38 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class Start {
 
+	@SuppressWarnings("unused")
 	private static Configuration cfg;
-	private static LoggingService logger = null;
 	private static CommandLineClient client;
+	private static Thread commandlineListener;
 
 	private static boolean isAnotherInstanceRunning() {
 		client = new CommandLineClient();
 		return client.startClient();
 	}
 
+	private static void setupEnvironment() {
+		final File daemonFilePath = new File("/var/run/iofabric");
+		if (!daemonFilePath.exists()) {
+			try {
+				daemonFilePath.mkdirs();
+
+				UserPrincipalLookupService lookupservice = FileSystems.getDefault().getUserPrincipalLookupService();
+				final GroupPrincipal group = lookupservice.lookupPrincipalByGroupName("iofabric");
+				Files.getFileAttributeView(daemonFilePath.toPath(), PosixFileAttributeView.class,
+						LinkOption.NOFOLLOW_LINKS).setGroup(group);
+				Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxrwx---");
+				Files.setPosixFilePermissions(daemonFilePath.toPath(), perms);
+			} catch (Exception e) {
+			}
+		}
+
+	}
+	
 	public static void main(String[] args) {
+		
 		try {
-			cfg = Configuration.getInstance();
+			Configuration.loadConfig();
 		} catch (ConfigurationItemException e) {
 			System.out.println("invalid configuration item(s).");
 			System.out.println(e.getMessage());
@@ -32,6 +63,8 @@ public class Start {
 			System.out.println("error accessing /etc/iofabric/config.xml");
 			System.exit(1);
 		}
+
+		setupEnvironment();
 
 		if (isAnotherInstanceRunning()) {
 			if (args.length > 0 && args[0].equals("start")) {
@@ -42,7 +75,9 @@ public class Start {
 			String command = "";
 			for (String str : args)
 				command += str + " ";
-			client.sendMessage(command);
+			if (command.trim().equals(""))
+				command = "help";
+			client.sendMessage(command.trim());
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e) {
@@ -55,16 +90,12 @@ public class Start {
 
 		if (args.length > 0 && !args[0].equals("start")) {
 			System.out.println("iofabric is not running.");
+			System.out.flush();
 			System.exit(1);
 		}
 
-		try {
-			logger = LoggingService.getInstance();
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			System.exit(1);
-		}
-		logger.log(Level.INFO, "Main", "configuration loaded.");
+		LoggingService.setupLogger();
+		LoggingService.log(Level.INFO, "Main", "configuration loaded.");
 
 		// port System.out to null
 		Constants.systemOut = System.out;
@@ -74,7 +105,7 @@ public class Start {
 				// DO NOTHING
 			}
 		}));
-		
+
 		System.setErr(new PrintStream(new OutputStream() {
 			@Override
 			public void write(int b) {
@@ -82,7 +113,12 @@ public class Start {
 			}
 		}));
 
-		Supervisor supervisor = new Supervisor(cfg, logger);
+		LoggingService.log(Level.INFO, "Main", "starting command line listener");
+		commandlineListener = new Thread(new CommandLineServer(), "Command Line Server");
+		commandlineListener.start();
+
+		LoggingService.log(Level.INFO, "Main", "starting supervisor");
+		Supervisor supervisor = new Supervisor();
 		supervisor.start();
 
 		// port System.out to standard

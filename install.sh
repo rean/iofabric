@@ -117,8 +117,9 @@ createDir $DAEMON_DIR
 
 
 cd $DIR >> /tmp/$SERVICE_NAME-install
-cp config/config.xml $CONFIG_DIR >> /tmp/$SERVICE_NAME-install
-cp iofabric.jar $BIN_DIR >> /tmp/$SERVICE_NAME-install
+mv config/config.xml $CONFIG_DIR >> /tmp/$SERVICE_NAME-install
+mv iofabric.jar $BIN_DIR >> /tmp/$SERVICE_NAME-install
+mv auto_completion /etc/bash_completion.d/iofabric >> /tmp/$SERVICE_NAME-install
 
 mv /dev/random /dev/random.real
 ln -s /dev/urandom /dev/random
@@ -132,7 +133,8 @@ update-rc.d $SERVICE_NAME defaults >> /tmp/$SERVICE_NAME-install
 echo "BLAH BLAH BLAH" >> $BIN_DIR/$SERVICE_NAME
 rm $BIN_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
 sed "2 a SERVICE_NAME=$SERVICE_NAME\nPATH_TO_JAR=$BIN_DIR" $SERVICE_NAME-console >> $BIN_DIR/$SERVICE_NAME
-chmod 774 $BIN_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
+chmod 754 $BIN_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
+chown :$GROUP_NAME $BIN_DIR/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
 ln -sf $BIN_DIR/$SERVICE_NAME /usr/local/bin/$SERVICE_NAME >> /tmp/$SERVICE_NAME-install
 
 echo "Done!"

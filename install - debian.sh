@@ -146,8 +146,9 @@ createDir $DAEMON_DIR
 
 
 cd $DIR >> /tmp/$SERVICE_NAME-install
-cp config/config.xml $CONFIG_DIR >> /tmp/$SERVICE_NAME-install
-cp iofabric.jar $BIN_DIR >> /tmp/$SERVICE_NAME-install
+mv config/config.xml $CONFIG_DIR >> /tmp/$SERVICE_NAME-install
+mv iofabric.jar $BIN_DIR >> /tmp/$SERVICE_NAME-install
+mv auto_completion /etc/bash_completion.d/iofabric >> /tmp/$SERVICE_NAME-install
 
 mv /dev/random /dev/random.real
 ln -s /dev/urandom /dev/random
