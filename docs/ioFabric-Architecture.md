@@ -126,7 +126,11 @@ Other than serving as the status repository, the only activity that the Status R
 
 ###Process Manager
 
-coming soon
+The Process Manager module is in charge of starting, stopping, and generally controlling the processes that run in ioFabric. In the case of this particular ioFabric version, the processes take the form of Linux kernel containers running via Docker. These processes are often called ioElement containers or sometimes just elements in the overall iotracks system. They are the actual computing tasks that are taking place on the iotracks I/O compute fabric. There is no need for ioFabric to have any awareness of what the processes might be. It only needs to manage them properly and manage them all exactly the same. Through that standardization, all ioElement containers become portable and re-usable from one part of the fabric to another.
+
+The Process Manager needs to interface with the Docker daemon to get a lot of its work done. It does that through the socket defined in the ioFabric configuration. The default is for Docker to communicate using Unix sockets, which is the most secure and is very fast. Therefore the default configuration in ioFabric is to use that default Docker setup. If the ioFabric user wants to run Docker over a TCP/IP socket, they are allowed to do so. As long as they enter the correct socket setting in the ioFabric configuration, everything should work as expected.
+
+This module needs to be aware of the containers that are supposed to be running, and it also needs to figure out what to start up and what to shut down when the list of containers changes. It should leverage Docker's functionality as much as possible, leaving almost 100% of the container handling to the Docker daemon but telling Docker what exactly it should do.
 
 ####Functional Requirements
 
@@ -149,10 +153,20 @@ coming soon
 * Accept certificate files for Docker registries and associate them with the proper registry in the list and store them in the correct place for Docker to access them
 * Accept login credentials for Docker registries and associate them with the proper registry in the list
 * Make the Docker daemon login to registries as needed
+* Communicate with the Docker daemon using the socket defined in the ioFabric configuration
+* Report Process Manager status information to the Status Reporter module according to the Status Information Specification document
 
 
 ####Performance Requirements
 
-* coming soon
+* Docker caches container images and the sub-images within them - leverage the speed of Docker's caching whenever possible (such as getting the Ubuntu 14.04 container once on the first container before starting up the other Ubuntu containers)
+
+* Respond to container list changes as quickly as possible without breaking stability - for example, when a container is removed from the list you should shut it down immediately... but if it is still being built then you might have to wait or submit a different command to Docker to stop the build
+
+* Avoid restarting containers unless it is necessary (when containers are restarted, it takes time and can seriously interrupt data flow)
+
+* Never ever ever miss a container update or change to the container list - if a new port is opened for a container, make absolutely sure that the container gets restarted with the port opened (unless there is an error, in which case you should make absolutely sure that the error gets reported in the status)
+
+* Do not let errors interrupt or corrupt the remaining tasks that Process Manager is performing - such as when the Docker daemon throws an error on building a container... you should still make sure to build all of the other containers
 
 
