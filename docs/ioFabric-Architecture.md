@@ -170,3 +170,27 @@ This module needs to be aware of the containers that are supposed to be running,
 * Do not let errors interrupt or corrupt the remaining tasks that Process Manager is performing - such as when the Docker daemon throws an error on building a container... you should still make sure to build all of the other containers
 
 
+###Local API
+
+more here...
+
+####Functional Requirements
+
+* Report Local API status information to the Status Reporter module according to the Status Information Specification document
+* Provide a REST API on port 54321 according to the Local API Specification document
+* Provide a real-time message Websocket according to the Local API Specification document
+* Provide a real-time control Websocket according to the Local API Specification document
+* Receive messages from the Message Bus and move them to the proper recipients through the real-time message sockets
+* Receive configuration changes for the containers from the Field Agent module and move them to the proper recipients through the real-time control sockets
+* Hold the most recent configuration information for all containers
+* Write the current container configuration information to a file on disk whenever it is updated so it can be retrieved on restarts or as needed
+* Read the stored container configuration from disk when the Local API module starts up
+* Get the next messages for a particular container from the Message Bus module when needed
+* Get the queried set of messages from the Message Bus module as needed
+
+
+####Performance Requirements
+
+* Handle dozens of synchronous connections and requests
+
+
