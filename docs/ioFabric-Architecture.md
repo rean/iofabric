@@ -172,7 +172,18 @@ This module needs to be aware of the containers that are supposed to be running,
 
 ###Local API
 
-more here...
+The Local API module is the part of ioFabric that creates an interface for ioElement containers to interact with the system (and therefore with other containers indirectly). Many systems allow plugins and 3rd party modules to be built, but they usually require a certain language or an SDK library to be compiled into the plugin. The Internet of Things needs a more general interaction model than that. Processes running on the I/O Compute Layer (made up of ioFabric instances) should have the same flexibility as processes running on the general Internet. But how can this be accomplished?
+
+We can accomplish it by using standard Web technologies, such as REST APIs, at the "edge" instead of just in the cloud. Because the actual code being executed in ioFabric is in containers, it is isolated from all of the other running code. This is great for security and stability and dynamic allocation... but it makes interconnectivity much more difficult. Instead of trying to make containers talk to each other, we just have every container talk to a single trusted local source. That is the Local API module. By offering Web technologies, programmers who understand regular network and Web programming can now build for the Internet of Things without changing languages, frameworks, libraries, and tool sets.
+
+The Local API offers two communication methods. The first is a REST API. Just like other common REST APIs, it accepts JSON and responds in JSON. There are documented endpoints. When an endpoint is accessed, a response is provided and the connection is ended. The REST API portion of the Local API needs to be very responsive and capable of handling a high transaction volume. As the number of containers rises, the number of requests will rise dramatically.
+
+The second communication method is a set of Websockets. There are two types of Websockets. One is for messages and the other is for control signals. For a container to get connected to the Websockets, it should be able to open a connection to a pre-defined endpoint and maintain the connection using standard methods. The control signal Websocket will allow the Local API to give the container new configuration information in real time or pass it other control signals in real time. The message Websocket will allow the Local API to give the container its data messages in real time as they arrive at the Local API. The same message Websocket also allows the container to publish data messages into the Local API, which will be passed to the Message Bus, which will route them.
+
+When using the REST API, containers need to transact in JSON. This means that any binary data will have to be encoded using base64 so it can be passed as UTF-8 information. The CPU cost of doing the encoding and decoding of the bytes is unfortunate and the encoded bytes take up about 30% more space. But the flexibility, ease of use, and universality of JSON and the REST API still make it a valuable communication channel on the edge.
+
+To send and receive information in real time, containers must use the Websockets. In addition to having messages "pushed" to them instead of "polling", the containers also receive the messages as pure bytes. No base64 encoding and decoding is required. For streaming media messages such as photos and video, the Websockets are the most appropriate choice.
+
 
 ####Functional Requirements
 
@@ -187,10 +198,16 @@ more here...
 * Read the stored container configuration from disk when the Local API module starts up
 * Get the next messages for a particular container from the Message Bus module when needed
 * Get the queried set of messages from the Message Bus module as needed
+* Allow messages transacted over the Websockets to be pure bytes (no base64 encoding required)
+* Receive newly published messages from containers and deliver them to the Message Bus module
+* Handle erroneous API inputs gracefully and give proper responses back to the offending containers
 
 
 ####Performance Requirements
 
-* Handle dozens of synchronous connections and requests
-
+* Handle dozens of simultaneous maintained Websocket connections
+* Handle at least 20,000 REST API requests per minute
+* Add only minimal latency to the delivery of messaages between the Message Bus module and containers
+* Respond to REST API requests within 100 milliseconds on average
+* Be available to containers at all times
 
