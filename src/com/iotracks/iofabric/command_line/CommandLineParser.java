@@ -3,9 +3,12 @@ package com.iotracks.iofabric.command_line;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
+import com.iotracks.iofabric.utils.configuration.Configuration;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class CommandLineParser {
 	public static String parse(String command) {
@@ -91,7 +94,7 @@ public class CommandLineParser {
 					return showHelp();
 				if (!args[i].equals("-d") && !args[i].equals("-dl") && !args[i].equals("-m") && !args[i].equals("-p")
 						&& !args[i].equals("-a") && !args[i].equals("-ac") && !args[i].equals("-c")
-						&& !args[i].equals("-n"))
+						&& !args[i].equals("-n") && !args[i].equals("-l") && !args[i].equals("-ld") && !args[i].equals("-lc"))
 					return showHelp();
 
 				String option = args[i].substring(1);
@@ -99,9 +102,17 @@ public class CommandLineParser {
 				config.put(option, value);
 				i += 2;
 			}
-			result.append("\nNew configuration");
-			for (Entry<String, String> e : config.entrySet())
-				result.append("\n\tOption : " + e.getKey() + "\tValue : " + e.getValue());
+			
+			try {
+				Configuration.setConfig(config);
+				result.append("\nNew configuration");
+				for (Entry<String, String> e : config.entrySet())
+					result.append("\n\tOption : -" + e.getKey() + "\tValue : " + e.getValue());
+			} catch (Exception e) {
+				LoggingService.log(Level.WARNING, "Command-line Parser", "error updating new config.");
+				result.append("error updating new config.\n" + e.getMessage());
+			}
+			
 			return result.toString();
 		}
 
@@ -153,7 +164,14 @@ public class CommandLineParser {
 				"\n                         -c <uri>                     Set the UNIX socket or network address that the Docker daemon is using");
 		help.append(
 				"\n                         -n <network adapter>         Set the name of the network adapter that holds the correct IP address of this machine\n\n");
-
+		help.append(
+				"\n							-l <#MB Limit>               Set the limit, in MiB, of disk space that the log files can consume");
+		help.append(
+				"\n							-ld <dir>                    Set the directory to use for log file storage");
+		help.append(
+				"\n							-lc <#log files>             Set the number of log files to evenly split the log storage limit");
+		
+		
 		help.append("\nReport bugs to: kilton@iotracks.com");
 		help.append("\nioFabric home page: http://iotracks.com");
 

@@ -1,6 +1,7 @@
 package com.iotracks.iofabric.utils.logging;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -19,7 +20,7 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public final class LoggingService {
 
-	private static Logger logger;
+	private static Logger logger = null;
 
 	private LoggingService() {
 
@@ -29,40 +30,38 @@ public final class LoggingService {
 		logger.log(level, moduleName + " : " + msg);
 	}
 
-	public static void setupLogger() {
-		int maxFileSize = (int) (Configuration.getLogDiskLimit() * 1024 * 1024); // Convert
-																		// MiB
-																		// to
-																		// bytes
+	public static void setupLogger() throws IOException {
+		int maxFileSize = (int) (Configuration.getLogDiskLimit() * 1024 * 1024); 
 		int logFileCount = Configuration.getLogFileCount();
-
 		final File logDirectory = new File(Configuration.getLogDiskDirectory());
-		try {
-			logDirectory.mkdirs();
 
-			UserPrincipalLookupService lookupservice = FileSystems.getDefault().getUserPrincipalLookupService();
-			final GroupPrincipal group = lookupservice.lookupPrincipalByGroupName("iofabric");
-			Files.getFileAttributeView(logDirectory.toPath(), PosixFileAttributeView.class,
-					LinkOption.NOFOLLOW_LINKS).setGroup(group);
-			Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxrwx---");
-			Files.setPosixFilePermissions(logDirectory.toPath(), perms);
+		logDirectory.mkdirs();
 
-			final String logFilePattern = logDirectory.getPath() + "/iofabric.%g.log";
-			Handler logFileHandler = null;
-			logFileHandler = new FileHandler(logFilePattern, maxFileSize / logFileCount, logFileCount);
+		UserPrincipalLookupService lookupservice = FileSystems.getDefault().getUserPrincipalLookupService();
+		final GroupPrincipal group = lookupservice.lookupPrincipalByGroupName("iofabric");
+		Files.getFileAttributeView(logDirectory.toPath(), PosixFileAttributeView.class,
+				LinkOption.NOFOLLOW_LINKS).setGroup(group);
+		Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxrwx---");
+		Files.setPosixFilePermissions(logDirectory.toPath(), perms);
 
-			logFileHandler.setFormatter(new LogFormatter());
-
-			logger = Logger.getLogger("com.iotracks.iofabric");
-			logger.addHandler(logFileHandler);
-
-			logger.setUseParentHandlers(false);
-
-			logger.info("logger started.");
-		} catch (Exception e) {
-			System.out.println("Error starting logging service\n" + e.getMessage());
-			System.exit(1);
+		final String logFilePattern = logDirectory.getPath() + "/iofabric.%g.log";
+		
+		if (logger != null) {
+			for (Handler f : logger.getHandlers())
+				f.close();
 		}
+		
+		Handler logFileHandler = null;
+		logFileHandler = new FileHandler(logFilePattern, maxFileSize / logFileCount, logFileCount);
+	
+		logFileHandler.setFormatter(new LogFormatter());
+	
+		logger = Logger.getLogger("com.iotracks.iofabric");
+		logger.addHandler(logFileHandler);
+
+		logger.setUseParentHandlers(false);
+
+		logger.info("logger started.");
 	}
 
 }

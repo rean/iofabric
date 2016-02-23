@@ -22,12 +22,16 @@ public class ResourceConsumptionManager extends Thread {
 	private Runnable getUsageData = () -> {
 		LoggingService.log(Level.INFO, MODULE_NAME, "get usage data");
 		// TODO : check for violations
-		StatusReporter.setResourceConsumptionManagerStatus().setMemoryUsage(getMemoryUsage()).setCpuUsage(getCpuUsage())
-				.setDiskUsage(getDiskUsage()).setMemoryViolation(false).setDiskViolation(false).setCpuViolation(false);
+		StatusReporter.setResourceConsumptionManagerStatus()
+				.setMemoryUsage(getMemoryUsage())
+				.setCpuUsage(getCpuUsage())
+				.setDiskUsage(getDiskUsage())
+				.setMemoryViolation(false)
+				.setDiskViolation(false)
+				.setCpuViolation(false);
 	};
 
 	public ResourceConsumptionManager() {
-		running = true;
 		this.setName(MODULE_NAME);
 	}
 
@@ -124,9 +128,16 @@ public class ResourceConsumptionManager extends Thread {
 
 	@Override
 	public void run() {
+		running = true;
+
 		// TODO : check for violations
-		StatusReporter.setResourceConsumptionManagerStatus().setMemoryUsage(getMemoryUsage()).setCpuUsage(getCpuUsage())
-				.setDiskUsage(getDiskUsage()).setMemoryViolation(false).setDiskViolation(false).setCpuViolation(false);
+		StatusReporter.setResourceConsumptionManagerStatus()
+				.setMemoryUsage(getMemoryUsage())
+				.setCpuUsage(getCpuUsage())
+				.setDiskUsage(getDiskUsage())
+				.setMemoryViolation(false)
+				.setDiskViolation(false)
+				.setCpuViolation(false);
 
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 		scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,

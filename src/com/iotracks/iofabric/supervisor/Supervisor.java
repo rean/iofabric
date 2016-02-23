@@ -5,10 +5,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.SupervisorStatus.StatusEnum;
 import com.iotracks.iofabric.utils.Constants;
+import com.iotracks.iofabric.utils.Constants.ModulesStatus;
+import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class Supervisor {
@@ -21,15 +23,27 @@ public class Supervisor {
 
 	private final Runnable checkStatus = () -> {
 		LoggingService.log(Level.INFO, MODULE_NAME, "checking modules status");
+		if (Configuration.configChanged) {
+			// TODO: Update modules configuration.
+			try {
+				LoggingService.setupLogger();
+			} catch (Exception e) {
+				LoggingService.log(Level.WARNING, MODULE_NAME, "error changing logger config");
+			}
+			
+			Configuration.configChanged = false;
+		}
 	};
-
+	
 	public void start() {
 		LoggingService.log(Level.INFO, MODULE_NAME, "starting status reporter");
 		StatusReporter.start();
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.STATUS_REPORTER, StatusEnum.running);
+		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.STATUS_REPORTER, ModulesStatus.RUNNING);
 		
-		StatusReporter.setSupervisorStatus().setDaemonStatus(StatusEnum.starting)
-				.setDaemonLastStart(System.currentTimeMillis()).setOperationDuration(0);
+		StatusReporter.setSupervisorStatus()
+				.setDaemonStatus(ModulesStatus.STARTING)
+				.setDaemonLastStart(System.currentTimeMillis())
+				.setOperationDuration(0);
 
 		// setting up scheduled executor to execute checkStatus
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -38,15 +52,27 @@ public class Supervisor {
 
 		// TODO: start other modules
 		// TODO: after starting each module, set SupervisorStatus.modulesStatus
+		
+		// starting Resource Consumption Manager
 		LoggingService.log(Level.INFO, MODULE_NAME, "starting resource consumption manager");
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER,
-				StatusEnum.starting);
+		StatusReporter.setSupervisorStatus()
+				.setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.STARTING);
 		ResourceConsumptionManager resourceConsumptionManager = new ResourceConsumptionManager();
 		resourceConsumptionManager.start();
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER,
-				StatusEnum.running);
+		StatusReporter.setSupervisorStatus()
+				.setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.RUNNING);
 
-		StatusReporter.setSupervisorStatus().setDaemonStatus(StatusEnum.running);
+		// starting Process Manager
+		LoggingService.log(Level.INFO, MODULE_NAME, "starting process manager");
+		StatusReporter.setSupervisorStatus()
+				.setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.STARTING);
+		ProcessManager processManager = new ProcessManager();
+		processManager.start();
+		StatusReporter.setSupervisorStatus()
+				.setModuleStatus(Constants.PROCESS_MANAGER,	ModulesStatus.RUNNING);
+
+		StatusReporter.setSupervisorStatus()
+				.setDaemonStatus(ModulesStatus.RUNNING);
 		LoggingService.log(Level.INFO, MODULE_NAME, "started");
 		while (true) {
 			try {
@@ -55,7 +81,8 @@ public class Supervisor {
 				LoggingService.log(Level.SEVERE, MODULE_NAME, e.getMessage());
 				System.exit(1);
 			}
-			StatusReporter.setSupervisorStatus().setOperationDuration(System.currentTimeMillis());
+			StatusReporter.setSupervisorStatus()
+					.setOperationDuration(System.currentTimeMillis());
 		}
 	}
 

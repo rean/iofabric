@@ -1,0 +1,61 @@
+{
+  "status": "ok",
+  "timestamp": 1456173234743,
+  "containerconfig": [
+    {
+      "id": "viewer",
+      "lastupdatedtimestamp": 1455913931000,
+      "config": "{\"accesstoken\":\"9mRBVhT26gQYDtRhMpkkk7ctGYgH2LJb\"}"
+    },
+    {
+      "id": "vwvw3tnrVxB9LQtnxWx6gdK7rgbnL3Lf",
+      "lastupdatedtimestamp": 1455913931000,
+      "config": "{\"mode\":\"public\",\"host\":\"comsat1.iotracks.com\",\"port\":34986,\"connectioncount\":60,\"passcode\":\"NtZD72yYRqvb9ffgkCHwbzmHGQfy6WwR\",\"localhost\":\"router\",\"localport\":60400,\"heartbeatfrequency\":20000,\"heartbeatabsencethreshold\":60000}"
+    },
+    {
+      "id": "debug",
+      "lastupdatedtimestamp": 1455913931000,
+      "config": "{\"accesstoken\":\"yfJzG6ZBBBJmq9HW6dZmqJrQYCdJFXWb\"}"
+    },
+    {
+      "id": "rv8H3m2fdzKJrKNVGftmWFYDbvgb3tpv",
+      "lastupdatedtimestamp": 1455913931000,
+      "config": "{\"mode\":\"public\",\"host\":\"comsat1.iotracks.com\",\"port\":34988,\"connectioncount\":60,\"passcode\":\"BdRhWgBdmcTzwwR27wWryHJdDJxxDZzd\",\"localhost\":\"router\",\"localport\":60401,\"heartbeatfrequency\":20000,\"heartbeatabsencethreshold\":60000}"
+    },
+    {
+      "id": "t6tJy3Fq7WYXDm4hZn6Hxf366QG7VTVn",
+      "lastupdatedtimestamp": 1455918160000,
+      "config": "{\"blah\":\"blah-blah\"}"
+    },
+    {
+      "id": "Nwmpq2kJbVPjtRKHHmMMX3xj6gLXHHFv",
+      "lastupdatedtimestamp": 1455920224000,
+      "config": "{\"mode\":\"public\",\"host\":\"comsat1.iotracks.com\",\"port\":34990,\"connectioncount\":60,\"passcode\":\"vNnzGCVHWk9C79y4rgPD67CgKn3LtTrW\",\"localhost\":\"router\",\"localport\":8080,\"heartbeatfrequency\":20000,\"heartbeatabsencethreshold\":60000}"
+    },
+    {
+      "id": "C9VBjcJnhbQfk3QNZffY8X2hr27CGpWg",
+      "lastupdatedtimestamp": 1455920288000,
+      "config": "{\"drum\":\"durum:dirim\"}"
+    },
+    {
+      "id": "W9FL8TXmTWwCgXQj9B3BW73NYgdMYLWT",
+      "lastupdatedtimestamp": 1455920678000,
+      "config": "{\"mode\":\"private\",\"host\":\"comsat1.iotracks.com\",\"port\":34998,\"connectioncount\":1,\"passcode\":\"KBqJv9FpKnfNNWHmkyKKxHgCm3xMMzXw\",\"localhost\":\"\",\"localport\":0,\"heartbeatfrequency\":20000,\"heartbeatabsencethreshold\":60000}"
+    },
+    {
+      "id": "rndjj73vwmvgNX6cwctjGRVxnZC9H3k8",
+      "lastupdatedtimestamp": 1456171493000,
+      "config": "{\"quailty\":\"awesome\"}"
+    },
+    {
+      "id": "cFvYRch87ZYxvm4gWRFmLcQWYYzBnBgy",
+      "lastupdatedtimestamp": 1456172484000,
+      "config": "{\"mode\":\"public\",\"host\":\"comsat1.iotracks.com\",\"port\":35000,\"connectioncount\":60,\"passcode\":\"p4MFNNdJkgWJRrwnyNCPqrTywcN8DDq2\",\"localhost\":\"router\",\"localport\":11111,\"heartbeatfrequency\":20000,\"heartbeatabsencethreshold\":60000}"
+    },
+    {
+      "id": "Qzv3kVWjftQ9fxvLYdzq9XfBd9Fw4ZcV",
+      "lastupdatedtimestamp": 1456173195000,
+      "config": "{}"
+    }
+  ]
+}

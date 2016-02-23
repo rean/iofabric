@@ -1,37 +1,35 @@
 package com.iotracks.iofabric.supervisor;
 
 import com.iotracks.iofabric.utils.Constants;
+import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 
 public class SupervisorStatus {
-	public enum StatusEnum {
-		starting, running, stopped
-	}
-	private StatusEnum daemonStatus;			// FC
-	private StatusEnum[] modulesStatus;
+	private ModulesStatus daemonStatus;			// FC
+	private ModulesStatus[] modulesStatus;
 	private long daemonLastStart;				// FC
 	private long operationDuration;				// FC
 	
 	
 	public SupervisorStatus() {
-		modulesStatus = new StatusEnum[Constants.NUMBER_OF_MODULES];
+		modulesStatus = new ModulesStatus[Constants.NUMBER_OF_MODULES];
 		for (int i = 0; i < Constants.NUMBER_OF_MODULES; i++)
-			modulesStatus[i] = StatusEnum.starting;
+			modulesStatus[i] = ModulesStatus.STARTING;
 	}
 
-	public SupervisorStatus setModuleStatus(int module, StatusEnum status) {
+	public SupervisorStatus setModuleStatus(int module, ModulesStatus status) {
 		modulesStatus[module] = status;
 		return this;
 	}
 	
-	public StatusEnum getModuleStatus(int module) {
+	public ModulesStatus getModuleStatus(int module) {
 		return modulesStatus[module];
 	}
 	
-	public StatusEnum getDaemonStatus() {
+	public ModulesStatus getDaemonStatus() {
 		return daemonStatus;
 	}
 	
-	public SupervisorStatus setDaemonStatus(StatusEnum daemonStatus) {
+	public SupervisorStatus setDaemonStatus(ModulesStatus daemonStatus) {
 		this.daemonStatus = daemonStatus;
 		return this;
 	}

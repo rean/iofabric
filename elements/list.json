@@ -1,0 +1,101 @@
+{
+  "status": "ok",
+  "timestamp": 1456173210873,
+  "containerlist": [
+    {
+      "id": "viewer",
+      "lastmodified": 1455913931,
+      "imageid": "iotracks/catalog:hello-web-1",
+      "portmappings": [
+        {
+          "outsidecontainer": "60400",
+          "insidecontainer": "80"
+        }
+      ]
+    },
+    {
+      "id": "vwvw3tnrVxB9LQtnxWx6gdK7rgbnL3Lf",
+      "lastmodified": 1455913931,
+      "imageid": "iotracks/catalog:core-networking-1-11",
+      "portmappings": []
+    },
+    {
+      "id": "debug",
+      "lastmodified": 1455913931,
+      "imageid": "iotracks/catalog:hello-web-1",
+      "portmappings": [
+        {
+          "outsidecontainer": "60401",
+          "insidecontainer": "80"
+        }
+      ]
+    },
+    {
+      "id": "rv8H3m2fdzKJrKNVGftmWFYDbvgb3tpv",
+      "lastmodified": 1455913931,
+      "imageid": "iotracks/catalog:core-networking-1-11",
+      "portmappings": []
+    },
+    {
+      "id": "t6tJy3Fq7WYXDm4hZn6Hxf366QG7VTVn",
+      "lastmodified": 1455920224,
+      "imageid": "iotracks/catalog:webcamdummy_v1",
+      "portmappings": [
+        {
+          "outsidecontainer": "8080",
+          "insidecontainer": "80"
+        }
+      ]
+    },
+    {
+      "id": "Nwmpq2kJbVPjtRKHHmMMX3xj6gLXHHFv",
+      "lastmodified": 1455920224,
+      "imageid": "iotracks/catalog:core-networking-1-11",
+      "portmappings": []
+    },
+    {
+      "id": "C9VBjcJnhbQfk3QNZffY8X2hr27CGpWg",
+      "lastmodified": 1455920313,
+      "imageid": "iotracks/catalog:simpledummy_v1",
+      "portmappings": [
+        {
+          "outsidecontainer": "9090",
+          "insidecontainer": "90"
+        }
+      ]
+    },
+    {
+      "id": "W9FL8TXmTWwCgXQj9B3BW73NYgdMYLWT",
+      "lastmodified": 1455920678,
+      "imageid": "iotracks/catalog:core-networking-1-11",
+      "portmappings": []
+    },
+    {
+      "id": "rndjj73vwmvgNX6cwctjGRVxnZC9H3k8",
+      "lastmodified": 1456172484,
+      "imageid": "iotracks/catalog:webcamdummy_v1",
+      "portmappings": [
+        {
+          "outsidecontainer": "10101",
+          "insidecontainer": "1010"
+        },
+        {
+          "outsidecontainer": "11111",
+          "insidecontainer": "1111"
+        }
+      ]
+    },
+    {
+      "id": "cFvYRch87ZYxvm4gWRFmLcQWYYzBnBgy",
+      "lastmodified": 1456172484,
+      "imageid": "iotracks/catalog:core-networking-1-11",
+      "portmappings": []
+    },
+    {
+      "id": "Qzv3kVWjftQ9fxvLYdzq9XfBd9Fw4ZcV",
+      "lastmodified": 1456173195,
+      "imageid": "iotracks/catalog:json-transform_v0.1",
+      "portmappings": []
+    }
+  ]
+}

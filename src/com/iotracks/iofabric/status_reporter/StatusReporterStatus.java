@@ -5,6 +5,8 @@ public class StatusReporterStatus {
 	private long lastUpdate;			// FC
 
 	public StatusReporterStatus() {
+		systemTime = System.currentTimeMillis();
+		lastUpdate = systemTime;
 	}
 
 	public StatusReporterStatus(long systemTime, long lastUpdate) {

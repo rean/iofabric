@@ -1,0 +1,34 @@
+{
+  "status": "ok",
+  "timestamp": 1456173256170,
+  "routing": [
+    {
+      "container": "t6tJy3Fq7WYXDm4hZn6Hxf366QG7VTVn",
+      "receivers": {
+        "internal": [
+          "C9VBjcJnhbQfk3QNZffY8X2hr27CGpWg",
+          "rndjj73vwmvgNX6cwctjGRVxnZC9H3k8"
+        ],
+        "external": []
+      }
+    },
+    {
+      "container": "C9VBjcJnhbQfk3QNZffY8X2hr27CGpWg",
+      "receivers": {
+        "internal": [
+          "W9FL8TXmTWwCgXQj9B3BW73NYgdMYLWT"
+        ],
+        "external": []
+      }
+    },
+    {
+      "container": "rndjj73vwmvgNX6cwctjGRVxnZC9H3k8",
+      "receivers": {
+        "internal": [
+          "Qzv3kVWjftQ9fxvLYdzq9XfBd9Fw4ZcV"
+        ],
+        "external": []
+      }
+    }
+  ]
+}
