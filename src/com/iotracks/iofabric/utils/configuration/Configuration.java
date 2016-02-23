@@ -1,7 +1,6 @@
 package com.iotracks.iofabric.utils.configuration;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -34,6 +33,8 @@ public final class Configuration {
 	private static float logDiskLimit;
 	private static String logDiskDirectory;
 	private static int logFileCount;
+	
+	public static boolean configChanged;
 
 	private static String getNode(String name) throws ConfigurationItemException {
 		NodeList nodes = configElement.getElementsByTagName(name);
@@ -43,7 +44,7 @@ public final class Configuration {
 		return nodes.item(0).getTextContent();
 	}
 
-	private static void setNode(String name, String content) throws Exception {
+	private static void setNode(String name, String content) throws ConfigurationItemException {
 
 		NodeList nodes = configFile.getElementsByTagName(name);
 
@@ -54,7 +55,7 @@ public final class Configuration {
 
 	}
 	
-	private static void saveConfigUpdates() throws Exception{
+	private static void saveConfigUpdates() throws Exception {
 		Transformer transformer = TransformerFactory.newInstance().newTransformer();
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		StreamResult result = new StreamResult(new File("/etc/iofabric/config.xml"));
@@ -62,7 +63,7 @@ public final class Configuration {
 		transformer.transform(source, result);
 	}
 
-	public static void setConfig(HashMap<String, String> commandLineMap) throws Exception {
+	public static void setConfig(Map<String, String> commandLineMap) throws Exception {
 		String option = null, value = null;
 
 		for (Map.Entry<String, String> command : commandLineMap.entrySet()) {
@@ -130,6 +131,7 @@ public final class Configuration {
 		}
 		
 		saveConfigUpdates();
+		configChanged = true;
 	}
 
 	private static void validateValue(String option, String value, String typeOfValidation) throws ConfigurationItemException {
@@ -144,6 +146,7 @@ public final class Configuration {
 	
 	public static void loadConfig() throws Exception {
 		// TODO: load configuration XML file here
+		configChanged = false;
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
 
