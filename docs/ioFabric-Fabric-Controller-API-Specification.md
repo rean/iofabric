@@ -37,3 +37,39 @@ This endpoint just gives you a response from the fabric controller with its stat
 	None
 </pre>
 
+
+
+####Get ioFabric Instance ID and Access Token
+
+This endpoint registers the ioFabric instance that is submitting the provisioning key and delivers the ioFabric instance ID along with an access token that must be submitted for any further API interaction. The access token remains valid until it is revoked. If it becomes invalid, the ioFabric instance must be re-provisioned to re-establish access to the fabric controller API.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/provision/key/A8842h
+</pre>
+
+#####Response
+
+<pre>
+	{
+		“status”:”ok”,
+		”timestamp”:1234567890123,
+		“id”:”4sd9whcfh”,
+		“token”:”3498wfesdhusdvkjh3refkjhsdpaohrg”
+	}
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	key - the provisioning key provided via the command line (example shown here as a8842h)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+
