@@ -6,7 +6,7 @@ Each ioFabric instance can do very little without connecting to a fabric control
 
 The API endpoints are listed here with a short description and the actual inputs and outputs. The actual IP address or domain name of the fabric controller will vary from deployment to deployment. It is mandatory that HTTPS be used, and both domain names and IP addresses are allowed for connecting to a fabric controller. The placeholder address of 1.2.3.4 is used in this document for the location of the fabric controller.
 
-####Server Status
+####Get Server Status
 
 This endpoint just gives you a response from the fabric controller with its status. It can be used for simple "ping" purposes to see if the fabric controller is online and operational.
 
@@ -145,6 +145,52 @@ This endpoint allows the ioFabric instance to send its status information to the
     messagespeed - The average speed, in milliseconds, of messages moving through the ioFabric instance (example: 84)
 
     lastcommandtime - Timestamp, in milliseconds, of the last update received by the ioFabric instance (example: 1234567890123)
+</pre>
+
+
+####Get ioFabric Configuration
+
+This endpoint ...
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/config/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+        “status”:”ok”,
+        “timestamp”:1234567890123,
+        “config”:
+            {
+                "networkinterface":"p2p1",
+                "dockerurl":"unix:///var/run/docker.sock",
+                "disklimit":12.0,
+                "diskdirectory":"/var/lib/iofabric/",
+                "memorylimit":1024.0,
+                "cpulimit":35.58,
+                "loglimit":2.45,
+                "logdirectory":"/var/log/iofabric/",
+                "logfilecount":10
+            }
+    }
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
 </pre>
 
 
