@@ -309,6 +309,7 @@ This endpoint provides the current list of containers that should be running on 
                 {
                     “id”:”sh23489gyrsdifuhw3iruedsifyasf”,
                     “imageid”:”iotracks/catalog:linksys_ip_camera_v1_7_7”,
+                    "registryurl":"hub.docker.com",
                     “lastmodified”:1234567890123,
                     "rebuild":false,
                     “portmappings”:
@@ -326,6 +327,7 @@ This endpoint provides the current list of containers that should be running on 
 				{
                     “id”:”debug”,
                     “imageid”:”iotracks/catalog:debug_console_v1_2_0”,
+                    "registryurl":"24.158.9.17",
 					“lastmodified”:1234567890123,
 					"rebuild":true,
                     “portmappings”:
@@ -439,6 +441,61 @@ This endpoint provides the routing plan for all containers. Note that no contain
                             “2398yrodsfkdshdsf”
                         ]
 				}
+            ]
+    }
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+
+####Get ioFabric Registries
+
+This endpoint provides the list of Docker container registries that the ioFabric instance needs to load container images from. Login credentials are provided for each registry. Information about whether or not a registry is secure is also provided. If a registry is not secure, it should be added to the Docker daemon "insecure" list. If a registry is secure, it may or may not require a certificate in order to access it. If it does, the certificate will be provided directly in the API response. Note that this field may contain intermediate certificates bundled into the certificate chain, making this a rather large amount of text. The certificate example shown in this documentation is merely a placeholder.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/registries/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+        “status”:”ok”,
+        “timestamp”:1234567890123,
+        "registries":
+            [
+                {
+                	"url":"15.68.152.8",
+                	"secure":true,
+                	"certificate":"4wht9wdfsSkusdfhi234kwrwoeruawofjas=wetiuh4wefssdf...",
+                	"requirescert":true,
+                	"username":"fabricuser1",
+                	"password":"abc123",
+                	"useremail":"jim@themail.com"
+            	},
+            	{
+                	"url":"hub.docker.com",
+                	"secure":true,
+                	"certificate":"",
+                	"requirescert":false,
+                	"username":"iofabric",
+                	"password":"abc123",
+                	"useremail":"iofabric_user@iotracks.com"
+            	}
             ]
     }
 </pre>
