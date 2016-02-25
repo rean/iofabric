@@ -244,3 +244,217 @@ This endpoint allows the ioFabric instance to send its configuration to the fabr
 </pre>
 
 
+####Get ioFabric Changes List
+
+This endpoint lists the current changes for the ioFabric instance. Much of the time there will not be any changes. The ioFabric instance should use this endpoint to check frequently, such as every 20 seconds. The changes are calculated based upon the timestamp that is sent in the querystring parameters. The timestamp must be stored locally in the ioFabric instance and passed to this endpoint on every request. It should be updated whenever a successful call to this endpoint is completed, and should use the timestamp provided in the response.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/changes/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg/timestamp/1234567890123
+</pre>
+
+#####Response
+
+<pre>
+	{
+        “status”:”ok”,
+        “timestamp”:1234567890123,
+        “changes”:
+            {
+                “config”:false,
+                “containerlist”:false,
+                “containerconfig”:true,
+                “routing”:false,
+                "registries":true
+            }
+    }
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+
+    timestamp - the timestamp from the last received results of this specific API call (example shown here as 1234567890123)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+
+####Get ioFabric Container List
+
+This endpoint provides the current list of containers that should be running on the ioFabric instance. Containers should be added, removed, and restarted based upon this list. A change in port mappings should result in a restart because containers can only have their port mappings updated when they are being started. When the "rebuild" flag is set to true, the Docker daemon should be asked to build the container again. If there is an updated image in the registry, Docker will see the change and flush its cache and build the container from the updated image. Triggering container updates is the purpose of this "rebuild" flag.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/containerlist/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+        “status”:”ok”,
+        “timestamp”:1234567890123,
+        “containerlist”:
+            [
+                {
+                    “id”:”sh23489gyrsdifuhw3iruedsifyasf”,
+                    “imageid”:”iotracks/catalog:linksys_ip_camera_v1_7_7”,
+                    “lastmodified”:1234567890123,
+                    "rebuild":false,
+                    “portmappings”:
+                        [
+                            {
+                                “outsidecontainer”:”5500”,
+                                “insidecontainer”:”80”
+                            },
+                            {
+                                “outsidecontainer”:”5650”,
+                                “insidecontainer”:”2040”
+                            }
+                        ]
+                },
+				{
+                    “id”:”debug”,
+                    “imageid”:”iotracks/catalog:debug_console_v1_2_0”,
+					“lastmodified”:1234567890123,
+					"rebuild":true,
+                    “portmappings”:
+                        [
+                        ]
+				}
+            ]
+    }
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+
+####Get ioFabric Container Configuration
+
+This endpoint provides the JSON configuration strings for all of the containers that should be running on the ioFabric instance. Note that the container configuration JSON strings are escaped. This is because they are being delivered inside a JSON response and we don't want these configuration strings to become part fo the actual response object. We want the strings to be unescaped and passed to the containers without being parsed.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/containerconfig/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+        “status”:”ok”,
+        “timestamp”:1234567890123,
+        “containerconfig”:
+            [
+                {
+                    “id”:”sdguh34tkwjdhfsdkhfs”,
+                    “lastupdatedtimestamp”:1234567890123,
+                    “config”:”\{\”username\”:\”iokilton\”,\”password\”:\”abc123\”\}”
+				},
+				{
+                    “id”:”345t9yergdskfhtwerwhuk”,
+                    “lastupdatedtimestamp”:1234567890123,
+                    “config”:”\{\”speed\”:40,\”sendphotos\”:true\}”
+				},
+				{
+                    “id”:”viewer”,
+                    “lastupdatedtimestamp”:1234567890123,
+                    “config”:”\{\}”
+				}
+            ]
+    }
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+
+####Get ioFabric Routing
+
+This endpoint provides the routing plan for all containers. Note that no container ever specifies its inputs. It only specifies its outputs. This is because the vast majority of IoT data streams begins with a container that does not take in ioMessages. It just connects to some external device or external system. Then it publishes ioMessages and the routing chain begins as a sequence of outputs from container to container.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/routing/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+        “status”:”ok”,
+        “timestamp”:1234567890123,
+        “routing”:
+            [
+                {
+                    “container”:”sdh4wte98yefsdouhdv”,
+                    “receivers”:
+						[
+                            “349y8sdofshsdefh”,
+                            “2398yrodsfkdshdsf”,
+                            “viewer”,
+                            “debug”
+                        ]
+				},
+				{
+                    “container”:”ou23uewds98tesdfjkhsed”,
+                    “receivers”:
+						[
+                            “iwe32rlejsdfxkjhsdf”,
+                            “2398yrodsfkdshdsf”
+                        ]
+				}
+            ]
+    }
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+
