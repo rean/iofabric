@@ -150,7 +150,7 @@ This endpoint allows the ioFabric instance to send its status information to the
 
 ####Get ioFabric Configuration
 
-This endpoint ...
+This endpoint provides the configuration for the ioFabric instance. Note that some configuration items, such as the fabric controller URL and certificate path, are not featured here. That's for security reasons. If someone gains control of a fabric controller, we don't want them to be able to tell the ioFabric instances to listen to a different fabric controller. This also prevents accidental disconnection of ioFabric instances from the fabric controller.
 
 #####Endpoint
 
