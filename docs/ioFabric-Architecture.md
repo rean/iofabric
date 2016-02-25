@@ -192,10 +192,10 @@ To send and receive information in real time, containers must use the Websockets
 * Provide a real-time message Websocket according to the Local API Specification document
 * Provide a real-time control Websocket according to the Local API Specification document
 * Receive messages from the Message Bus and move them to the proper recipients through the real-time message sockets
-* Receive configuration changes for the containers from the Field Agent module and move them to the proper recipients through the real-time control sockets
-* Hold the most recent configuration information for all containers
-* Write the current container configuration information to a file on disk whenever it is updated so it can be retrieved on restarts or as needed
-* Read the stored container configuration from disk when the Local API module starts up
+* Receive notification of configuration changes for the containers from the Field Agent module and move them to the proper recipients through the real-time control sockets
+* Hold the most recent configuration information for all containers in memory so the access is very fast
+* Retrieve the stored container configuration from the proper application component when the Local API module starts up
+* Update the container configuration held in memory when configuration changes are received
 * Get the next messages for a particular container from the Message Bus module when needed
 * Get the queried set of messages from the Message Bus module as needed
 * Allow messages transacted over the Websockets to be pure bytes (no base64 encoding required)

@@ -38,7 +38,6 @@ This endpoint just gives you a response from the fabric controller with its stat
 </pre>
 
 
-
 ####Get ioFabric Instance ID and Access Token
 
 This endpoint registers the ioFabric instance that is submitting the provisioning key and delivers the ioFabric instance ID along with an access token that must be submitted for any further API interaction. The access token remains valid until it is revoked. If it becomes invalid, the ioFabric instance must be re-provisioned to re-establish access to the fabric controller API.
@@ -70,6 +69,39 @@ This endpoint registers the ioFabric instance that is submitting the provisionin
 
 <pre>
 	None
+</pre>
+
+
+####Post ioFabric Instance Status Information
+
+This endpoint allows the ioFabric instance to send its status information to the fabric controller. This should be done regularly, but not so often as to waste bandwidth and CPU resources.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/status/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+		“status”:”ok”,
+		”timestamp”:1234567890123
+	}
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	ABC - tbladhsd
 </pre>
 
 
