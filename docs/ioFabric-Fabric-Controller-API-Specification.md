@@ -95,13 +95,56 @@ This endpoint allows the ioFabric instance to send its status information to the
 
 <pre>
 	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
     token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
 </pre>
 
 #####POST Parameters
 
 <pre>
-	ABC - tbladhsd
+    daemonstatus - ioFabric daemon status string (example: running)
+    
+    daemonoperatingduration - ioFabric daemon operating duration in milliseconds (example: 43473272)
+    
+    daemonlaststart - Timestamp of the ioFabric daemon last start in milliseconds (example: 1234567890123)
+    
+    memoryusage - ioFabric current memory usage in mebibytes MiB (example: 562.8)
+    
+    diskusage - ioFabric current disk usage in gibibytes GiB (example: 2.79)
+    
+    cpuusage - ioFabric current CPU usage in percent (example: 24.71)
+    
+    memoryviolation - Status indicating if the ioFabric's current memory usage is in violation of the configured limit (example: yes)
+    
+    diskviolation - Status indicating if the ioFabric's current disk usage is in violation of the configured limit (example: no)
+    
+    cpuviolation - Status indicating if the ioFabric's current CPU usage is in violation of the configured limit (example: no)
+    
+    elementstatus - JSON string providing the status of all elements (example below)
+    	
+    	[{"id":"sdfkjhweSDDkjhwer8","status":"starting","starttime":1234567890123,"operatingduration":278421},{"id":"239y7dsDSFuihweiuhr32we","status":"stopped","starttime":1234567890123,"operatingduration":421900}]
+        
+    repositorycount - Number of Docker container registries being used by the ioFabric instance (example: 5)
+
+    repositorystatus - JSON string providing the status of all the repositories (example below)
+
+    	[{"url":"hub.docker.com","linkstatus":"connected"},{"url":"188.65.2.81/containers","failed login"}]
+
+    systemtime - Timestamp of the current ioFabric system time in milliseconds (example: 1234567890123)
+    
+    laststatustime - Timestamp in milliseconds of the last time any status information on the ioFabric instance was updated (example: 1234567890123)
+
+    ipaddress - Current IP address of the network adapter configured for the ioFabric instance (example: 10.0.15.13)
+
+    processedmessages - Total number of messages processed by the ioFabric instance (example: 4481)
+
+    elementmessagecounts - JSON string providing the number of messages published per element (example below)
+
+    	[{"id":"d9823y23rewfouhSDFkh","messagecount":428},{"id":"978yerwfiouhASDFkjh","messagecount":8321}]
+    
+    messagespeed - The average speed, in milliseconds, of messages moving through the ioFabric instance (example: 84)
+
+    lastcommandtime - Timestamp, in milliseconds, of the last update received by the ioFabric instance (example: 1234567890123)
 </pre>
 
 
