@@ -194,3 +194,53 @@ This endpoint provides the configuration for the ioFabric instance. Note that so
 </pre>
 
 
+####Post ioFabric Configuration
+
+This endpoint allows the ioFabric instance to send its configuration to the fabric controller. It should send the updated configuration to this endpoint whenever a change is made locally.
+
+#####Endpoint
+
+<pre>
+	https://1.2.3.4/api/v2/instance/config/changes/id/4sd9whcfh/token/3498wfesdhusdvkjh3refkjhsdpaohrg
+</pre>
+
+#####Response
+
+<pre>
+	{
+		“status”:”ok”,
+		”timestamp”:1234567890123
+	}
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the instance ID held by the ioFabric instance (example shown here as 4sd9whcfh)
+    
+    token - the access token given to the ioFabric instance for accessing the API (example shown here as 3498wfesdhusdvkjh3refkjhsdpaohrg)
+</pre>
+
+#####POST Parameters
+
+<pre>
+    networkinterface - example: p2p1
+
+    dockerurl - example: unix:///var/run/docker.sock
+
+    disklimit - example: 12.0
+
+    diskdirectory - example: /var/lib/iofabric/
+
+    memorylimit - example: 1024.0
+
+    cpulimit - example: 35.58
+
+    loglimit - example: 2.45
+
+    logdirectory - example: /var/log/iofabric/
+
+    logfilecount - example: 10
+</pre>
+
+
