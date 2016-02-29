@@ -163,7 +163,10 @@ This module needs to be aware of the containers that are supposed to be running,
 
 * Respond to container list changes as quickly as possible without breaking stability - for example, when a container is removed from the list you should shut it down immediately... but if it is still being built then you might have to wait or submit a different command to Docker to stop the build
 
-* Avoid restarting containers unless it is necessary (when containers are restarted, it takes time and can seriously interrupt data flow)
+* Avoid restarting containers unless it is necessary (when containers are restarted, it takes time and can seriously interrupt data flow) - the appropriate times to restart containers are as follows:
+	* When the container has been stopped or has crashed
+	* When the network and port mapping for the container has changed
+	* When the container needs to be rebuilt
 
 * Never ever ever miss a container update or change to the container list - if a new port is opened for a container, make absolutely sure that the container gets restarted with the port opened (unless there is an error, in which case you should make absolutely sure that the error gets reported in the status)
 
