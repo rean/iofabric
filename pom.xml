@@ -18,6 +18,11 @@
   </build>
   <dependencies>
   	<dependency>
+		<groupId>org.jboss.netty</groupId>
+		<artifactId>netty</artifactId>
+		<version>3.2.0.Final</version>
+	</dependency>  	
+  	<dependency>
   		<groupId>com.github.docker-java</groupId>
   		<artifactId>docker-java</artifactId>
   		<version>2.2.0</version>

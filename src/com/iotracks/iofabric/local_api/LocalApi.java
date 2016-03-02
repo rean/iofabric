@@ -35,6 +35,7 @@ public class LocalApi {
 	
 	public void start() throws Exception {
 		readContainerConfig();
+		
 		StatusReporter.setLocalApiStatus().setCurrentIpAddress("127.0.0.1");
 	}
 	

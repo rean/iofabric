@@ -5,6 +5,7 @@
   <classpathentry kind="var" path="M2_REPO/javax/ws/rs/javax.ws.rs-api/2.0/javax.ws.rs-api-2.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/javax/annotation/javax.annotation-api/1.2/javax.annotation-api-1.2.jar"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="var" path="M2_REPO/org/jboss/netty/netty/3.2.0.Final/netty-3.2.0.Final.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/github/docker-java/docker-java/2.2.0/docker-java-2.2.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/fasterxml/jackson/jaxrs/jackson-jaxrs-json-provider/2.1.2/jackson-jaxrs-json-provider-2.1.2.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/fasterxml/jackson/core/jackson-core/2.1.2/jackson-core-2.1.2.jar"/>
