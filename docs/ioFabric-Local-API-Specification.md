@@ -39,7 +39,7 @@ This endpoint provides the current JSON configuration string for the requesting 
 #####POST Parameters
 
 <pre>
-	{“publisher”:”R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ”}
+	{“id”:”R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ”}
 
 	Note: The POST value is JSON and must be sent with HTTP header set as “Content-Type:application/json”
 </pre>
@@ -60,7 +60,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 <pre>
 	{
 		"status":"okay",
-		"count":1,
+		"count":2,
 		"messages":
 			[
 				{
@@ -124,7 +124,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 #####POST Parameters
 
 <pre>
-	{“publisher”:”R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ”}
+	{“id”:”R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ”}
 
 	Note: The POST value is JSON and must be sent with HTTP header set as “Content-Type:application/json”
 </pre>
@@ -181,6 +181,91 @@ This endpoing allows a container to post a message to the system. The message ID
 		"contentlength":14,
 		"contentdata":"A New Message!"
 	}
+
+	Note: The POST value is JSON and must be sent with HTTP header set as “Content-Type:application/json”
+</pre>
+
+
+####Get Messages From Publishers Within Timeframe
+
+This endpoint allows a container to query for messages from any number of publishers within any timeframe. The messages will only be provided for publishers that the container is allowed to access. In other words, if a container doesn't normally receive messages from a particular publisher, then the container can try to query for messages from that publisher but it won't receive any. The message retrieval and security controls are all performed by the Message Bus module and the allowed messages are passed to the Local API to send out.
+
+#####Endpoint
+
+<pre>
+	http://iofabric:54321/v2/messages/query
+</pre>
+
+#####Response
+
+<pre>
+	{
+		"status":"okay",
+		"count":2,
+		"messages":
+			[
+				{
+					"id":"ObJ5STY02PMLM4XKXM8oSuPlc7mUh5Ej",
+					"tag":"",
+					"groupid":"",
+					"sequencenumber":1,
+					"sequencetotal":1,
+					"priority":0,
+					"timestamp":1452214777495,
+					"publisher":"R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ",
+					"authid":"",
+					"authgroup":"",
+					"version":1.4,
+					"chainposition":0,
+					"hash":"",
+					"previoushash":"",
+					"nonce":"",
+					"difficultytarget":0.0,
+					"infotype":"text",
+					"infoformat":"utf-8",
+					"contextlength":0,
+					"contextdata":"",
+					"contentlength":14,
+					"contentdata":"A New Message!"
+				},
+				{
+					"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
+					"tag":"Bosch Camera 16",
+					"groupid":"",
+					"sequencenumber":1,
+					"sequencetotal":1,
+					"priority":0,
+					"timestamp":1234567890123,
+					"publisher":"Ayew98wtosdhFSKdjhsdfkjhkjesdhg",
+					"authid":"",
+					"authgroup":"",
+					"version":1.4,
+					"chainposition":0,
+					"hash":"",
+					"previoushash":"",
+					"nonce":"",
+					"difficultytarget":0.0,
+					"infotype":"image/jpeg",
+					"infoformat":"base64",
+					"contextlength":0,
+					"contextdata":"",
+					"contentlength":1071,
+					"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
+				}
+			]
+	}
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	None
+</pre>
+
+#####POST Parameters
+
+<pre>
+	{"id":”R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ”, "timeframestart":1234567890123, "timeframeend":1234567890123, "publishers":["sefhuiw4984twefsdoiuhsdf","d895y459rwdsifuhSDFKukuewf","SESD984wtsdidsiusidsufgsdfkh"]}
 
 	Note: The POST value is JSON and must be sent with HTTP header set as “Content-Type:application/json”
 </pre>
