@@ -214,3 +214,55 @@ To send and receive information in real time, containers must use the Websockets
 * Respond to REST API requests within 100 milliseconds on average
 * Be available to containers at all times
 
+
+###Field Agent
+
+The Field Agent module handles all of the communication with the fabric controller. It serves as the provider of updates to the other modules. It also sends updates to the fabric controller on behalf of the other modules. The Field Agent is in charge of establishing and maintaining a connection to the fabric controller at all times, and it must report a change in connection status when it occurs. In addition, the Field Agent is in charge of verifying the identity of the configured fabric controller before communicating with it.
+
+In this version of ioFabric, the Field Agent learns about new commands from the fabric controller through simple polling of the fabric controller REST API. In order to be performant, the ioFabric instance must poll somewhat frequently. In future versions of ioFabric, a Websocket connection will allow real-time delivery of changes and commands from the fabric controller without cyclical polling.
+
+
+####Functional Requirements
+
+* Validate the identity of the fabric controller using the certificate path in the ioFabric configuration
+* Update the fabric controller identity verification status when it changes
+* Post status information to the fabric controller according to the Fabric Controller API Specification document
+* Check the fabric controller regularly for changes
+* Ping the fabric controller regularly to make sure it is online and reachable
+* Update the fabric controller connection status when it changes
+* Perform the provisioning process with the fabric controller when requested to do so
+* Use the provisioning token passed via the command line when performing the provisioning process
+* Store the results of the provisioning process in the ioFabric configuration
+* Get update configuration information for the ioFabric instance when it has changed
+* Store the updated configuration in the ioFabric configuration when it has changed
+* Alert other modules that their configuration has been changed but only alert the modules that have actual changes
+* Post the ioFabric configuration to the fabric controller when it changes locally
+* Always communicate with the fabric controller over a secure connection (TLS using HTTPS)
+* Provide a common code class for all modules to get the current list of containers, container configuration, routing, and list of registries
+* Read the list of containers, container configuration, routing, and list of registries stored on disk when starting and populate the common code class
+* Write the udpated list of containers, container configuration, routing, and list of registries to disk when any of them change
+* Do not communicate with a fabric controller if the ioFabric instance has been deprovisioned
+* Update the "Last Command Time" status whenever any changes are received from the fabric controller
+* Do not communicate with a fabric controller that has failed the identity verification process
+* Get the updated container list when it changes
+* Alert the Process Manager module that the container list has changed
+* Store the updated container list in memory in the common code class
+* Get the updated container configuration when it changes
+* Alert the Local API module that the container configuration has changed
+* Store the updated container configuration in memory in the common code class
+* Get the updated routing when it changes
+* Alert the Message Bus module that the routing has changed
+* Store the updated routing in memory in the common code class
+* Get the updated list of registries when it changes
+* Alert the Process Manager module that the list of registries has changed
+* Store the updated list of registries in memory in the common code class
+
+
+####Performance Requirements
+
+* Retrieve detailed changes immediately when a type of changes is indicated by the fabric controller
+* Check the fabric controller connection every 60 seconds or more frequently
+* Check the fabric controller for changes every 30 seconds or more frequently
+* Post status changes immediately when they occur
+* Post ioFabric configuration changes immediately when they occur
+
