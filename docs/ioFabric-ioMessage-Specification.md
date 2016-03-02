@@ -83,6 +83,54 @@ The purpose of a message is move information along a path. No understanding of t
     Description: This is an open field to pass authentication group information. This allows pieces of the application to know they are dealing with a message from an authenticated user of a particular type (such as “employee” or “system admin”) without needing to know the actual identification information.
 </pre>
 
+####ioMessage Version
+<pre>
+    Data Type: Decimal
+    Key: Version
+    Required: Yes
+    Description: Which version of the ioMessage format does this particular message comply with?
+</pre>
+
+####Chain Position
+<pre>
+    Data Type: Integer
+    Key: ChainPosition
+    Required: No
+    Description: When using cryptographic message chaining, this field represents the position in the message chain that this paricular message occupies. It is similar to the "block height" value found in blockchain technology.
+</pre>
+
+####Hash
+<pre>
+    Data Type: Text in UTF-8 format
+    Key: Hash
+    Required: No
+    Description: When using cryptographic message chaining, a hash of this entire message can be included here.
+</pre>
+
+####Previous Message Hash
+<pre>
+    Data Type: Text in UTF-8 format
+    Key: PreviousHash
+    Required: No
+    Description: When using cryptographic message chaining, the hash value of the previous message is included here. This forms the cryptographic link from the prior message to this one.
+</pre>
+
+####Nonce
+<pre>
+    Data Type: Text in UTF-8 format
+    Key: Nonce
+    Required: No
+    Description: When using cryptographic message chaining, an open field is needed to achieve the correct hash value. The information in this field will not be meaningful, but will be necessary to produce the final hash of the message.
+</pre>
+
+####Difficulty Target
+<pre>
+    Data Type: Decimal
+    Key: DifficultyTarget
+    Required: No
+    Description: When using cryptographic message chaining, this field represents the hashing workload required to cryptographically seal the chain.
+</pre>
+
 ####Information Type
 <pre>
     Data Type: Text in UTF-8 format
