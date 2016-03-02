@@ -271,3 +271,99 @@ This endpoint allows a container to query for messages from any number of publis
 </pre>
 
 
+####Get Control Websocket Connection
+
+This endpoint opens a control Websocket connection for the container. The control commands sent over this Websocket are specified here. It is the responsibility of the container to establish this connection and ensure it is always running. If the container loses the Websocket connection, it should establish a new connection. The Local API is responsible for knowing which Websocket connection belongs to which container so that it can pass information to the appropriate recipients.
+
+The container ID must be passed as part of the URL because otherwise it would have to be passed in the Websocket connection itself and that would make associated connections with container IDs rather difficult.
+
+#####Endpoint
+
+<pre>
+	ws://iofabric:54321/v2/control/socket/id/34t9whefsdfDFKjhw4tiouhwef
+</pre>
+
+#####Response
+
+<pre>
+	None - the Websocket will simply be opened successfully
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the container ID of the container requesting the Websocket connection (example shown here as 34t9whefsdfDFKjhw4tiouhwef)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+#####Transmissions From ioFabric To Container
+
+<pre>
+	Standard "Ping" message (op code 9)
+	Standard "Pong" message (op code 10)
+	Acknowledgement message (op code 11)
+	New container configuration available (op code 12)
+</pre>
+
+#####Transmissions From Container To ioFabric
+
+<pre>
+	Standard "Ping" message (op code 9)
+	Standard "Pong" message (op code 10)
+	Acknowledgement message (op code 11)
+</pre>
+
+
+####Get Message Websocket Connection
+
+This endpoint opens a message Websocket connection for the container. The messages and other commands sent over this Websocket are specified here. It is the responsibility of the container to establish this connection and ensure it is always running. If the container loses the Websocket connection, it should establish a new connection. The Local API is responsible for knowing which Websocket connection belongs to which container so that it can pass information to the appropriate recipients.
+
+The container ID must be passed as part of the URL because otherwise it would have to be passed in the Websocket connection itself and that would make associated connections with container IDs rather difficult.
+
+#####Endpoint
+
+<pre>
+	ws://iofabric:54321/v2/message/socket/id/34t9whefsdfDFKjhw4tiouhwef
+</pre>
+
+#####Response
+
+<pre>
+	None - the Websocket will simply be opened successfully
+</pre>
+
+#####Querystring Parameters
+
+<pre>
+	id - the container ID of the container requesting the Websocket connection (example shown here as 34t9whefsdfDFKjhw4tiouhwef)
+</pre>
+
+#####POST Parameters
+
+<pre>
+	None
+</pre>
+
+#####Transmissions from ioFabric to Container
+
+<pre>
+	Standard "Ping" message (op code 9)
+	Standard "Pong" message (op code 10)
+	ioMessage transmission (op code 13 followed by bytes of the actual ioMessage)
+	ioMessage receipt transmission (op code 14 followed by bytes containing the ioMessage ID and Timestamp fields)
+</pre>
+
+#####Transmissions from Container to ioFabric
+
+<pre>
+	Standard "Ping" message (op code 9)
+	Standard "Pong" message (op code 10)
+	Acknowledgement message (op code 11)
+	ioMessage transmission (op code 13 followed by bytes of the actual ioMessage)
+</pre>
+
