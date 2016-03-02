@@ -8,6 +8,8 @@ This Local API offers both standard REST API endpoints and Websocket API endpoin
 
 This means that we will offer the standard closure codes, op codes, etc.
 
+All messages passing through the Local API must be in the standard ioMessage format, which can be found in the ioMessage Specification document.
+
 
 ####Get Container Configuration
 
