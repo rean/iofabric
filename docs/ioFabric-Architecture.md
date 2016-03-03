@@ -266,3 +266,53 @@ In this version of ioFabric, the Field Agent learns about new commands from the 
 * Post status changes immediately when they occur
 * Post ioFabric configuration changes immediately when they occur
 
+
+###Message Bus
+
+The Message Bus module moves the actual data messages around the ioFabric system. Through the Local API, it can receive new messages and deliver messages to the recipient containers. The Message Bus must be as fast as possible in order to avoid adding latency to data moving through ioFabric. The Message Bus maintains a routing table that it uses to determine the recipients of each message. The routing table is subject to change, with new routing information coming through the operations of the Field Agent module.
+
+The Message Bus is a combination of a disk spooling message bus and an in-memory message bus. All messages are spooled to disk for future retrieval and for archival purposes. But messages written to disk and read from disk are not the highest speed messages. All messages are also either delivered to recipients in real-time (through the Local API message Websockets) or held in memory for the fastest delivery when a recipient container requests its next messages. This dual-mode operation gives the Message Bus module of ioFabric fast performance with message reliability.
+
+The Message Bus must assign a unique message ID to each newly posted message. The specification for message IDs can be found in the ioMessage Specification document. Because these unique IDs are rather large, the Message Bus might be best implemented having a ready pool of pre-calculated but unused message IDs to draw from in real-time processing.
+
+
+####Functional Requirements
+
+* Hold routing information in memory in a way that facilitates rapid routing of messages
+* Store the current unread messages for each container in memory
+* Limi the number of unread messages stored for each container to the total allowed RAM usage divided by the number of containers
+* Respond to a request to reduce RAM usage by eliminating the oldest messages held in memory until the RAM usage is within limits
+* Respond to a request to reduce disk usage by deleting the oldest messages from disk storage until the disk usage is within limits
+* Provide a way for the Local API module to get the currently unread messages for a specified recipient container
+* Provide a way for the Local API module to post new messages to the Message Bus
+* Respond to the Local API with a unique message ID and the timestamp of the message receipt when the Local API posts a new message
+* Look up the routing of the publisher when a new message is posted and perform the following tasks:
+	* Send the message as a real-time message to the Local API for each recipient
+	* If the Local API indicates that the recipient did not receive the message via a real-time connection, place the message in memory in the currently unread message list for that recipient container
+* Write all newly posted messages to disk
+* Use the configured disk location to store messages
+* Write a separate set of message storage files for each publisher
+* Start a new message file for a publisher when the previous file contains 1,000 messages
+* Name each file as follows:
+	* uh43wiufdsiushdfkj_1234567890123_9876543210123.iomsg where "uh43wiufdsiushdfkj" is the publishing container ID and "1234567890123" is the timestamp of the oldest message in the file and "9876543210123" is the timestamp of the newest message in the file
+	* Use uh43wiufdsiushdfkj_1234567890123_current.iomsg when the file is the currently unfilled message storage file
+* Provide a way for the Local API to request the entire set of messages from a given list of publishers within a specified timeframe for a particular recipient
+* Filter out messages from any message retrieval request that do not comply with the current routing configuration
+* When the Local API requests the currently unread messages for a recipient container, remove the delivered messages from memory
+* Accept new routing information alerts from the Field Agent and retrieve the new routing configuration and store it in memory
+* Count total messages being posted into the Message Bus and update the status information
+* Count messages published per container and update the status information
+* Store timestamp information with microsecond accuracy for when messages are posted
+* Store timestamp information with microsecond accuracy for when messages are either confirmed as delivered via a real-time connection or when messages are retrieved from the unread queue
+* Periodically calculate the average speed of message movement using the stored timestamps of message arrival and delivery
+* Update the status information with the average message speed when it has been newly calculated
+* Store, send, and receive messages according to the ioMessage Specification document
+
+
+####Performance Requirements
+
+* Apply unique message IDs and respond to message post operations as quickly as possible
+* Calculate message recipients (from routing configuration) and deliver real-time messages as quickly as possible
+* Reduce the accuracy or frequency of measurement operations (such as message counts) if it can help increase the speed of message delivery operations
+* Calculate the average message speed every five minutes or more frequently
+
