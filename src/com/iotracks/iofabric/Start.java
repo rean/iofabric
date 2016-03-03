@@ -12,11 +12,15 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Set;
-import java.util.logging.Level;
+import java.util.TimeZone;
+
 import com.iotracks.iofabric.command_line.CommandLineClient;
 import com.iotracks.iofabric.command_line.CommandLineServer;
-import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -51,8 +55,7 @@ public class Start {
 
 	}
 	
-	public static void main(String[] args) {
-		
+	public static void main(String[] args) throws ParseException {
 		try {
 			Configuration.loadConfig();
 		} catch (ConfigurationItemException e) {
@@ -64,71 +67,72 @@ public class Start {
 			System.exit(1);
 		}
 
-//		setupEnvironment();
-//
-//		if (isAnotherInstanceRunning()) {
-//			if (args.length > 0 && args[0].equals("start")) {
-//				System.out.println("iofabric is already running.");
-//				System.exit(1);
-//			}
-//
-//			String command = "";
-//			for (String str : args)
-//				command += str + " ";
-//			if (command.trim().equals(""))
-//				command = "help";
-//			client.sendMessage(command.trim());
-//			try {
-//				Thread.sleep(50);
-//			} catch (InterruptedException e) {
-//			}
-//
-//			client.stopClient();
-//			System.out.println();
-//			System.exit(0);
-//		}
-//
-//		if (args.length > 0 && !args[0].equals("start")) {
-//			System.out.println("iofabric is not running.");
-//			System.out.flush();
-//			System.exit(1);
-//		}
+		setupEnvironment();
 
-		Configuration.setLogDiskDirectory("/tmp/iofabric/log");
+		if (isAnotherInstanceRunning()) {
+			if (args.length > 0 && args[0].equals("start")) {
+				System.out.println("iofabric is already running.");
+				System.exit(1);
+			}
+			
+			String command = "";
+			for (String str : args)
+				command += str + " ";
+
+			if (command.trim().equals(""))
+				command = "help";
+			client.sendMessage(command.trim());
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+			}
+			if (command.trim().startsWith("stop")) {
+				System.out.println("Stopping iofabric service...");
+				System.out.flush();
+			}
+			client.stopClient();
+			System.out.println();
+			System.exit(0);
+		}
+
+		if (args.length > 0 && !args[0].equals("start")) {
+			System.out.println("iofabric is not running.");
+			System.out.flush();
+			System.exit(1);
+		}
+
 		try {
 			LoggingService.setupLogger();
 		} catch (IOException e) {
 			System.out.println("Error starting logging service\n" + e.getMessage());
 			System.exit(1);
 		}
-		LoggingService.log(Level.INFO, "Main", "configuration loaded.");
-
-		ProcessManager p = new ProcessManager();
-		p.start();
-		System.exit(0);
+		LoggingService.logInfo("Main", "configuration loaded.");
 
 		// port System.out to null
 		Constants.systemOut = System.out;
-		System.setOut(new PrintStream(new OutputStream() {
-			@Override
-			public void write(int b) {
-				// DO NOTHING
-			}
-		}));
-
-		System.setErr(new PrintStream(new OutputStream() {
-			@Override
-			public void write(int b) {
-				// DO NOTHING
-			}
-		}));
+		if (!Configuration.debugging) {
+			System.setOut(new PrintStream(new OutputStream() {
+				@Override
+				public void write(int b) {
+					// DO NOTHING
+				}
+			}));
+	
+			System.setErr(new PrintStream(new OutputStream() {
+				@Override
+				public void write(int b) {
+					// DO NOTHING
+				}
+			}));
+		}
 		
 		
-		LoggingService.log(Level.INFO, "Main", "starting command line listener");
+		LoggingService.logInfo("Main", "starting command line listener");
 		commandlineListener = new Thread(new CommandLineServer(), "Command Line Server");
 		commandlineListener.start();
 
-		LoggingService.log(Level.INFO, "Main", "starting supervisor");
+		LoggingService.logInfo("Main", "starting supervisor");
 		Supervisor supervisor = new Supervisor();
 		supervisor.start();
 

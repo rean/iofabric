@@ -51,7 +51,7 @@ public class CommandLineServer implements Runnable {
 					perms);
 
 			
-			LoggingService.log(Level.INFO, "UNIX", "SERVER STARTED");
+			LoggingService.logInfo("UNIX", "SERVER STARTED");
 
 			f.channel().closeFuture().sync();
 		} catch (Exception e) {

@@ -1,27 +1,36 @@
 package com.iotracks.iofabric.element;
 
 public class PortMapping {
-    final String external;
-    final String internal;
+    final String outside;
+    final String inside;
 
-	public PortMapping(String out, String in) {
-        this.external = out;
-        this.internal = in;
+	public PortMapping(String outside, String inside) {
+        this.outside = outside;
+        this.inside = inside;
     }
 
-    public String getExternal() {
-		return external;
+    public String getOutside() {
+		return outside;
 	}
 
-	public String getInternal() {
-		return internal;
+	public String getInside() {
+		return inside;
 	}
 
     @Override
     public String toString() {
         return "{" +
-                "external='" + external + '\'' +
-                ", internal='" + internal + '\'' +
+                "outside='" + outside + '\'' +
+                ", inside='" + inside + '\'' +
                 '}';
     }
+    
+    @Override
+    public boolean equals(Object other) {
+    	if (other.getClass() != PortMapping.class)
+    		return false;
+    	return this.outside.equals(((PortMapping) other).outside) 
+    			&& this.inside.equals(((PortMapping) other).inside); 
+    }
+    
 }

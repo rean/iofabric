@@ -12,7 +12,7 @@ public class Constants {
 	}
 
 	public enum ElementStatus {
-		BUILDING, FAILED_VERIFICATION, STARTING, RUNNING, STOPPED
+		BUILDING, FAILED_VERIFICATION, STARTING, RUNNING, STOPPED 
 	}
 	
 	public enum LinkStatus {

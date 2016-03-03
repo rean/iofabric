@@ -80,6 +80,10 @@ public final class StatusReporter {
 		return processManagerStatus;
 	}
 	
+	public static ProcessManagerStatus getProcessManagerStatus() {
+		return processManagerStatus;
+	}
+	
 	public static LocalApiStatus setLocalApiStatus() {
 		statusReporterStatus.setLastUpdate(System.currentTimeMillis());
 		return localApiStatus;
@@ -88,7 +92,27 @@ public final class StatusReporter {
 	public static void start() {
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 		scheduler.scheduleAtFixedRate(setStatusReporterSystemTime, 0, 60, TimeUnit.SECONDS);
-		LoggingService.log(Level.INFO, MODULE_NAME, "started");
+		LoggingService.logInfo(MODULE_NAME, "started");
+	}
+
+	public static SupervisorStatus getSupervisorStatus() {
+		return supervisorStatus;
+	}
+
+	public static ResourceConsumptionManagerStatus getResourceConsumptionManagerStatus() {
+		return resourceConsumptionManagerStatus;
+	}
+
+	public static FieldAgentStatus getFieldAgentStatus() {
+		return fieldAgentStatus;
+	}
+
+	public static StatusReporterStatus getStatusReporterStatus() {
+		return statusReporterStatus;
+	}
+
+	public static LocalApiStatus getLocalApiStatus() {
+		return localApiStatus;
 	}
 
 }

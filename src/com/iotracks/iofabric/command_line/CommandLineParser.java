@@ -3,8 +3,8 @@ package com.iotracks.iofabric.command_line;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Level;
 
+import com.iotracks.iofabric.field_agent.FieldAgent;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -17,8 +17,6 @@ public class CommandLineParser {
 		
 		if (args[0].equals("stop")) {
 			System.setOut(Constants.systemOut);
-			System.out.println("Stopping iofabric service...");
-			System.out.flush();
 			System.exit(0);
 		}
 		
@@ -77,8 +75,7 @@ public class CommandLineParser {
 			}
 			String provisionKey = args[1];
 			result.append("Provisioning with key \"" + provisionKey + "\"...");
-			result.append("\n\n[Success - instance ID is fw49hrSuh43SEFuihsdfw4wefuh]");
-			result.append("\n[Failure - <error message from provisioning process>]");
+			result.append(new FieldAgent().doProvisioning(provisionKey));
 
 			return result.toString();
 		}
@@ -109,7 +106,7 @@ public class CommandLineParser {
 				for (Entry<String, String> e : config.entrySet())
 					result.append("\n\tOption : -" + e.getKey() + "\tValue : " + e.getValue());
 			} catch (Exception e) {
-				LoggingService.log(Level.WARNING, "Command-line Parser", "error updating new config.");
+				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config.\n" + e.getMessage());
 			}
 			

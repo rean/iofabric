@@ -23,7 +23,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             command += (char) in.readByte();
         }
         
-        LoggingService.log(Level.INFO, "UNIX", "COMMAND RECIEVED: " + command);
+        LoggingService.logInfo("UNIX", "COMMAND RECIEVED: " + command);
         String result = CommandLineParser.parse(command);
 
         ByteBuf response = ctx.alloc().buffer();
@@ -32,7 +32,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         f.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) {
-                LoggingService.log(Level.INFO, "UNIX", "CLOSING CHANNEL");
+                LoggingService.logInfo("UNIX", "CLOSING CHANNEL");
                 ctx.close();
             }
         });
@@ -40,7 +40,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelActive(final ChannelHandlerContext ctx) {
-		LoggingService.log(Level.INFO, "UNIX", "CLIENT CONNECTED");
+		LoggingService.logInfo("UNIX", "CLIENT CONNECTED");
 	}
 
 	@Override

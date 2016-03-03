@@ -3,8 +3,7 @@ package com.iotracks.iofabric.process_manager;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.iotracks.iofabric.docker.Registry;
-import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.utils.Constants.DockerStatus;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
@@ -12,7 +11,7 @@ import com.iotracks.iofabric.utils.Constants.LinkStatus;
 public class ProcessManagerStatus {
 	private int runningElementsCount;
 	private DockerStatus dockerStatus;
-	private Map<Element, ElementStatus> elementsStatus;
+	private Map<String, ElementStatus> elementsStatus;
 	private int registriesCount;
 	private Map<Registry, LinkStatus> registriesStatus;
 
@@ -47,13 +46,26 @@ public class ProcessManagerStatus {
 		return this;
 	}
 
-	public ElementStatus getElementsStatus(Element element) {
-		return elementsStatus.get(element);
+	public ElementStatus getElementsStatus(String elementId) {
+		synchronized (elementsStatus) {
+			return elementsStatus.get(elementId);
+		}
 	}
 
-	public ProcessManagerStatus setElementsStatus(Element element, ElementStatus status) {
-		this.elementsStatus.put(element, status);
+	public ProcessManagerStatus setElementsStatus(String elementId, ElementStatus status) {
+		synchronized (elementsStatus) {
+			this.elementsStatus.put(elementId, status);
+		}
 		return this;
+	}
+
+	public void removeElementStatus(String elementId) {
+		synchronized (elementsStatus) {
+			elementsStatus.keySet().forEach(element -> {
+				if (element.equals(elementId))
+					elementsStatus.remove(elementId);
+			});
+		}
 	}
 
 	public int getRegistriesCount() {
@@ -78,5 +90,5 @@ public class ProcessManagerStatus {
 		this.registriesStatus.put(registry, status);
 		return this;
 	}
-
+	
 }

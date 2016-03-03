@@ -26,8 +26,12 @@ public final class LoggingService {
 
 	}
 
-	public static void log(Level level, String moduleName, String msg) {
-		logger.log(level, moduleName + " : " + msg);
+	public static void logInfo(String moduleName, String msg) {
+		logger.log(Level.INFO, moduleName + " : " + msg);
+	}
+
+	public static void logWarning(String moduleName, String msg) {
+		logger.log(Level.WARNING, moduleName + " : " + msg);
 	}
 
 	public static void setupLogger() throws IOException {
@@ -59,7 +63,7 @@ public final class LoggingService {
 		logger = Logger.getLogger("com.iotracks.iofabric");
 		logger.addHandler(logFileHandler);
 
-		logger.setUseParentHandlers(false);
+		logger.setUseParentHandlers(Configuration.debugging);
 
 		logger.info("logger started.");
 	}

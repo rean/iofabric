@@ -20,7 +20,7 @@ public class ResourceConsumptionManager extends Thread {
 	private String MODULE_NAME = "Resource Consumption Manager";
 
 	private Runnable getUsageData = () -> {
-		LoggingService.log(Level.INFO, MODULE_NAME, "get usage data");
+		LoggingService.logInfo(MODULE_NAME, "get usage data");
 		// TODO : check for violations
 		StatusReporter.setResourceConsumptionManagerStatus()
 				.setMemoryUsage(getMemoryUsage())
@@ -130,7 +130,7 @@ public class ResourceConsumptionManager extends Thread {
 	public void run() {
 		running = true;
 
-		// TODO : check for violations
+		// TODO : check for violations 
 		StatusReporter.setResourceConsumptionManagerStatus()
 				.setMemoryUsage(getMemoryUsage())
 				.setCpuUsage(getCpuUsage())
@@ -143,7 +143,7 @@ public class ResourceConsumptionManager extends Thread {
 		scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 
-		LoggingService.log(Level.INFO, MODULE_NAME, "started");
+		LoggingService.logInfo(MODULE_NAME, "started");
 		while (running)
 			;
 		scheduler.shutdownNow();
