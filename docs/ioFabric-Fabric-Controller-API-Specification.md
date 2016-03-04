@@ -42,6 +42,8 @@ This endpoint just gives you a response from the fabric controller with its stat
 
 This endpoint registers the ioFabric instance that is submitting the provisioning key and delivers the ioFabric instance ID along with an access token that must be submitted for any further API interaction. The access token remains valid until it is revoked. If it becomes invalid, the ioFabric instance must be re-provisioned to re-establish access to the fabric controller API.
 
+The ioFabric Instance ID provided by this endpoint is a 128-bit random ID formatted in base58. We use base58 for compactness, readability, portability, and transmission safety between systems.
+
 #####Endpoint
 
 <pre>
@@ -291,6 +293,8 @@ This endpoint lists the current changes for the ioFabric instance. Much of the t
 ####Get ioFabric Container List
 
 This endpoint provides the current list of containers that should be running on the ioFabric instance. Containers should be added, removed, and restarted based upon this list. A change in port mappings should result in a restart because containers can only have their port mappings updated when they are being started. When the "rebuild" flag is set to true, the Docker daemon should be asked to build the container again. If there is an updated image in the registry, Docker will see the change and flush its cache and build the container from the updated image. Triggering container updates is the purpose of this "rebuild" flag.
+
+The container IDs provided by this endpoint are 128-bit random IDs formatted in base58. We use base58 for compactness, readability, portability, and transmission safety between systems.
 
 #####Endpoint
 
