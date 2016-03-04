@@ -1,19 +1,26 @@
-# ioMessage Specification version 1.4 (March 2nd, 2016)
+# ioMessage Specification version 4 (March 2nd, 2016)
 
 The purpose of a message is move information along a path. No understanding of the contents of the messages should be required in order to help it to its correct destination. The header fields of each message, however, are intended to be read and understood by functional pieces of the iotracks system. Because the data contents of the message format are open, that means each recipient will be required to determine for itself if it understands how to read the data. Recipients can check the information type and information format headers to determine this.
 
+The ioMessage versions are integers, not decimals. This is because it is harder to parse a raw binary message with decimals across different computing platforms. So... ioMessage versions will be things like 4, 5, and 12. The version can be used to determine what fields will be present in the message and perhaps how the data will be arranged in those fields.
+
+The fields listed here do not contain any formatting information. Each embodiment of the ioMessage standard will make use of the best features of the embodiment method. For example, when using JSON to create ioMessages, there is no need to include length information about the different fields. And there is no need to put any particular field in any particular position. XML is similar. But when encoding an ioMessage in raw bytes, the order of the information is very crucial for packing and parsing the messages. While JSON and XML offer some advantages, they also have more overhead than raw bytes. And while raw byte formatting requires parsing by the receiver, it also has very low overhead and is excellent for real-time transmission of media such as photos or video.
+
+A listing for JSON, XML, and raw bytes is included in this document after the main field listing.
+
+###Fields of an ioMessage
+
 ####ID
 <pre>
-    Data Type: UUID (Universally Unique ID) as a UTF-8 string
+    Data Type: Text
     Key: ID
     Required: Yes
     Description: A universally unique identifier per message allows for portability and system-wide verification of events.
 </pre>
 
-
 ####Tag
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: Tag
     Required: No
     Description: This is an open field for associating a message with a particular device or any other interesting thing. It should be queryable later, making this a high-value field for some applications.
@@ -21,7 +28,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Message Group ID
 <pre>    
-    Data Type: UUID as a UTF-8 string
+    Data Type: Text
     Key: GroupID
     Required: No
     Description: This is how messages can be allocated to a sequence or stream.
@@ -61,7 +68,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Publisher
 <pre>
-    Data Type: UUID as a UTF-8 string
+    Data Type: Text
     Key: Publisher
     Required: Yes
     Description: This is the identifier of the element that is sending the message. It can be used to determine routing or guarantee privacy and security. Because each element is assigned a UUID during configuration, even across ioFabric instances no message should be received by an unintended entity.
@@ -69,7 +76,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Authentication Identifier
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: AuthID
     Required: No
     Description: This is an open field to pass along authentication information about the particular authorized entity generating the message, such as an employee ID number or a user ID in the application.
@@ -77,7 +84,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Authentication Group
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: AuthGroup
     Required: No
     Description: This is an open field to pass authentication group information. This allows pieces of the application to know they are dealing with a message from an authenticated user of a particular type (such as “employee” or “system admin”) without needing to know the actual identification information.
@@ -85,7 +92,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####ioMessage Version
 <pre>
-    Data Type: Decimal
+    Data Type: Integer
     Key: Version
     Required: Yes
     Description: Which version of the ioMessage format does this particular message comply with?
@@ -101,7 +108,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Hash
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: Hash
     Required: No
     Description: When using cryptographic message chaining, a hash of this entire message can be included here.
@@ -109,7 +116,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Previous Message Hash
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: PreviousHash
     Required: No
     Description: When using cryptographic message chaining, the hash value of the previous message is included here. This forms the cryptographic link from the prior message to this one.
@@ -117,7 +124,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Nonce
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: Nonce
     Required: No
     Description: When using cryptographic message chaining, an open field is needed to achieve the correct hash value. The information in this field will not be meaningful, but will be necessary to produce the final hash of the message.
@@ -133,7 +140,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Information Type
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: InfoType
     Required: Yes
     Description: This is like a MIME type. It describes what type of information is contained in the content data field.
@@ -141,18 +148,10 @@ The purpose of a message is move information along a path. No understanding of t
 
 ####Information Format
 <pre>
-    Data Type: Text in UTF-8 format
+    Data Type: Text
     Key: InfoFormat
     Required: Yes
     Description: This is a sub-field of the Information Type. It defines the format of the data content in this message. If the information type is “Temperature”, for example, then the information format might be “Degrees Kelvin”.
-</pre>
-
-####Context Number of Bytes
-<pre>
-    Data Type: Integer
-    Key: ContextLength
-    Required: No
-    Description: What is the byte size of the context data in this message?
 </pre>
 
 ####Context Data
@@ -161,14 +160,6 @@ The purpose of a message is move information along a path. No understanding of t
     Key: ContextData
     Required: No
     Description: Context data in raw bytes. This field can be used to embed any information desired and will likely be very different from one solution to the next. It is the responsibility of the receiving element(s) to understand the context data format and the meaning of the context information.
-</pre>
-
-####Content Number of Bytes
-<pre>
-    Data Type: Integer
-    Key: ContentLength
-    Required: Yes
-    Description: What is the size of the data content body in this message?
 </pre>
 
 ####Data Content
