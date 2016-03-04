@@ -224,3 +224,52 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 	&lt;/iomessage&gt;
 </pre>
 
+
+###Binary Embodiment of an ioMessage
+
+Bytes are octets here. No funny business. Just good old 8-bit bytes. The sequence of bytes here must be followed strictly so the message can be parsed by the receiver.
+
+<pre>
+	[2 bytes] - Version
+
+	[1 bytes] - Length of ID field
+	[2 bytes] - Length of Tag field
+	[1 bytes] - Length of Group ID field
+	[1 bytes] - Length of Sequence Number field
+	[1 bytes] - Length of Sequence Total field
+	[1 bytes] - Length of Priority field
+	[1 bytes] - Length of Timestamp field
+	[1 bytes] - Length of Publisher field
+	[2 bytes] - Length of Auth ID field
+	[2 bytes] - Length of Auth Group field
+	[1 bytes] - Length of Chain Position field
+	[2 bytes] - Length of Hash field
+	[2 bytes] - Length of Previous Hash field
+	[2 bytes] - Length of Nonce field
+	[1 bytes] - Length of Difficulty Target field
+	[1 bytes] - Length of Info Type field
+	[1 bytes] - Length of Info Format field
+	[4 bytes] - Length of Context Data field
+	[4 bytes] - Length of Content Data field
+
+	[n bytes] - ID value
+	[n bytes] - Tag value
+	[n bytes] - Group ID value
+	[n bytes] - Sequence Number value
+	[n bytes] - Sequence Total value
+	[n bytes] - Priority value
+	[n bytes] - Timestamp value
+	[n bytes] - Publisher value
+	[n bytes] - Auth ID value
+	[n bytes] - Auth Group value
+	[n bytes] - Chain Position value
+	[n bytes] - Hash value
+	[n bytes] - Previous Hash value
+	[n bytes] - Nonce value
+	[n bytes] - Difficulty Target value
+	[n bytes] - Info Type value
+	[n bytes] - Info Format value
+	[n bytes] - Context Data value
+	[n bytes] - Content Data value
+</pre>
+
