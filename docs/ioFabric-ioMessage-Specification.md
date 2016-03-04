@@ -134,7 +134,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 
 ####Difficulty Target
 <pre>
-    Data Type: Decimal
+    Data Type: Integer
     Key: DifficultyTarget
     Required: No
     Description: When using cryptographic message chaining, this field represents the hashing workload required to cryptographically seal the chain.
