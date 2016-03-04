@@ -200,10 +200,10 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 
 ###XML Embodiment of an ioMessage
 <pre>
-	<iomessage>
-		<id>sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf</id>
-		<tag>Bosch Camera 16</tag>
-	</iomessage>
+	&lt;iomessage&gt;
+		&lt;id&gt;sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf&lt;/id&gt;
+		&lt;tag&gt;Bosch Camera 16&lt;/tag&gt;
+	&lt;/iomessage&gt;
 	
 	{
 		"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
