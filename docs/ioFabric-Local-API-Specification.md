@@ -344,8 +344,8 @@ The container ID must be passed as part of the URL because otherwise it would ha
 <pre>
 	Standard "Ping" message (op code 9)
 	Standard "Pong" message (op code 10)
-	ioMessage transmission (op code 13 followed by bytes of the actual ioMessage)
-	ioMessage receipt transmission (op code 14 followed by bytes containing the ioMessage ID and Timestamp fields)
+	ioMessage transmission (op code 13 followed by 4 bytes indicating the total length of the message followed by the bytes of the actual ioMessage)
+	ioMessage receipt transmission (op code 14 followed by 4 bytes indicating the length of the response followed by the actual bytes of the response message containing the ioMessage ID and Timestamp fields with all other fields empty)
 </pre>
 
 #####Transmissions from Container to ioFabric
@@ -354,6 +354,6 @@ The container ID must be passed as part of the URL because otherwise it would ha
 	Standard "Ping" message (op code 9)
 	Standard "Pong" message (op code 10)
 	Acknowledgement message (op code 11)
-	ioMessage transmission (op code 13 followed by bytes of the actual ioMessage)
+	ioMessage transmission (op code 13 followed by 4 bytes indicating the total length of the message followed by the bytes of the actual ioMessage)
 </pre>
 
