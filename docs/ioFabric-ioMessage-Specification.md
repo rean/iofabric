@@ -203,29 +203,24 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 	&lt;iomessage&gt;
 		&lt;id&gt;sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf&lt;/id&gt;
 		&lt;tag&gt;Bosch Camera 16&lt;/tag&gt;
+		&lt;groupid&gt;&lt;/groupid&gt;
+		&lt;sequencenumber&gt;1&lt;/sequencenumber&gt;
+		&lt;sequencetotal&gt;1&lt;/sequencetotal&gt;
+		&lt;priority&gt;0&lt;/priority&gt;
+		&lt;timestamp&gt;1234567890123&lt;/timestamp&gt;
+		&lt;publisher&gt;Ayew98wtosdhFSKdjhsdfkjhkjesdhg&lt;/publisher&gt;
+		&lt;authid&gt;&lt;/authid&gt;
+		&lt;authgroup&gt;&lt;/authgroup&gt;
+		&lt;version&gt;4&lt;/version&gt;
+		&lt;chainposition&gt;0&lt;/chainposition&gt;
+		&lt;hash&gt;&lt;/hash&gt;
+		&lt;previoushash&gt;&lt;/previoushash&gt;
+		&lt;nonce&gt;&lt;/nonce&gt;
+		&lt;difficultytarget&gt;0.0&lt;/difficultytarget&gt;
+		&lt;infotype&gt;image/jpeg&lt;/infotype&gt;
+		&lt;infoformat&gt;base64&lt;/infoformat&gt;
+		&lt;contextdata&gt;&lt;/contextdata&gt;
+		&lt;contentdata&gt;sDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufha&lt;/contentdata&gt;
 	&lt;/iomessage&gt;
-	
-	{
-		"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
-		"tag":"Bosch Camera 16",
-		"groupid":"",
-		"sequencenumber":1,
-		"sequencetotal":1,
-		"priority":0,
-		"timestamp":1234567890123,
-		"publisher":"Ayew98wtosdhFSKdjhsdfkjhkjesdhg",
-		"authid":"",
-		"authgroup":"",
-		"version":4,
-		"chainposition":0,
-		"hash":"",
-		"previoushash":"",
-		"nonce":"",
-		"difficultytarget":0.0,
-		"infotype":"image/jpeg",
-		"infoformat":"base64",
-		"contextdata":"",
-		"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
-	}
 </pre>
 
