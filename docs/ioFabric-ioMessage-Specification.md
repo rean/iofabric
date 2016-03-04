@@ -170,3 +170,62 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
     Description: The actual data content of the message in its raw form. Having a raw format for this field allows for the greatest amount of flexibility in the system.
 </pre>
 
+
+###JSON Embodiment of an ioMessage
+<pre>
+	{
+		"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
+		"tag":"Bosch Camera 16",
+		"groupid":"",
+		"sequencenumber":1,
+		"sequencetotal":1,
+		"priority":0,
+		"timestamp":1234567890123,
+		"publisher":"Ayew98wtosdhFSKdjhsdfkjhkjesdhg",
+		"authid":"",
+		"authgroup":"",
+		"version":4,
+		"chainposition":0,
+		"hash":"",
+		"previoushash":"",
+		"nonce":"",
+		"difficultytarget":0.0,
+		"infotype":"image/jpeg",
+		"infoformat":"base64",
+		"contextdata":"",
+		"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
+	}
+</pre>
+
+
+###XML Embodiment of an ioMessage
+<pre>
+	<iomessage>
+		<id>sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf</id>
+		<tag>Bosch Camera 16</tag>
+	</iomessage>
+	
+	{
+		"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
+		"tag":"Bosch Camera 16",
+		"groupid":"",
+		"sequencenumber":1,
+		"sequencetotal":1,
+		"priority":0,
+		"timestamp":1234567890123,
+		"publisher":"Ayew98wtosdhFSKdjhsdfkjhkjesdhg",
+		"authid":"",
+		"authgroup":"",
+		"version":4,
+		"chainposition":0,
+		"hash":"",
+		"previoushash":"",
+		"nonce":"",
+		"difficultytarget":0.0,
+		"infotype":"image/jpeg",
+		"infoformat":"base64",
+		"contextdata":"",
+		"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
+	}
+</pre>
+

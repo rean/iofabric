@@ -74,7 +74,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 					"publisher":"R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ",
 					"authid":"",
 					"authgroup":"",
-					"version":1.4,
+					"version":4,
 					"chainposition":0,
 					"hash":"",
 					"previoushash":"",
@@ -82,9 +82,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 					"difficultytarget":0.0,
 					"infotype":"text",
 					"infoformat":"utf-8",
-					"contextlength":0,
 					"contextdata":"",
-					"contentlength":14,
 					"contentdata":"A New Message!"
 				},
 				{
@@ -98,7 +96,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 					"publisher":"Ayew98wtosdhFSKdjhsdfkjhkjesdhg",
 					"authid":"",
 					"authgroup":"",
-					"version":1.4,
+					"version":4,
 					"chainposition":0,
 					"hash":"",
 					"previoushash":"",
@@ -106,9 +104,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 					"difficultytarget":0.0,
 					"infotype":"image/jpeg",
 					"infoformat":"base64",
-					"contextlength":0,
 					"contextdata":"",
-					"contentlength":1071,
 					"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
 				}
 			]
@@ -168,7 +164,7 @@ This endpoing allows a container to post a message to the system. The message ID
 		"publisher":"R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ",
 		"authid":"",
 		"authgroup":"",
-		"version":1.4,
+		"version":4,
 		"chainposition":0,
 		"hash":"",
 		"previoushash":"",
@@ -176,9 +172,7 @@ This endpoing allows a container to post a message to the system. The message ID
 		"difficultytarget":0.0,
 		"infotype":"text",
 		"infoformat":"utf-8",
-		"contextlength":0,
 		"contextdata":"",
-		"contentlength":14,
 		"contentdata":"A New Message!"
 	}
 
@@ -215,7 +209,7 @@ This endpoint allows a container to query for messages from any number of publis
 					"publisher":"R4b2WPZRbycCzyZBz9tD7BdMWg94YDhQ",
 					"authid":"",
 					"authgroup":"",
-					"version":1.4,
+					"version":4,
 					"chainposition":0,
 					"hash":"",
 					"previoushash":"",
@@ -223,9 +217,7 @@ This endpoint allows a container to query for messages from any number of publis
 					"difficultytarget":0.0,
 					"infotype":"text",
 					"infoformat":"utf-8",
-					"contextlength":0,
 					"contextdata":"",
-					"contentlength":14,
 					"contentdata":"A New Message!"
 				},
 				{
@@ -239,7 +231,7 @@ This endpoint allows a container to query for messages from any number of publis
 					"publisher":"Ayew98wtosdhFSKdjhsdfkjhkjesdhg",
 					"authid":"",
 					"authgroup":"",
-					"version":1.4,
+					"version":4,
 					"chainposition":0,
 					"hash":"",
 					"previoushash":"",
@@ -247,9 +239,7 @@ This endpoint allows a container to query for messages from any number of publis
 					"difficultytarget":0.0,
 					"infotype":"image/jpeg",
 					"infoformat":"base64",
-					"contextlength":0,
 					"contextdata":"",
-					"contentlength":1071,
 					"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
 				}
 			]
