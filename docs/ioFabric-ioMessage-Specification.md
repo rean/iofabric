@@ -4,7 +4,9 @@ The purpose of a message is move information along a path. No understanding of t
 
 The ioMessage versions are integers, not decimals. This is because it is harder to parse a raw binary message with decimals across different computing platforms. So... ioMessage versions will be things like 4, 5, and 12. The version can be used to determine what fields will be present in the message and perhaps how the data will be arranged in those fields.
 
-The fields listed here do not contain any formatting information. Each embodiment of the ioMessage standard will make use of the best features of the embodiment method. For example, when using JSON to create ioMessages, there is no need to include length information about the different fields. And there is no need to put any particular field in any particular position. XML is similar. But when encoding an ioMessage in raw bytes, the order of the information is very crucial for packing and parsing the messages. While JSON and XML offer some advantages, they also have more overhead than raw bytes. And while raw byte formatting requires parsing by the receiver, it also has very low overhead and is excellent for real-time transmission of media such as photos or video.
+The ID for each message must be unique across the Earth for 20 years or longer. Depending on the volume of ioMessages across the globe, a 128-bit identifier may reach a 99.9%+ chance of collisions well before that timeframe ends. So a 256-bit identifier has been chosen and should suffice. 
+
+The fields listed here do not contain any formatting information except for the ID, which is strictly standardized. Each embodiment of the ioMessage standard will make use of the best features of the embodiment method. For example, when using JSON to create ioMessages, there is no need to include length information about the different fields. And there is no need to put any particular field in any particular position. XML is similar. But when encoding an ioMessage in raw bytes, the order of the information is very crucial for packing and parsing the messages. While JSON and XML offer some advantages, they also have more overhead than raw bytes. And while raw byte formatting requires parsing by the receiver, it also has very low overhead and is excellent for real-time transmission of media such as photos or video.
 
 A listing for JSON, XML, and raw bytes is included in this document after the main field listing.
 
@@ -15,7 +17,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
     Data Type: Text
     Key: ID
     Required: Yes
-    Description: A universally unique identifier per message allows for portability and system-wide verification of events.
+    Description: A 256-bit universally unique identifier per message allows for portability and globe-wide verification of events. The ID string is formatted in base58 for readability, transmission safety between systems, and compactness.
 </pre>
 
 ####Tag
