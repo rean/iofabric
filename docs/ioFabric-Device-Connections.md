@@ -142,5 +142,22 @@ Another example is long-range, low-power wireless networks such as LoRA or Ultra
 
 
 
+####Connect to Proxy Devices via USB or Serial Port
 
+If network interfaces such as Bluetooth are not available over the TCP/IP network, it is possible to connect to common interfaces such as a USB Bluetooth dongle. Any resource available on the root Linux installation can be opened to the container element for direct access. With access to the USB interface, a container element can be used to interact with the resources attached to it and circumvent the problem of the hardware missing a TCP/IP interface.
+
+This approach is only recommended as a last resort for several reasons. It requires the gateway hardware or network interface to be physically located near the ioFabric installation. It also requires the container element to access non-segregated system resources such as the USB interface or the RS-232 serial port interface.
+
+#####Pros
+
+* Readiness - even when TCP/IP hardware is not available, your IoT application can be extended with locally connected radios and gateways
+* Network - the choice of networks for your IoT application can go beyond TCP/IP to any possible network type
+* Setup - the setup process for devices remains as the native process of the gateway or wireless network base station
+* Efficiency - the base station or gateway hardware can move data directly into the container element as it arrives
+
+#####Cons
+
+* Scale - there are only so many local ports avialable per ioFabric install
+* Complexity - the container element must be built to match the connected hardware and may need to contain a USB driver or similar software
+* Security - system resource segregation is rather difficult in this situation and the container element has privileged access to low-level interfaces
 
