@@ -98,5 +98,49 @@ If your desire is to move information to a cloud instead of drawing information 
 
 
 
+####Reach Out to Local Resources
+
+All container elements running in ioFabric have the ability to connect on the LAN. Some devices need to be queried for their information. The container element can simply connect to the device and retrieve the desired data. This approach also works very well for common network resources such as network storage, LDAP, and Active Directory resources.
+
+The container element will need to know how to reach the devices. This information should be delivered through container element properties, of course. If any credentials or certificates are required to make the connections, these can be included in the container element properties configuration, as well.
+
+Some hardware systems, such as ID badge readers and door locks in a corporate office, will have interfaces that operate over IP networks. This connection method works very well for bringing such legacy resources into an IoT application. The network traffic between the resource and the container element is bidirectional, which allows for full integration of things found on the LAN.
+
+#####Pros
+
+* Flexibility - the container element can be written to speak to the device or LAN resource natively, allowing for endless connection possibilities
+* Repackaging - if code already exists for connecting to devices or network resources, it may be possible to simply package it as a container element
+* Security - because the container element initiates the connection, there is less of an attack surface on the container element itself
+
+#####Cons
+
+* Efficiency - if the data coming from devices or network resources is retrieved frequently, many extra CPU cycles can be spent polling
+* Scale - if there are many device connections required, the container element itself will have to establish and manage them
+* Speed - although polling frequencies can be quite high on the LAN, a small amount of latency will be introduced in any polling situation
+
+
+
+####Connect to Proxy Devices on the Network
+
+Some devices communicate directly with gateway hardware. A good example is an ARM mbed gateway which speaks the same structured protocol (COAP) to all devices it sees. When gateways are available on the network, a single container element can be used to speak with the gateway in order to reach all of the devices. This approach has some scale advantages and may bring setup and configuration advantages, too.
+
+The network hardware does not have to be a device gateway. It may also be a radio interface, as well. One example is a device that connects on the TCP/IP network but also has a Bluetooth radio to connect to devices that don't connect on TCP/IP. By using a container element to connect with the Bluetooth interface hardware, full Bluetooth (or Bluetooth Low Energy) connectivity can be brought into the IoT application.
+
+Another example is long-range, low-power wireless networks such as LoRA or Ultra-Narrow Band. These wireless networks provide high battery life for devices and long network range. But they are not TCP/IP networks. The base station for such wireless networks can be connected on the LAN and the ioFabric container element can connect to the base station. This setup allows the most advanced IoT wireless network technology to be integrated into the solution with the highest security and speed possible.
+
+#####Pros
+
+* Network - the choice of networks for your IoT application can go beyond TCP/IP to any possible network type
+* Setup - the setup process for devices remains as the native process of the gateway or wireless network base station
+* Efficiency - the base station or gateway hardware can move data directly into the container element as it arrives
+* Scale - gateway and base station hardware can be chosen for a particular device scale, and many pieces of such hardware can be integrated into one or more container elements
+
+#####Cons
+
+* Complexity - additional network types may require additional coding skills and configuration skills
+* Security - adding long-range wireless networks can increase the attack surface of the IoT application
+
+
+
 
 
