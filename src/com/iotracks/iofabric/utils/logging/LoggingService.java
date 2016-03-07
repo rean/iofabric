@@ -18,6 +18,8 @@ import java.util.logging.Logger;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
+import jdk.nashorn.internal.runtime.regexp.joni.Config;
+
 public final class LoggingService {
 
 	private static Logger logger = null;
@@ -27,11 +29,17 @@ public final class LoggingService {
 	}
 
 	public static void logInfo(String moduleName, String msg) {
-		logger.log(Level.INFO, moduleName + " : " + msg);
+		if (Configuration.debugging)
+			System.out.println(moduleName + " : " + msg);
+		else
+			logger.log(Level.INFO, moduleName + " : " + msg);
 	}
 
 	public static void logWarning(String moduleName, String msg) {
-		logger.log(Level.WARNING, moduleName + " : " + msg);
+		if (Configuration.debugging)
+			System.out.println(moduleName + " : " + msg);
+		else
+			logger.log(Level.WARNING, moduleName + " : " + msg);
 	}
 
 	public static void setupLogger() throws IOException {
@@ -63,7 +71,7 @@ public final class LoggingService {
 		logger = Logger.getLogger("com.iotracks.iofabric");
 		logger.addHandler(logFileHandler);
 
-		logger.setUseParentHandlers(Configuration.debugging);
+		logger.setUseParentHandlers(false);
 
 		logger.info("logger started.");
 	}

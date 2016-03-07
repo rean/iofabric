@@ -1,7 +1,9 @@
 package com.iotracks.iofabric.element;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -12,6 +14,8 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 public class ElementManager {
 
 	private static List<Element> elements = new ArrayList<>();
+	private static Map<String, Route> routes = new HashMap<>();
+	private static Map<String, String> configs = new HashMap<>();
 	private static List<Registry> registries = new ArrayList<>();
 
 	public void loadFromApi() {
@@ -68,9 +72,9 @@ public class ElementManager {
 				String id = config.get("id").toString();
 				String configString = config.get("config").toString();
 				long lastUpdated = Long.parseLong(config.get("lastupdatedtimestamp").toString());
+				this.configs.put(id, configString);
 				for (Element element : elements)
 					if (element.getElementId().equals(id)) {
-						element.setElementConfig(configString);
 						element.setLastUpdated(lastUpdated);
 						break;
 					}
@@ -90,27 +94,15 @@ public class ElementManager {
 				Route elementRoute = new Route();
 				String container = route.get("container").toString();
 
-				JSONObject receivers = (JSONObject) route.get("receivers");
-
-				JSONArray internals = (JSONArray) receivers.get("internal");
-				List<Element> internalElements = null;
-				if (internals.size() > 0)
-					internalElements = new ArrayList<>();
-				for (Object internalObj : internals) {
-					String internal = internalObj.toString();
-					for (Element element : elements)
-						if (element.getElementId().equals(internal)) {
-							internalElements.add(element);
-							break;
-						}
+				JSONObject receiversObj = (JSONObject) route.get("receivers");
+				JSONArray receivers = (JSONArray) receiversObj.get("internal");
+				if (receivers.size() == 0)
+					continue;
+				for (Object receiverObj : receivers) {
+					String receiver = receiverObj.toString();
+					elementRoute.getReceivers().add(receiver);
 				}
-
-				elementRoute.setInternalReceivers(internalElements);
-				for (Element element : elements)
-					if (element.getElementId().equals(container)) {
-						element.setRoute(elementRoute);
-						break;
-					}
+				this.routes.put(container, elementRoute);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

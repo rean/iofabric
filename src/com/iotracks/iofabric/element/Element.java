@@ -5,12 +5,10 @@ import java.util.List;
 public class Element {
 	private final String elementId;
 	private final String imageName;
-	private String elementConfig;
 	private List<PortMapping> portMappings;
 	private long startTime;
 	private long lastModified;
 	private long lastUpdated;
-	private Route route;
 	private String containerId;
 	private Registry registry;
 	private String containerIpAddress;
@@ -45,14 +43,6 @@ public class Element {
 		containerId = "";
 	}
 
-	public String getElementConfig() {
-		return elementConfig;
-	}
-
-	public void setElementConfig(String elementConfig) {
-		this.elementConfig = elementConfig;
-	}
-
 	public List<PortMapping> getPortMappings() {
 		return portMappings;
 	}
@@ -77,14 +67,6 @@ public class Element {
 		this.lastModified = lastModified;
 	}
 
-	public Route getRoute() {
-		return route;
-	}
-
-	public void setRoute(Route route) {
-		this.route = route;
-	}
-
 	public String getElementId() {
 		return elementId;
 	}
@@ -93,20 +75,6 @@ public class Element {
 		return imageName;
 	}
 	
-	@Override
-	public String toString() {
-		return "{\n" + 
-				"\"elementId\":\"" + this.elementId + "\",\n" + 
-				"\"imageName\":\"" + this.imageName + "\",\n" + 
-				"\"lastModified\":\"" + this.lastModified + "\",\n" + 
-				"\"lastUpdateed\":\"" + this.lastUpdated + "\",\n" + 
-				"\"elementConfig\":\"" + this.elementConfig + "\",\n" + 
-				"\"startTime\":\"" + this.startTime + "\",\n" + 
-				"\"portMappings\":\"" + ((this.portMappings != null) ? this.portMappings.toString() : "[]") + "\",\n" + 
-				"\"routes\":\"" + (this.route != null ? this.route.toString() : "{}") + "\"\n" + 
-				"}";
-	}
-
 	public long getLastUpdated() {
 		return lastUpdated;
 	}
@@ -121,14 +89,6 @@ public class Element {
 			return false;
 		Element element = (Element) e;
 		return this.elementId.equals(element.getElementId());
-//		return  this.elementId.equals(element.getElementId()) &&
-//				this.imageName.equals(element.getImageName()) &&
-//				this.elementConfig.equals(element.getElementConfig()) &&
-//				this.startTime == element.getStartTime() &&
-//				this.lastModified == element.getLastModified() &&
-//				this.lastUpdated == element.getLastUpdated() &&
-//				this.route.equals(element.getRoute()) &&
-//				this.portMappings.equals(element.getPortMappings());
 	}
 	
 }

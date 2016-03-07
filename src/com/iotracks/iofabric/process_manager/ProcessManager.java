@@ -227,10 +227,6 @@ public class ProcessManager implements Runnable {
 			ContainerTask newTask = ContainerTaskManager.getTask();
 			if (newTask != null) {
 				delay = 50;
-				if (newTask.action.equals(Tasks.ADD))
-					System.out.println(newTask.action + " : " + ((Element) newTask.data).getImageName());
-				else
-					System.out.println(newTask.action + " : " + newTask.data.toString());
 				Thread taskThread = new Thread(new ContainerManager(newTask), "ContainerManager (" + newTask.action + ")");
 				ContainerTaskManager.updateTask(newTask, taskThread);
 				taskThread.start();

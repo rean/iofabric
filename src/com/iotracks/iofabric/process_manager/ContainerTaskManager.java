@@ -4,6 +4,8 @@ import java.lang.Thread.State;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.iotracks.iofabric.process_manager.ContainerTask.Tasks;
+
 public class ContainerTaskManager {
 	private static Map<ContainerTask, Boolean> todoTasks = new HashMap<>();
 	private static Map<ContainerTask, Thread> execTasks = new HashMap<>();
@@ -11,7 +13,7 @@ public class ContainerTaskManager {
 	public static void newTask(ContainerTask task) {
 		synchronized (todoTasks) {
 			for (ContainerTask t : todoTasks.keySet()) {
-				if (t.equals(task))
+				if (t.equals(task) || (task.action == Tasks.ADD && t.action == Tasks.UPDATE && t.data.equals(task.data)))
 					return;
 			}
 			todoTasks.put(task, false);

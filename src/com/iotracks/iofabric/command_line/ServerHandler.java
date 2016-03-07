@@ -1,7 +1,5 @@
 package com.iotracks.iofabric.command_line;
 
-import java.util.logging.Level;
-
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
