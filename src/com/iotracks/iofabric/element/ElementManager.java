@@ -34,6 +34,18 @@ public class ElementManager {
 		}
 	}
 
+	public static Map<String, Route> getRoutes() {
+		synchronized (ElementManager.class) {
+			return routes;
+		}
+	}
+
+	public static Map<String, String> getConfigs() {
+		synchronized (ElementManager.class) {
+			return configs;
+		}
+	}
+
 	public static List<Registry> getRegistries() {
 		synchronized (ElementManager.class) {
 			return registries;

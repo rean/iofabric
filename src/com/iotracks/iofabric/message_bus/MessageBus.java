@@ -1,79 +1,92 @@
 package com.iotracks.iofabric.message_bus;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
+import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class MessageBus {
 	
-	private final char ALPHABET[] = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ".toCharArray();
-	private final static int MAX_SEQUENCE = 100000000;
-	private static volatile long lastTime = 0;
-	private static volatile int sequence = MAX_SEQUENCE;
-	
-	private MessageBusUtil messageBusUtil;
-	private Map<String, Route> routes;
+	private MessageBusServer messageBusServer;
+	private static Map<String, Route> routes;
+	private static Map<String, MessagePublisher> publishers;
+	private static Map<String, MessageReceiver> receivers;
+	private MessageIdGenerator idGenerator;
 	
 	public MessageBus() {
-		messageBusUtil = new MessageBusUtil();
-		try {
-			messageBusUtil.startServer();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 	
-	public void publishMessage(String sender, IOMessage message) throws Exception {
+	public Message publishMessage(Message message) throws Exception {
+		long timestamp = System.currentTimeMillis();
+		message.setId(idGenerator.generate(timestamp));
+		message.setTimestamp(timestamp);
+		
+		MessagePublisher publisher = publishers.get(message.getPublisher());
+
+		if (publisher != null)
+			publisher.publish(message);
+
+		return message;
+	}
+	
+	public void enableRealTimeReceiving(String receiver) {
+		receivers.get(receiver).setListener();
+	}
+
+	public void disableRealTimeReceiving(String receiver) {
+		receivers.get(receiver).removeListener();
+	}
+
+	private void updateRoutingTable() {
 		if (routes == null)
 			return;
 		
-		Route route = routes.get(sender);
-		if (route == null)
-			return;
-		
-		for (String recipient : route.getReceivers()) {
-			messageBusUtil.sendMessage(recipient, message);
-		}
+		routes.entrySet().forEach(entry -> {
+			if (entry.getValue() != null && entry.getValue().getReceivers() != null) {
+				publishers.put(entry.getKey(), new MessagePublisher(entry.getKey(), entry.getValue()));
+				for (String receiver : entry.getValue().getReceivers())
+					if (!receivers.containsKey(receiver)) {
+						messageBusServer.createCosumer(receiver);
+						receivers.put(receiver, new MessageReceiver(receiver));
+					}
+			}
+		});
 	}
-
-	private synchronized String generateId(long time) {
-		if (lastTime == time) {
-			sequence--;
-		} else {
-			lastTime = time;
-			sequence = MAX_SEQUENCE;
-		}
-		return toBase58(time, 11) + toBase58(sequence, 5);
-	}
-
 	
-	private String toBase58(long number, int len) {
-		StringBuilder result = new StringBuilder();
-		while (number >= 58) {
-			result.append(ALPHABET[(int) (number % 58)]);
-			number /= 58;
+	public void start() {
+		messageBusServer = new MessageBusServer();
+		try {
+			messageBusServer.startServer();
+			messageBusServer.initialize();
+		} catch (Exception e) {
+			try {
+				messageBusServer.stopServer();
+			} catch (Exception e1) {
+				e1.printStackTrace(System.out);
+			}
+			e.printStackTrace(System.out);
+			System.exit(1);
 		}
-		result.append(ALPHABET[(int) number]);
-		for (int i = result.length(); i < len; i++)
-			result.append(ALPHABET[0]);
-		return result.reverse().toString();
+		
+		idGenerator = new MessageIdGenerator();
+		publishers = new ConcurrentHashMap<>();
+		receivers = new ConcurrentHashMap<>();
+		routes = ElementManager.getRoutes();
+		updateRoutingTable();
+
+		try {
+			messageBusServer.stopServer();
+		} catch (Exception e) {
+			e.printStackTrace(System.out);
+		}
 	}
-//			 			 1         2         3         4         5         6         7         8         9         0         1         2         3         4         5         6         7         
-//  			12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
-//  Double:		uWJ7hf5NAL7ufAjUbfwAfAwuwQfLNN9y9wyUQy5syYE3W9qJsWC3bEQu7WYUWJyUYNu3EbSfbCLWwdNsGsEYuqY35h79YoSqYh7bfYWGGNmWqYyWoummsdwodoqLyjGSwyfWhu3hb1Q1J9wWhdUbJufo9AACYJyuYG3E5mmTre6jpcs
-//	Float:		319jQQdmU33UhsMFqAEuBx
-//  Long:		ddQ8PjM6Lpn
-//	Integer:	85qLg4
-//	Elements:	rv8H3m2fdzKJrKNVGftmWFYDbvgb3tpv
 	
 	public static void main(String[] args) throws Exception {
+		Configuration.loadConfig();
+		new ElementManager().loadFromApi();
 		MessageBus messageBus = new MessageBus();
-		
-		long start = System.currentTimeMillis();
-		for (int i = 0; i < 1000; i++)
-			System.out.println(messageBus.generateId(System.currentTimeMillis())); 
-		long end = System.currentTimeMillis();
-		System.out.println(end - start);
+		messageBus.start();
 	}
 }

@@ -1,14 +1,13 @@
 package com.iotracks.iofabric.message_bus;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Base64;
 
 import org.bouncycastle.util.Arrays;
 import org.json.simple.JSONObject;
 
 import com.iotracks.iofabric.utils.BytesUtil;
 
-public class IOMessage {
+public class Message {
 	private final short VERSION = 4; 
 	
 	private String id;
@@ -32,7 +31,7 @@ public class IOMessage {
 	private byte[] contextData;
 	private byte[] contentData;
 
-	public IOMessage() {
+	public Message() {
 		id = null;
 		tag = null;
 		messageGroupId = null;
@@ -55,16 +54,15 @@ public class IOMessage {
 	}
 	
 	// from json
-	public IOMessage(JSONObject json) {
+	public Message(JSONObject json) {
 		super();
 		// TODO: from json
-		setContextData(Base64.getDecoder().decode(json.get("contextData").toString()));
-		setContentData(Base64.getDecoder().decode(json.get("contentData").toString()));
 	}
 	
 	// from rawBytes
-	public IOMessage(byte[] rawBytes) {
+	public Message(byte[] rawBytes) {
 		super();
+		
 		version = BytesUtil.bytesToShort(Arrays.copyOfRange(rawBytes, 0, 2));
 		if (version != VERSION) {
 			// TODO: incompatible version
@@ -457,17 +455,18 @@ public class IOMessage {
 			throw e;
 		}
 		
-		byte[] header = headerBaos.toByteArray();
-		byte[] data = dataBaos.toByteArray();
-		byte[] result = new byte[header.length + data.length];
-		for (int i = 0; i < header.length; i++)
-			result[i] = header[i];
-		for (int i = 0; i < data.length; i++)
-			result[header.length + i] = data[i];
-		return result;
-//		return Arrays.concatenate(headerBaos.toByteArray(), dataBaos.toByteArray());
+//		byte[] header = headerBaos.toByteArray();
+//		byte[] data = dataBaos.toByteArray();
+//		byte[] result = new byte[header.length + data.length];
+//		for (int i = 0; i < header.length; i++)
+//			result[i] = header[i];
+//		for (int i = 0; i < data.length; i++)
+//			result[header.length + i] = data[i];
+//		return result;
+		return Arrays.concatenate(headerBaos.toByteArray(), dataBaos.toByteArray());
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public String toString() {
 		JSONObject result = new JSONObject();
@@ -489,15 +488,14 @@ public class IOMessage {
 		result.put("difficultyTarget", difficultyTarget);
 		result.put("informationType", infoType);
 		result.put("informationFormat", infoFormat);
-		// encode byte arrays to base 64
-		result.put("contextData", Base64.getEncoder().encodeToString(contextData));
-		result.put("contentData", Base64.getEncoder().encodeToString(contentData));
+		result.put("contextData", BytesUtil.byteArrayToString(contextData));
+		result.put("contentData", BytesUtil.byteArrayToString(contentData));
 		
 		return result.toJSONString();
 	}
 	
 	public static void main(String[] args) throws Exception {
-		IOMessage m = new IOMessage();
+		Message m = new Message();
 		m.setId("AA");
 		m.setTag("BB");
 		m.setMessageGroupId("CC");
@@ -522,7 +520,7 @@ public class IOMessage {
 		System.out.println(b.length);
 		System.out.println();
 		
-		IOMessage n = new IOMessage(b);
+		Message n = new Message(b);
 
 		String s = n.toString();
 		System.out.println(s);

@@ -77,4 +77,17 @@ public class BytesUtil {
         return new String(bytes);
     }
 
+    public static String byteArrayToString(byte[] bytes) {
+    	StringBuilder result = new StringBuilder();
+    	
+		result.append("[");
+    	for (byte b : bytes) {
+    		if (result.length() > 1)
+    			result.append(", ");
+    		result.append(b);
+    	}
+		result.append("]");
+    	
+    	return result.toString();
+    }
 }
