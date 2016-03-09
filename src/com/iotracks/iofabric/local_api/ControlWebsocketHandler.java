@@ -20,11 +20,11 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 
 public class ControlWebsocketHandler {
 
-	private static final byte OPCODE_PING = 0x9; 
-	private static final byte OPCODE_PONG = 0xA; 
-	private static final byte OPCODE_ACK = 0xB; 
-	private static final byte OPCODE_CONTROL_SIGNAL = 0xC;
-	private int intiateCount = 0;
+	private static final Byte OPCODE_PING = 0x9; 
+	private static final Byte OPCODE_PONG = 0xA; 
+	private static final Byte OPCODE_ACK = 0xB; 
+	private static final Byte OPCODE_CONTROL_SIGNAL = 0xC;
+	private static int intiateCount = 0;
 
 	private static final String WEBSOCKET_PATH = "/v2/control/socket";
 
@@ -58,11 +58,12 @@ public class ControlWebsocketHandler {
 
 		System.out.println("Handshake end....");
 
-		//Code for testing
+		//Code for testing - To be removed later - start
 		if(publisherId.equals("viewer")){
 			System.out.println("Initiating the control signal...");
 			initiateControlSignal();
 		}
+		//Code for testing - end
 	}
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
@@ -71,28 +72,28 @@ public class ControlWebsocketHandler {
 			System.out.println("In websocket handleWebSocketFrame.....  PongWebSocketFrame... " );
 			ByteBuf buffer = frame.content();
 			Byte opcode = buffer.readByte(); 
-			System.out.println("OPCPDE: " + opcode);
-			if(opcode == OPCODE_PING){
+			if(opcode == OPCODE_PING.intValue()){
 				if(hasContextInMap(ctx)){
 					ByteBuf buffer1 = Unpooled.buffer(126);
-					buffer1.writeByte(OPCODE_PONG);
+					buffer1.writeByte(OPCODE_PONG.intValue());
 					ctx.channel().write(new PongWebSocketFrame(buffer1));
 				}
 			}		
 		}
 
-		if (!(frame instanceof TextWebSocketFrame)) {
+		if (frame instanceof TextWebSocketFrame) {
 			System.out.println("In websocket handleWebSocketFrame.....  TextWebSocketFrame... " );
 			ByteBuf buffer2 = frame.content();
 			Byte opcode = buffer2.readByte(); 
-			System.out.println("OPCODE: " + opcode);
-			if(opcode != OPCODE_ACK){
+			System.out.println("OPCODE Acknowledgment: " + opcode);
+			if(opcode != OPCODE_ACK.intValue()){
 				if(intiateCount < 10){
 					initiateControlSignal();
 				}else{
 					removeContextFromMap(ctx);
 				}
 			}else{
+				System.out.println("Acknowledgement received...");
 				intiateCount = 0;
 			}
 			return;
@@ -133,7 +134,7 @@ public class ControlWebsocketHandler {
 	public void initiateControlSignal(){
 		System.out.println("In ControlWebsocketHandler : initiateControlSignal");
 		intiateCount++;
-		System.out.println("Count" + intiateCount);
+		System.out.println("Count   " + intiateCount);
 		//Receive control signals from field agent module
 		ChannelHandlerContext ctx = null;
 		String containerChangedId = "viewer";
@@ -144,6 +145,7 @@ public class ControlWebsocketHandler {
 			ctx = controlMap.get(containerChangedId);
 			ByteBuf buffer1 = Unpooled.buffer(126);
 			buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
+			System.out.println(ctx);
 			ctx.channel().write(new TextWebSocketFrame(buffer1));
 		}
 

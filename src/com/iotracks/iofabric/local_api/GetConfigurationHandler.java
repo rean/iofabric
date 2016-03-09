@@ -5,15 +5,13 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
 import java.io.StringReader;
-import java.util.List;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
-
-import com.iotracks.iofabric.element.Element;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -35,7 +33,7 @@ public class GetConfigurationHandler {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
-		
+
 		HttpHeaders headers = req.headers();
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
@@ -43,7 +41,7 @@ public class GetConfigurationHandler {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
-		
+
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
 		System.out.println("body :"+ requestBody);
@@ -58,37 +56,24 @@ public class GetConfigurationHandler {
 		String publisherId = jsonObject.getString("id");
 		System.out.println("In GetConfigurationHandler: handle - Publisher " + publisherId);
 
-		boolean elementFound = false;
-
-		//To change - For testing 
-		//Get configuration object from field agent module and make JSON and pass
-		LocalApi api = new LocalApi();
-		List<Element> containersList = api.readContainerConfig();
+		boolean elementFound = false;		
 
 		//Element found
-		for(Element element : containersList){
-			if(element.getElementID().equals(publisherId)){
+		for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
+			if(entry.getKey().equals(publisherId)){
 				System.out.println("Element found: status ok");
-				//HttpResponse res = new DefaultHttpResponse(HTTP_1_1, OK);
 				elementFound = true;
+				String containerConfig = entry.getValue();
 				JsonBuilderFactory factory = Json.createBuilderFactory(null);
 				JsonObjectBuilder builder = factory.createObjectBuilder();
 				builder.add("status", "okay");
-				if(element.getElementConfig() != null) {
-					builder.add("config", element.getElementConfig());
-				} else {
-					builder.add("config","");
-				}
-
+				builder.add("config", containerConfig);
 				String configData = builder.build().toString();
-				
-			//	res.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
 				System.out.println("Config: "+ configData);
 				ByteBuf	bytesData = ctx.alloc().buffer();
 				bytesData.writeBytes(configData.getBytes());
 				FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 				HttpHeaders.setContentLength(res, bytesData.readableBytes());
-				
 				sendHttpResponse( ctx, req, res); 
 				return;
 			}
@@ -100,7 +85,7 @@ public class GetConfigurationHandler {
 		}
 
 	}
-	
+
 	private static void sendHttpResponse(
 			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
 		// Generate an error page if response getStatus code is not OK (200).

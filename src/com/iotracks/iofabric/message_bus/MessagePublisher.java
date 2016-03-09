@@ -1,47 +1,43 @@
 package com.iotracks.iofabric.message_bus;
 
+import java.util.List;
+
 import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientProducer;
 import org.hornetq.api.core.client.ClientSession;
 
 import com.iotracks.iofabric.element.Route;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class MessagePublisher {
-	private final String name;
 	private final MessageArchive archive;
 	
+	private final String name;
 	private ClientProducer producer;
 	private ClientSession session;
 	private Route route;
 	
 	public MessagePublisher(String name, Route route) {
-		this.name = name;
 		this.archive = new MessageArchive(name);
 		this.route = route;
+		this.name = name;
 		producer = MessageBusServer.getProducer();
 		session = MessageBusServer.getSession();
 	}
 	
-	protected void publish(Message message) {
-		byte[] bytes;
-		try {
-			bytes = message.getBytes();
-		} catch (Exception e) {
-			e.printStackTrace(System.out);
-			return;
-		}
+	protected synchronized void publish(Message message) throws Exception {
+		byte[] bytes = message.getBytes();
 
-		archive.save(bytes, message.getTimestamp());
+		try {
+			archive.save(bytes, message.getTimestamp());
+		} catch (Exception e) {
+			LoggingService.logWarning("Message Publisher (" + this.name + ")", "unable to archive massage --> " + e.getMessage());
+		}
 		for (String receiver : route.getReceivers()) {
-			ClientMessage msg = session.createMessage(true);
+			ClientMessage msg = session.createMessage(false);
 			msg.putObjectProperty("receiver", receiver);
-			try {
-				msg.putBytesProperty("message", bytes);
-				producer.send(msg);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace(System.out);
-			}
+			msg.putBytesProperty("message", bytes);
+			producer.send(msg);
 		}
 	}
 	
@@ -57,9 +53,10 @@ public class MessagePublisher {
 	public void close() {
 		try {
 			archive.close();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.out);
-		}
+		} catch (Exception e) {}
+	}
+
+	public List<Message> messageQuery(long from, long to) {
+		return archive.messageQuery(from, to);
 	}
 }

@@ -3,7 +3,7 @@ package com.iotracks.iofabric.field_agent;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.simple.JSONObject;
+import javax.json.JsonObject;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
@@ -71,7 +71,7 @@ public class FieldAgent {
 		postParams.put("lastcommandtime", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation());
 
 		try {
-			JSONObject result = orchestrator.doCommand("status", null, postParams);
+			JsonObject result = orchestrator.doCommand("status", null, postParams);
 			if (!result.get("status").equals("ok"))
 				throw new Exception("error from fabric controller");
 		} catch (Exception e) {
@@ -124,7 +124,7 @@ public class FieldAgent {
 	}
 	
 	public String doProvisioning(String key) {
-		JSONObject result = null;
+		JsonObject result = null;
 		try {
 			result = orchestrator.provision(key);
 			if (!result.get("status").equals("ok")) 

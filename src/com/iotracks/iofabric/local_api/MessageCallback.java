@@ -11,5 +11,13 @@ public class MessageCallback {
 	
 	public void sendRealtimeMessage(Message message) {
 		//TODO : send received message to container "name"
+		MessageWebsocketHandler handler = new MessageWebsocketHandler();
+		handler.sendRealTimeMessage(name, message);
+	}
+	
+	public static void main(String[] args) {
+		Message message = new Message();
+		MessageCallback callback = new MessageCallback("viewer");
+		callback.sendRealtimeMessage(message);
 	}
 }
