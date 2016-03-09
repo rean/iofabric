@@ -33,19 +33,24 @@ public class MessageBus {
 	}
 	
 	public List<Message> getMessages(String receiver) {
-		if (!receivers.containsKey(receiver))
+		MessageReceiver rec = receivers.get(receiver); 
+		if (rec == null)
 			return null;
-		return receivers.get(receiver).getMessages();
+		return rec.getMessages();
 	}
 	
 	public void enableRealTimeReceiving(String receiver) {
-		if (receivers.containsKey(receiver))
-			receivers.get(receiver).enableRealTimeReceiving();
+		MessageReceiver rec = receivers.get(receiver); 
+		if (rec == null)
+			return;
+		rec.enableRealTimeReceiving();
 	}
 
 	public void disableRealTimeReceiving(String receiver) {
-		if (receivers.containsKey(receiver))
-			receivers.get(receiver).disableRealTimeReceiving();
+		MessageReceiver rec = receivers.get(receiver); 
+		if (rec == null)
+			return;
+		rec.disableRealTimeReceiving();
 	}
 
 	private void updateRoutingTable() {
@@ -93,7 +98,8 @@ public class MessageBus {
 		
 		
 		String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
-		String r = "dFg6jjj4QKKrPGpgfX9FLrzQhFXzYZtc";
+		String r = "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh";
+		
 		Message m = new Message();
 		m.setTag("BB");
 		m.setMessageGroupId("CC");
