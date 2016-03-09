@@ -14,30 +14,28 @@ public class MessageReceiver {
 
 	private MessageListener listener;
 	private ClientConsumer consumer;
-	private MessageCallback callback;
 
 	public MessageReceiver(String name) {
 		this.name = name;
 		consumer = MessageBusServer.getConsumer(name);
-		callback = null;
 		listener = null;
 	}
 
 	protected List<Message> getMessages() {
-		if (consumer == null)
-			return null;
-
 		List<Message> result = new ArrayList<>();
-		Message message = getMessage();
-		while (message != null) {
-			result.add(message);
-			message = getMessage();
+		
+		if (consumer != null || listener == null) {
+			Message message = getMessage();
+			while (message != null) {
+				result.add(message);
+				message = getMessage();
+			}
 		}
 		return result;
 	}
 
 	protected Message getMessage() {
-		if (consumer == null)
+		if (consumer == null || listener != null)
 			return null;
 
 		Message result = null; 
@@ -56,17 +54,14 @@ public class MessageReceiver {
 		consumer = MessageBusServer.getConsumer(name);
 	}
 
-	protected MessageCallback getCallback() {
-		return callback;
-	}
-	
 	protected String getName() {
 		return name;
 	}
 	
 	protected void enableRealTimeReceiving() {
-		callback = new MessageCallback(name);
-		listener = new MessageListener(this);
+		if (consumer == null || consumer.isClosed())
+			return;
+		listener = new MessageListener(new MessageCallback(name));
 		try {
 			consumer.setMessageHandler(listener);
 		} catch (Exception e) {
@@ -77,9 +72,8 @@ public class MessageReceiver {
 	
 	protected void disableRealTimeReceiving() {
 		try {
-			if (listener == null || consumer.getMessageHandler() == null)
+			if (consumer == null || listener == null || consumer.getMessageHandler() == null)
 				return;
-			callback = null;
 			listener = null;
 			consumer.setMessageHandler(null);
 		} catch (Exception e) {
@@ -88,6 +82,8 @@ public class MessageReceiver {
 	}
 	
 	protected void close() {
+		if (consumer == null)
+			return;
 		disableRealTimeReceiving();
 		try {
 			consumer.close();

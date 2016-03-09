@@ -5,6 +5,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
 import java.io.StringReader;
+import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -12,6 +13,10 @@ import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+
+import com.iotracks.iofabric.message_bus.Message;
+import com.iotracks.iofabric.message_bus.MessageBus;
+import com.sun.corba.se.impl.protocol.giopmsgheaders.MessageBase;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -53,18 +58,22 @@ public class MessageReceiverHandler {
 			return;
 		}
 		
-		String publisherId = jsonObject.getString("id");
-		
-		//Send Id to bus and receive JSON messages and put it in JSON array as reponse
-		//Get message count and send
+		String receiverId = jsonObject.getString("id");
+	
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
-		messagesArray.add("{}");
-		messagesArray.add("{}");
-			
+		MessageBus bus = new MessageBus();
+		List<Message> messageList = bus.getMessages(receiverId);
+		int msgCount = 0;
+		for(Message msg : messageList){
+			String msgJson = msg.toString();
+			messagesArray.add(msgJson);
+			msgCount++;
+		}
+				
 		builder.add("status", "okay");
-		builder.add("count", "2");
+		builder.add("count", msgCount);
 		builder.add("messages", messagesArray);
 		
 		String configData = builder.build().toString();

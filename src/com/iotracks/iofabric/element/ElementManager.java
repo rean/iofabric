@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 
 import com.iotracks.iofabric.utils.JSON;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -54,20 +54,22 @@ public class ElementManager {
 	
 	public void loadRegistries() {
 		try {
-			JSONObject registriesObjs = JSON.getJSON(
+			JsonObject registriesObjs =  
+					JSON.getJSON(
 					"https://iotracks.com/api/v1/instance/registries/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JSONArray registriesList = (JSONArray) registriesObjs.get("registries");
-			for (Object registryObj : registriesList) {
-				JSONObject registry = (JSONObject) registryObj;
+			JsonArray registriesList = registriesObjs.getJsonArray("registries"); 
+
+			for (int i = 0; i < registriesList.size(); i++) {
+				JsonObject registry = registriesList.getJsonObject(i);
 				Registry r = new Registry();
-				r.setUrl(registry.get("url").toString());
-				r.setSecure(registry.get("secure").toString().equals("true"));
-				r.setCertificate(registry.get("certificate").toString());
-				r.setRequiersCertificate(registry.get("requierscert").toString().equals("true"));
-				r.setUserName(registry.get("username").toString());
-				r.setPassword(registry.get("password").toString());
-				r.setUserEmail(registry.get("useremail").toString());
-				registries.add(r);
+				r.setUrl(registry.getString("url"));
+				r.setSecure(registry.getString("secure").equals("true"));
+				r.setCertificate(registry.getString("certificate"));
+				r.setRequiersCertificate(registry.getString("requierscert").equals("true"));
+				r.setUserName(registry.getString("username"));
+				r.setPassword(registry.getString("password"));
+				r.setUserEmail(registry.getString("useremail"));
+				ElementManager.registries.add(r);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -76,15 +78,15 @@ public class ElementManager {
 
 	public void loadElementsConfig() {
 		try {
-			JSONObject configObjs = JSON.getJSON(
+			JsonObject configObjs = JSON.getJSON(
 					"https://iotracks.com/api/v1/instance/containerconfig/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JSONArray configs = (JSONArray) configObjs.get("containerconfig");
-			for (Object configObj : configs) {
-				JSONObject config = (JSONObject) configObj;
-				String id = config.get("id").toString();
-				String configString = config.get("config").toString();
-				long lastUpdated = Long.parseLong(config.get("lastupdatedtimestamp").toString());
-				this.configs.put(id, configString);
+			JsonArray configs = configObjs.getJsonArray("containerconfig");
+			for (int i = 0; i < configs.size(); i++) {
+				JsonObject config = configs.getJsonObject(i);
+				String id = config.getString("id");
+				String configString = config.getString("config");
+				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
+				ElementManager.configs.put(id, configString);
 				for (Element element : elements)
 					if (element.getElementId().equals(id)) {
 						element.setLastUpdated(lastUpdated);
@@ -98,23 +100,23 @@ public class ElementManager {
 
 	public void loadRoutes() {
 		try {
-			JSONObject routeObjs = JSON
+			JsonObject routeObjs = JSON
 					.getJSON("https://iotracks.com/api/v1/instance/routing/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JSONArray routes = (JSONArray) routeObjs.get("routing");
-			for (Object routeObj : routes) {
-				JSONObject route = (JSONObject) routeObj;
+			JsonArray routes = routeObjs.getJsonArray("routing");
+			for (int i = 0; i < routes.size(); i++) {
+				JsonObject route = routes.getJsonObject(i);
 				Route elementRoute = new Route();
-				String container = route.get("container").toString();
+				String container = route.getString("container");
 
-				JSONObject receiversObj = (JSONObject) route.get("receivers");
-				JSONArray receivers = (JSONArray) receiversObj.get("internal");
+				JsonObject receiversObj = route.getJsonObject("receivers");
+				JsonArray receivers = receiversObj.getJsonArray("internal");
 				if (receivers.size() == 0)
 					continue;
-				for (Object receiverObj : receivers) {
-					String receiver = receiverObj.toString();
+				for (int j = 0; j < receivers.size(); j++) {
+					String receiver = receivers.getString(j);
 					elementRoute.getReceivers().add(receiver);
 				}
-				this.routes.put(container, elementRoute);
+				ElementManager.routes.put(container, elementRoute);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -124,26 +126,26 @@ public class ElementManager {
 
 	public void loadElementsList() {
 		try {
-			JSONObject containerObjects = JSON
+			JsonObject containerObjects = JSON
 					.getJSON("https://iotracks.com/api/v1/instance/containerlist/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JSONArray containers = (JSONArray) containerObjects.get("containerlist");
+			JsonArray containers = containerObjects.getJsonArray("containerlist");
 			if (containers.size() > 0)
 				elements = new ArrayList<>();
-			for (Object containerObj : containers) {
-				JSONObject container = (JSONObject) containerObj;
+			for (int i = 0; i < containers.size(); i++) {
+				JsonObject container = containers.getJsonObject(i);
 
-				Element element = new Element(container.get("id").toString(), container.get("imageid").toString());
+				Element element = new Element(container.getString("id"), container.getString("imageid"));
 
-				element.setLastModified(Long.parseLong(container.get("lastmodified").toString()));
+				element.setLastModified(container.getJsonNumber("lastmodified").longValue());
 
-				JSONArray portMappingObjs = (JSONArray) container.get("portmappings");
+				JsonArray portMappingObjs = container.getJsonArray("portmappings");
 				List<PortMapping> pms = null;
 				if (portMappingObjs.size() > 0) {
 					pms = new ArrayList<>();
-					for (Object portMappingObj : portMappingObjs) {
-						JSONObject portMapping = (JSONObject) portMappingObj;
-						PortMapping pm = new PortMapping(portMapping.get("outsidecontainer").toString(),
-								portMapping.get("insidecontainer").toString());
+					for (int j = 0; j < portMappingObjs.size(); j++) {
+						JsonObject portMapping = portMappingObjs.getJsonObject(j);
+						PortMapping pm = new PortMapping(portMapping.getString("outsidecontainer"),
+								portMapping.getString("insidecontainer"));
 						pms.add(pm);
 					}
 				}

@@ -12,12 +12,8 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Set;
-import java.util.TimeZone;
 
 import com.iotracks.iofabric.command_line.CommandLineClient;
 import com.iotracks.iofabric.command_line.CommandLineServer;
