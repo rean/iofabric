@@ -8,6 +8,7 @@ import java.io.StringReader;
 import java.util.List;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
@@ -16,7 +17,6 @@ import javax.json.JsonReader;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
-import com.sun.corba.se.impl.protocol.giopmsgheaders.MessageBase;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -29,7 +29,7 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.CharsetUtil;
 
-public class MessageReceiverHandler {
+public class QueryMessageReceiverHandler {
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
 		System.out.println("In MessageReceiverHandler : handle");
@@ -52,18 +52,23 @@ public class MessageReceiverHandler {
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 		
-		if(!jsonObject.containsKey("id")){
-			System.out.println("id not found");
+		if(validateMessageQuery(jsonObject) != null){
+			System.out.println("Validation failure");
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
 		
 		String receiverId = jsonObject.getString("id");
+		long timeframeStart = Long.parseLong(jsonObject.getString("timeframestart"));
+		long timeframeEnd = Long.parseLong(jsonObject.getString("timeframeend"));
+		JsonArray publishersArray = jsonObject.getJsonArray("publishers");
 	
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
+		
 		MessageBus bus = MessageBus.getInstance();
+		//TODO: change the method to QueryMessages
 		List<Message> messageList = bus.getMessages(receiverId);
 		int msgCount = 0;
 		for(Message msg : messageList){
@@ -86,6 +91,28 @@ public class MessageReceiverHandler {
 		sendHttpResponse( ctx, req, res); 
 		return;
 
+	}
+	
+	private String validateMessageQuery(JsonObject message){
+		System.out.println("In validateMessageQuery...");
+		if(!message.containsKey("id")){
+			System.out.println("id not found");
+			return "Error: Missing input field id";
+		}
+		
+		if(!(message.containsKey("timeframestart") && message.containsKey("timeframeend"))){
+			System.out.println("timeframestart or timeframeend not found");
+			return "Error: Missing input field timeframe start or end";
+		}
+		
+		if(!message.containsKey("publishers")){
+			System.out.println("Publisher not found");
+			return "Error: Missing input field publishers";
+		}
+		
+		if((message.getString("id").trim().equals(""))) return "Error: Missing input field value id";
+		
+		return null;
 	}
 
 	private static void sendHttpResponse(

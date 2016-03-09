@@ -160,13 +160,13 @@ public class CommandLineParser {
 		help.append(
 				"\n                         -c <uri>                     Set the UNIX socket or network address that the Docker daemon is using");
 		help.append(
-				"\n                         -n <network adapter>         Set the name of the network adapter that holds the correct IP address of this machine\n\n");
+				"\n                         -n <network adapter>         Set the name of the network adapter that holds the correct IP address of this machine");
 		help.append(
 				"\n							-l <#MB Limit>               Set the limit, in MiB, of disk space that the log files can consume");
 		help.append(
 				"\n							-ld <dir>                    Set the directory to use for log file storage");
 		help.append(
-				"\n							-lc <#log files>             Set the number of log files to evenly split the log storage limit");
+				"\n							-lc <#log files>             Set the number of log files to evenly split the log storage limit\n\n");
 		
 		
 		help.append("\nReport bugs to: kilton@iotracks.com");

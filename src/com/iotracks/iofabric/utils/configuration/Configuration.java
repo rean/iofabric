@@ -160,19 +160,19 @@ public final class Configuration {
 		}
 		configElement = (Element) nodes.item(0);
 
-		instanceId = getNode("instance_id");
-		accessToken = getNode("access_token");
-		controllerUrl = getNode("controller_url");
-		controllerCert = getNode("controller_cert");
-		networkInterface = getNode("network_interface");
-		dockerUrl = getNode("docker_url");
-		diskLimit = Float.parseFloat(getNode("disk_consumption_limit"));
-		diskDirectory = getNode("disk_directory");
-		memoryLimit = Float.parseFloat(getNode("memory_consumption_limit"));
-		cpuLimit = Float.parseFloat(getNode("processor_consumption_limit"));
-		logDiskDirectory = getNode("log_disk_directory");
-		logDiskLimit = Float.parseFloat(getNode("log_disk_consumption_limit"));
-		logFileCount = Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent());
+		setInstanceId(getNode("instance_id"));
+		setAccessToken(getNode("access_token"));
+		setControllerUrl(getNode("controller_url"));
+		setControllerCert(getNode("controller_cert"));
+		setNetworkInterface(getNode("network_interface"));
+		setDockerUrl(getNode("docker_url"));
+		setDiskLimit(Float.parseFloat(getNode("disk_consumption_limit")));
+		setDiskDirectory(getNode("disk_directory"));
+		setMemoryLimit(Float.parseFloat(getNode("memory_consumption_limit")));
+		setCpuLimit(Float.parseFloat(getNode("processor_consumption_limit")));
+		setLogDiskDirectory(getNode("log_disk_directory"));
+		setLogDiskLimit(Float.parseFloat(getNode("log_disk_consumption_limit")));
+		setLogFileCount(Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent()));
 	}
 	
 	private Configuration() {
@@ -268,6 +268,8 @@ public final class Configuration {
 	}
 
 	public static void setDiskDirectory(String diskDirectory) {
+		if (diskDirectory.charAt(diskDirectory.length() - 1) != File.separatorChar)
+			diskDirectory += File.separatorChar;
 		Configuration.diskDirectory = diskDirectory;
 	}
 

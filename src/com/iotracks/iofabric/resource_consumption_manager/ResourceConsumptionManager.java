@@ -7,7 +7,6 @@ import java.lang.management.ManagementFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 import com.iotracks.iofabric.Start;
 import com.iotracks.iofabric.status_reporter.StatusReporter;

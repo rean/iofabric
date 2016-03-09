@@ -18,8 +18,6 @@ import java.util.logging.Logger;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
-import jdk.nashorn.internal.runtime.regexp.joni.Config;
-
 public final class LoggingService {
 
 	private static Logger logger = null;

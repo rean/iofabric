@@ -3,7 +3,7 @@ package com.iotracks.iofabric.local_api;
 public class LocalApiStatus {
 	private String currentIpAddress;
 	private int openConfigSocketsCount;
-	private int openDataSocketsCount;
+	private int openMessageSocketsCount;
 	
 	public String getCurrentIpAddress() {
 		return currentIpAddress;
@@ -23,12 +23,12 @@ public class LocalApiStatus {
 		return this;
 	}
 	
-	public int getOpenDataSocketsCount() {
-		return openDataSocketsCount;
+	public int getOpenMessageSocketsCount() {
+		return openMessageSocketsCount;
 	}
 	
-	public LocalApiStatus setOpenDataSocketsCount(int openDataSocketsCount) {
-		this.openDataSocketsCount = openDataSocketsCount;
+	public LocalApiStatus setOpenMessageSocketsCount(int openMessageSocketsCount) {
+		this.openMessageSocketsCount = openMessageSocketsCount;
 		return this;
 	}
 }
