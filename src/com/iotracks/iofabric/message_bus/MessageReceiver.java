@@ -7,15 +7,20 @@ import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.client.ClientConsumer;
 import org.hornetq.api.core.client.ClientMessage;
 
+import com.iotracks.iofabric.local_api.MessageCallback;
+
 public class MessageReceiver {
 	private final String name;
 
 	private MessageListener listener;
 	private ClientConsumer consumer;
+	private MessageCallback callback;
 
 	public MessageReceiver(String name) {
 		this.name = name;
 		consumer = MessageBusServer.getConsumer(name);
+		callback = null;
+		listener = null;
 	}
 
 	protected List<Message> getMessages() {
@@ -51,8 +56,17 @@ public class MessageReceiver {
 		consumer = MessageBusServer.getConsumer(name);
 	}
 
-	protected void setListener() {
-		this.listener = new MessageListener(this);
+	protected MessageCallback getCallback() {
+		return callback;
+	}
+	
+	protected String getName() {
+		return name;
+	}
+	
+	protected void enableRealTimeReceiving() {
+		callback = new MessageCallback(name);
+		listener = new MessageListener(this);
 		try {
 			consumer.setMessageHandler(listener);
 		} catch (Exception e) {
@@ -61,18 +75,24 @@ public class MessageReceiver {
 		}
 	}
 	
-	public String getName() {
-		return name;
-	}
-	
-	public void removeListener() {
+	protected void disableRealTimeReceiving() {
 		try {
 			if (listener == null || consumer.getMessageHandler() == null)
 				return;
-	
+			callback = null;
 			listener = null;
 			consumer.setMessageHandler(null);
 		} catch (Exception e) {
+			e.printStackTrace(System.out);
+		}
+	}
+	
+	protected void close() {
+		disableRealTimeReceiving();
+		try {
+			consumer.close();
+		} catch (HornetQException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace(System.out);
 		}
 	}

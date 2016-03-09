@@ -1,5 +1,6 @@
 package com.iotracks.iofabric.message_bus;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,7 +19,7 @@ public class MessageBus {
 	public MessageBus() {
 	}
 	
-	public Message publishMessage(Message message) throws Exception {
+	public Message publishMessage(Message message) {
 		long timestamp = System.currentTimeMillis();
 		message.setId(idGenerator.generate(timestamp));
 		message.setTimestamp(timestamp);
@@ -31,12 +32,20 @@ public class MessageBus {
 		return message;
 	}
 	
+	public List<Message> getMessages(String receiver) {
+		if (!receivers.containsKey(receiver))
+			return null;
+		return receivers.get(receiver).getMessages();
+	}
+	
 	public void enableRealTimeReceiving(String receiver) {
-		receivers.get(receiver).setListener();
+		if (receivers.containsKey(receiver))
+			receivers.get(receiver).enableRealTimeReceiving();
 	}
 
 	public void disableRealTimeReceiving(String receiver) {
-		receivers.get(receiver).removeListener();
+		if (receivers.containsKey(receiver))
+			receivers.get(receiver).disableRealTimeReceiving();
 	}
 
 	private void updateRoutingTable() {
@@ -53,6 +62,10 @@ public class MessageBus {
 					}
 			}
 		});
+	}
+	
+	public void updateRoutes() {
+		// TODO: receive new changes and update routes, receivers, publishers
 	}
 	
 	public void start() {
@@ -76,6 +89,41 @@ public class MessageBus {
 		routes = ElementManager.getRoutes();
 		updateRoutingTable();
 
+		
+		
+		
+		String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
+		String r = "dFg6jjj4QKKrPGpgfX9FLrzQhFXzYZtc";
+		Message m = new Message();
+		m.setTag("BB");
+		m.setMessageGroupId("CC");
+		m.setSequenceNumber(1);
+		m.setSequenceTotal(2);
+		m.setPriority((byte) 3);
+		m.setPublisher(p);
+		m.setAuthIdentifier("EE");
+		m.setAuthGroup("FF");
+		m.setChainPosition(5);
+		m.setHash("GG");
+		m.setPreviousHash("HH");
+		m.setNonce("II");
+		m.setDifficultyTarget(6);
+		m.setInfoType("JJ");
+		m.setInfoFormat("KK");
+		m.setContextData(new byte[] {7, 7, 7, 7, 7});
+		m.setContentData(new byte[] {8, 8, 8, 8, 8});
+
+		for (int i = 0; i < 1100; i++)
+			publishMessage(m);
+
+		List<Message> messages = getMessages(r);
+		for (Message message : messages) {
+			System.out.println(message);
+		}
+		
+		
+		for (MessagePublisher publisher : publishers.values())
+			publisher.close();
 		try {
 			messageBusServer.stopServer();
 		} catch (Exception e) {

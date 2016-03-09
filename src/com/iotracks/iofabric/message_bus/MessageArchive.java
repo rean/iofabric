@@ -9,10 +9,11 @@ import java.io.RandomAccessFile;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class MessageArchive {
-	private final byte HEADER_SIZE = 41;
+	private final byte HEADER_SIZE = 33;
 	private final short MAXIMUM_MESSAGE_PER_FILE = 1000;
 
 	private final String name;
+	private String diskDirectory;
 	private long currentFileTimestamp;
 	private String currentFileName;
 	private RandomAccessFile indexFile;
@@ -26,10 +27,10 @@ public class MessageArchive {
 	protected void init() {
 		currentFileName = "";
 		currentFileTimestamp = 0;
-
+		diskDirectory = Configuration.getDiskDirectory() + "/archive";
 		File lastFile = null;
 		long lastFileTimestamp = 0;
-		final File workingDirectory = new File(Configuration.getDiskDirectory() + "/archive");
+		final File workingDirectory = new File(diskDirectory);
 		if (!workingDirectory.exists())
 			workingDirectory.mkdirs();
 		
@@ -54,16 +55,16 @@ public class MessageArchive {
 			}
 		}
 		
-		if (lastFileTimestamp > 0 && lastFile.length() < (HEADER_SIZE * MAXIMUM_MESSAGE_PER_FILE)) {
-			currentFileName = lastFile.getPath() + "/" + lastFile.getName();
+		if (lastFileTimestamp > 0 && lastFile.length() < ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
+			currentFileName = lastFile.getPath();
 			currentFileTimestamp = lastFileTimestamp;
 		}
 	}
 	
 	private void openFiles(long timestamp) throws FileNotFoundException {
 		if (currentFileName.equals("")) {
-			indexFile = new RandomAccessFile(new File(Configuration.getDiskDirectory() + "/" + name + "_" + timestamp + ".idx"), "rw");
-			dataFile = new RandomAccessFile(new File(Configuration.getDiskDirectory() + "/" + name + "_" + timestamp + ".iomsg"), "rw");
+			indexFile = new RandomAccessFile(new File(diskDirectory + "/" + name + "_" + timestamp + ".idx"), "rw");
+			dataFile = new RandomAccessFile(new File(diskDirectory + "/" + name + "_" + timestamp + ".iomsg"), "rw");
 		} else {
 			indexFile = new RandomAccessFile(new File(currentFileName), "rw");
 			dataFile = new RandomAccessFile(new File(currentFileName.substring(0, currentFileName.indexOf(".")) + ".iomsg"), "rw");
@@ -80,13 +81,19 @@ public class MessageArchive {
 			}
 		
 		try {
+			if (indexFile.length() >= ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
+				indexFile.close();
+				dataFile.close();
+				currentFileName = "";
+				openFiles(timestamp);
+			}
 			indexFile.seek(indexFile.length());
-			dataFile.seek(indexFile.length());
+			dataFile.seek(dataFile.length());
 			long dataPos = dataFile.getFilePointer();
 			
 			indexFile.write(message, 0, HEADER_SIZE);
 			indexFile.writeLong(dataPos);
-			dataFile.write(message, HEADER_SIZE, message.length);
+			dataFile.write(message, HEADER_SIZE, message.length - HEADER_SIZE);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace(System.out);
@@ -94,7 +101,9 @@ public class MessageArchive {
 	}
 	
 	public void close() throws Exception {
-		indexFile.close();
+		if (indexFile != null)
+			indexFile.close();
+		if (dataFile != null)
 		dataFile.close();
 	}
 }

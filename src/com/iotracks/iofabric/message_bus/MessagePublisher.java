@@ -53,4 +53,13 @@ public class MessagePublisher {
 	protected void updateRoute(Route route) {
 		this.route = route;
 	}
+
+	public void close() {
+		try {
+			archive.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace(System.out);
+		}
+	}
 }

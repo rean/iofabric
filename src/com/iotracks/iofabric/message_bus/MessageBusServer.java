@@ -47,7 +47,7 @@ public class MessageBusServer {
         configuration.setBindingsDirectory("/var/log/iofabric/messages/binding");
         configuration.setCreateBindingsDir(true);
         configuration.setPagingDirectory("/var/lib/iofabric/messages/paging");
-        configuration.setPersistenceEnabled(true);
+        configuration.setPersistenceEnabled(false);
         configuration.setSecurityEnabled(false);
         configuration.setAddressesSettings(s);
         configuration.getAcceptorConfigurations().add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));

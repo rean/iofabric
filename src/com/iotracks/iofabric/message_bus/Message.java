@@ -493,36 +493,4 @@ public class Message {
 		
 		return result.toJSONString();
 	}
-	
-	public static void main(String[] args) throws Exception {
-		Message m = new Message();
-		m.setId("AA");
-		m.setTag("BB");
-		m.setMessageGroupId("CC");
-		m.setSequenceNumber(1);
-		m.setSequenceTotal(2);
-		m.setPriority((byte) 3);
-		m.setTimestamp(4);
-		m.setPublisher("DD");
-		m.setAuthIdentifier("EE");
-		m.setAuthGroup("FF");
-		m.setChainPosition(5);
-		m.setHash("GG");
-		m.setPreviousHash("HH");
-		m.setNonce("II");
-		m.setDifficultyTarget(6);
-		m.setInfoType("JJ");
-		m.setInfoFormat("KK");
-		m.setContextData(new byte[] {7, 7, 7, 7, 7});
-		m.setContentData(new byte[] {8, 8, 8, 8, 8});
-		
-		byte[] b = m.getBytes();
-		System.out.println(b.length);
-		System.out.println();
-		
-		Message n = new Message(b);
-
-		String s = n.toString();
-		System.out.println(s);
-	}
 }

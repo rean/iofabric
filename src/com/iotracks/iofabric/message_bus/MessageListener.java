@@ -12,10 +12,8 @@ public class MessageListener implements MessageHandler{
 	
 	@Override
 	public void onMessage(ClientMessage msg) {
-		//TODO: send message to local api
-		
 		Message message = new Message(msg.getBytesProperty("message"));
-		System.out.println("message received by " + receiver.getName() + "\n\t" + message.toString());
+		receiver.getCallback().sendRealtimeMessage(message);
 	}
 
 }
