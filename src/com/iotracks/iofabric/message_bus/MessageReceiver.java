@@ -59,6 +59,8 @@ public class MessageReceiver {
 	}
 	
 	protected void enableRealTimeReceiving() {
+		if (consumer == null || consumer.isClosed())
+			return;
 		listener = new MessageListener(new MessageCallback(name));
 		try {
 			consumer.setMessageHandler(listener);
@@ -70,7 +72,7 @@ public class MessageReceiver {
 	
 	protected void disableRealTimeReceiving() {
 		try {
-			if (listener == null || consumer.getMessageHandler() == null)
+			if (consumer == null || listener == null || consumer.getMessageHandler() == null)
 				return;
 			listener = null;
 			consumer.setMessageHandler(null);
@@ -80,6 +82,8 @@ public class MessageReceiver {
 	}
 	
 	protected void close() {
+		if (consumer == null)
+			return;
 		disableRealTimeReceiving();
 		try {
 			consumer.close();

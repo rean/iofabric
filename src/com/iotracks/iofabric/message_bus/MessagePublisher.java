@@ -7,7 +7,6 @@ import org.hornetq.api.core.client.ClientSession;
 import com.iotracks.iofabric.element.Route;
 
 public class MessagePublisher {
-	private final String name;
 	private final MessageArchive archive;
 	
 	private ClientProducer producer;
@@ -15,7 +14,6 @@ public class MessagePublisher {
 	private Route route;
 	
 	public MessagePublisher(String name, Route route) {
-		this.name = name;
 		this.archive = new MessageArchive(name);
 		this.route = route;
 		producer = MessageBusServer.getProducer();

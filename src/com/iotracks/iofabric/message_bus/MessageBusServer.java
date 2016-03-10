@@ -13,15 +13,19 @@ import org.hornetq.api.core.client.ClientSession.QueueQuery;
 import org.hornetq.api.core.client.ClientSessionFactory;
 import org.hornetq.api.core.client.HornetQClient;
 import org.hornetq.api.core.client.ServerLocator;
-import org.hornetq.core.config.Configuration;
 import org.hornetq.core.config.impl.ConfigurationImpl;
 import org.hornetq.core.remoting.impl.invm.InVMAcceptorFactory;
 import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
+import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
+import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
 import org.hornetq.core.server.HornetQServer;
 import org.hornetq.core.server.HornetQServers;
 import org.hornetq.core.server.JournalType;
 import org.hornetq.core.settings.impl.AddressFullMessagePolicy;
 import org.hornetq.core.settings.impl.AddressSettings;
+
+import com.iotracks.iofabric.utils.configuration.Configuration;
+
 
 public class MessageBusServer {
 	
@@ -33,29 +37,39 @@ public class MessageBusServer {
 	private static Map<String, ClientConsumer> consumers;
 	
 	protected void startServer() throws Exception {
-		AddressSettings addressSettings = new AddressSettings();
-		addressSettings.setMaxSizeBytes(500 * 1024);
-		addressSettings.setPageSizeBytes(100 * 1024);
-		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.PAGE);
-		Map<String, AddressSettings> s = new HashMap<>();
-		s.put(address, addressSettings);
+		Map<String, Object> connectionParams = new HashMap<String, Object>();
+		connectionParams.put("port", 5445);
+		connectionParams.put("host", "localhost");
 
-		Configuration configuration = new ConfigurationImpl();
-        configuration.setJournalDirectory("/var/lib/iofabric/messages/journal");
+		TransportConfiguration transportConfiguration = 
+		    new TransportConfiguration(
+		    NettyAcceptorFactory.class.getName(), connectionParams);
+
+		AddressSettings addressSettings = new AddressSettings();
+		
+		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
+		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
+		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.PAGE);
+		String workingDirectory = Configuration.getDiskDirectory();
+
+		org.hornetq.core.config.Configuration configuration = new ConfigurationImpl();
+        configuration.setJournalDirectory(workingDirectory + "messages/journal");
         configuration.setCreateJournalDir(true);
         configuration.setJournalType(JournalType.NIO);
-        configuration.setBindingsDirectory("/var/log/iofabric/messages/binding");
+        configuration.setBindingsDirectory(workingDirectory + "messages/binding");
         configuration.setCreateBindingsDir(true);
-        configuration.setPagingDirectory("/var/lib/iofabric/messages/paging");
+        configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.setPersistenceEnabled(false);
         configuration.setSecurityEnabled(false);
-        configuration.setAddressesSettings(s);
+        configuration.getAddressesSettings().put(address, addressSettings);
+//        configuration.getAcceptorConfigurations().add(transportConfiguration);
         configuration.getAcceptorConfigurations().add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
 
         server = HornetQServers.newHornetQServer(configuration);
         server.start();
 
         ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
+//        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(NettyConnectorFactory.class.getName()));
         sf = serverLocator.createSessionFactory();
 	}
 	
@@ -99,15 +113,19 @@ public class MessageBusServer {
 	}
 	
 	protected void stopServer() throws Exception {
-		producer.close();
-		consumers.entrySet().forEach(entry -> {
-			try {
-				entry.getValue().close();
-			} catch (Exception e) {
-				e.printStackTrace(System.out);
-			}
-		});
-		sf.close();
-		server.stop();
+		if (producer != null)
+			producer.close();
+		if (consumers != null)
+			consumers.entrySet().forEach(entry -> {
+				try {
+					entry.getValue().close();
+				} catch (Exception e) {
+					e.printStackTrace(System.out);
+				}
+			});
+		if (sf != null)
+			sf.close();
+		if (server != null)
+			server.stop();
 	}
 }

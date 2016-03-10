@@ -8,9 +8,9 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
@@ -22,15 +22,15 @@ public class Orchestrator {
 
 	public boolean ping() {
 		try {
-			JSONObject data = JSON.getJSON(apiUrl + "status");
+			JsonObject data = JSON.getJSON(apiUrl + "status");
 			return data.get("status").equals("ok");
 		} catch (Exception e) {
 			return false;
 		} 
 	}
 
-	public JSONObject provision(String key) throws Exception {
-		JSONObject result = null;
+	public JsonObject provision(String key) throws Exception {
+		JsonObject result = null;
 		try {
 			result = JSON.getJSON(apiUrl + "instance/provision/key/" + key);
 		} catch (Exception e) {
@@ -39,8 +39,8 @@ public class Orchestrator {
 		return result;
 	}
 	
-	public JSONObject doCommand(String command, Map<String, Object> queryParams, Map<String, Object> postParams) throws Exception {
-		JSONObject result = null;
+	public JsonObject doCommand(String command, Map<String, Object> queryParams, Map<String, Object> postParams) throws Exception {
+		JsonObject result = null;
 		
 		StringBuilder uri = new StringBuilder(apiUrl);
 		
@@ -78,8 +78,7 @@ public class Orchestrator {
 			httpRequest.setDoOutput(true);
 			httpRequest.getOutputStream().write(postDataBytes);
 			BufferedReader in = new BufferedReader(new InputStreamReader(httpRequest.getInputStream(), "UTF-8"));
-			JSONParser parser = new JSONParser();
-			result = (JSONObject) parser.parse(in);
+			result = Json.createReader(in).readObject();
 		} catch (Exception e) {
 			throw e;
 		}
@@ -89,6 +88,7 @@ public class Orchestrator {
 	
 	public static void main(String[] args) throws Exception {
 		Orchestrator orchestrator = new Orchestrator();
+		Configuration.loadConfig();
 		
 		Map<String, Object> query = new HashMap<>();
 		query.put("id", "qk7PnPVpDTGmx3zWNR8zNP34");
@@ -99,11 +99,13 @@ public class Orchestrator {
 		post.put("daemonlaststart", 1234567890);
 		post.put("cpuusage", 24.71);
 		
-		Map<String, Object> result = orchestrator.doCommand("containerlist", query, null);
-		JSONArray listArray = (JSONArray) result.get("containerlist");
-		for (Object o : listArray) {
-			((Map<String, Object>) o).entrySet().forEach(entry -> {
-				System.out.println(entry.getKey() + " : " + entry.getValue());
+		JsonObject result = orchestrator.doCommand("containerlist", query, null);
+		JsonArray listArray = result.getJsonArray("containerlist");
+		for (int i = 0; i < listArray.size(); i++) {
+			System.out.println(i);
+			JsonObject listItem = listArray.getJsonObject(i);
+			listItem.forEach((key, value) -> {
+				System.out.println("\t" + key + " : " + value.toString());
 			});
 			System.out.println();
 		}

@@ -2,8 +2,10 @@ package com.iotracks.iofabric.message_bus;
 
 import java.io.ByteArrayOutputStream;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+
 import org.bouncycastle.util.Arrays;
-import org.json.simple.JSONObject;
 
 import com.iotracks.iofabric.utils.BytesUtil;
 
@@ -32,6 +34,7 @@ public class Message {
 	private byte[] contentData;
 
 	public Message() {
+		version = VERSION;
 		id = null;
 		tag = null;
 		messageGroupId = null;
@@ -54,7 +57,7 @@ public class Message {
 	}
 	
 	// from json
-	public Message(JSONObject json) {
+	public Message(JsonObject json) {
 		super();
 		// TODO: from json
 	}
@@ -247,9 +250,6 @@ public class Message {
 	}
 	public short getVersion() {
 		return version;
-	}
-	public void setVersion(short version) {
-		this.version = version;
 	}
 	public long getChainPosition() {
 		return chainPosition;
@@ -466,31 +466,30 @@ public class Message {
 		return Arrays.concatenate(headerBaos.toByteArray(), dataBaos.toByteArray());
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public String toString() {
-		JSONObject result = new JSONObject();
-		result.put("id", id);
-		result.put("tag", tag);
-		result.put("messageGroupId", messageGroupId);
-		result.put("sequenceNumber", sequenceNumber);
-		result.put("sequenceTotal", sequenceTotal);
-		result.put("priority", priority);
-		result.put("timestamp", timestamp);
-		result.put("publisher", publisher);
-		result.put("authenticationIdentifier", authIdentifier);
-		result.put("authenticationGroup", authGroup);
-		result.put("version", version);
-		result.put("chainPosition", chainPosition);
-		result.put("hash", hash);
-		result.put("previousMessageHash", previousHash);
-		result.put("nonce", nonce);
-		result.put("difficultyTarget", difficultyTarget);
-		result.put("informationType", infoType);
-		result.put("informationFormat", infoFormat);
-		result.put("contextData", BytesUtil.byteArrayToString(contextData));
-		result.put("contentData", BytesUtil.byteArrayToString(contentData));
-		
-		return result.toJSONString();
+		JsonObject result = Json.createObjectBuilder().add("id", id == null ? "" : id)
+				.add("tag", tag == null ? "" : tag)
+				.add("messageGroupId", messageGroupId)
+				.add("sequenceNumber", sequenceNumber)
+				.add("sequenceTotal", sequenceTotal)
+				.add("priority", priority)
+				.add("timestamp", timestamp)
+				.add("publisher", publisher == null ? "" : publisher)
+				.add("authenticationIdentifier", authIdentifier == null ? "" : authIdentifier)
+				.add("authenticationGroup", authGroup == null ? "" : authGroup)
+				.add("version", version)
+				.add("chainPosition", chainPosition)
+				.add("hash", hash == null ? "" : hash)
+				.add("previousMessageHash", previousHash == null ? "" : previousHash)
+				.add("nonce", nonce == null ? "" : nonce)
+				.add("difficultyTarget", difficultyTarget)
+				.add("informationType", infoType == null ? "" : infoType)
+				.add("informationFormat", infoFormat == null ? "" : infoFormat)
+				.add("contextData", BytesUtil.byteArrayToString(contextData))
+				.add("contentData", BytesUtil.byteArrayToString(contentData))
+				.build();
+
+		return result.toString();
 	}
 }

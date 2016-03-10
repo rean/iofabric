@@ -3,7 +3,6 @@ package com.iotracks.iofabric.message_bus;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -25,7 +24,8 @@ public class MessageArchive {
 	
 	protected void init() {
 		currentFileName = "";
-		diskDirectory = Configuration.getDiskDirectory() + "/archive";
+		diskDirectory = Configuration.getDiskDirectory() + "messages/archive/";
+		
 		File lastFile = null;
 		long lastFileTimestamp = 0;
 		final File workingDirectory = new File(diskDirectory);
@@ -59,7 +59,7 @@ public class MessageArchive {
 	
 	private void openFiles(long timestamp) throws FileNotFoundException {
 		if (currentFileName.equals(""))
-			currentFileName = diskDirectory + "/" + name + "_" + timestamp + ".idx";
+			currentFileName = diskDirectory + name + "_" + timestamp + ".idx";
 		indexFile = new RandomAccessFile(new File(currentFileName), "rw");
 		dataFile = new RandomAccessFile(new File(currentFileName.substring(0, currentFileName.indexOf(".")) + ".iomsg"), "rw");
 	}

@@ -5,10 +5,10 @@ import java.text.SimpleDateFormat;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 import com.iotracks.iofabric.field_agent.FieldAgentStatus;
 import com.iotracks.iofabric.local_api.LocalApiStatus;
+import com.iotracks.iofabric.message_bus.MessageBusStatus;
 import com.iotracks.iofabric.process_manager.ProcessManagerStatus;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManagerStatus;
 import com.iotracks.iofabric.supervisor.SupervisorStatus;
@@ -22,6 +22,7 @@ public final class StatusReporter {
 	private static StatusReporterStatus statusReporterStatus = new StatusReporterStatus();
 	private static ProcessManagerStatus processManagerStatus = new ProcessManagerStatus();
 	private static LocalApiStatus localApiStatus = new LocalApiStatus();
+	private static MessageBusStatus messageBusStatus = new MessageBusStatus();
 	
 	private static String MODULE_NAME = "Status Reporter";
 	
@@ -65,6 +66,11 @@ public final class StatusReporter {
 		return resourceConsumptionManagerStatus;
 	}
 
+	public static MessageBusStatus setMessageBusStatus() {
+		statusReporterStatus.setLastUpdate(System.currentTimeMillis());
+		return messageBusStatus;
+	}
+
 	public static FieldAgentStatus setFieldAgentStatus() {
 		statusReporterStatus.setLastUpdate(System.currentTimeMillis());
 		return fieldAgentStatus;
@@ -97,6 +103,10 @@ public final class StatusReporter {
 
 	public static SupervisorStatus getSupervisorStatus() {
 		return supervisorStatus;
+	}
+	
+	public static MessageBusStatus getMessageBusStatus() {
+		return messageBusStatus;
 	}
 
 	public static ResourceConsumptionManagerStatus getResourceConsumptionManagerStatus() {
