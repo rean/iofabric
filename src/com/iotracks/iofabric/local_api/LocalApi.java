@@ -14,8 +14,8 @@ public class LocalApi {
 	}
 
 	public static void main(String[] args) throws Exception {
-		ElementManager elementManager = new ElementManager();
-		elementManager.loadFromApi();
+	//	ElementManager elementManager = new ElementManager();
+	//	elementManager.loadFromApi();
 		LocalApi api = new LocalApi();
 		api.start();
 	}
