@@ -13,6 +13,12 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
+import org.bouncycastle.util.Arrays;
+
+import com.iotracks.iofabric.message_bus.Message;
+import com.iotracks.iofabric.message_bus.MessageBus;
+import com.sun.corba.se.impl.protocol.giopmsgheaders.MessageBase;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -43,9 +49,12 @@ public class MessageSenderHandler {
 		}
 
 		ByteBuf msgBytes = req.content();
-		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
-		System.out.println("body :"+ requestBody);
-		JsonReader reader = Json.createReader(new StringReader(requestBody));
+		byte[] msgByteArray = msgBytes.array();
+		String msgString = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
+		Message message = new Message(Arrays.copyOfRange(msgByteArray, 0, msgByteArray.length));
+		
+		System.out.println("body :"+ msgString);
+		JsonReader reader = Json.createReader(new StringReader(msgString));
 		JsonObject jsonObject = reader.readObject();
 
 
@@ -56,14 +65,14 @@ public class MessageSenderHandler {
 		}
 
 		System.out.println("Validation Successful.. ");
-		//Put JSON message on message bus, get message id and timestamp from bus 
-		//Send in response
-
+		MessageBus bus = new MessageBus();
+		Message messageWithId = bus.publishMessage(message);
+		
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		builder.add("status", "okay");
-		builder.add("timestamp", "12233444");
-		builder.add("id", "wewwererwwerfty");
+		builder.add("timestamp", messageWithId.getTimestamp());
+		builder.add("id", messageWithId.getId());
 
 		String configData = builder.build().toString();
 		ByteBuf	bytesData = ctx.alloc().buffer();

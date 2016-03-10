@@ -14,6 +14,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+		System.out.println(ctx);
 		System.out.println("In LocalApiServerHandler:channelRead0");
 		if (msg instanceof FullHttpRequest) {
 			handleHttpRequest(ctx, (FullHttpRequest) msg);
