@@ -1,6 +1,5 @@
 package com.iotracks.iofabric.message_bus;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,8 +15,6 @@ import org.hornetq.api.core.client.ServerLocator;
 import org.hornetq.core.config.impl.ConfigurationImpl;
 import org.hornetq.core.remoting.impl.invm.InVMAcceptorFactory;
 import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
-import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
-import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
 import org.hornetq.core.server.HornetQServer;
 import org.hornetq.core.server.HornetQServers;
 import org.hornetq.core.server.JournalType;
@@ -36,35 +33,46 @@ public class MessageBusServer {
 	private static ClientProducer producer;
 	private static Map<String, ClientConsumer> consumers;
 	
+	protected boolean isServerActive() {
+		return server.isActive();
+	}
+	
+	protected boolean isProducerClosed() {
+		return producer.isClosed();
+	}
+	
+	protected boolean isConsumerClosed(String name) {
+		ClientConsumer consumer = consumers.get(name); 
+		return consumer == null || consumer.isClosed();
+	}
+	
 	protected void startServer() throws Exception {
-		Map<String, Object> connectionParams = new HashMap<String, Object>();
-		connectionParams.put("port", 5445);
-		connectionParams.put("host", "localhost");
-
-		TransportConfiguration transportConfiguration = 
-		    new TransportConfiguration(
-		    NettyAcceptorFactory.class.getName(), connectionParams);
-
 		AddressSettings addressSettings = new AddressSettings();
-		
 		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
 		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.PAGE);
 		String workingDirectory = Configuration.getDiskDirectory();
 
-		org.hornetq.core.config.Configuration configuration = new ConfigurationImpl();
+        org.hornetq.core.config.Configuration configuration = new ConfigurationImpl();
         configuration.setJournalDirectory(workingDirectory + "messages/journal");
         configuration.setCreateJournalDir(true);
-        configuration.setJournalType(JournalType.NIO);
-        configuration.setBindingsDirectory(workingDirectory + "messages/binding");
-        configuration.setCreateBindingsDir(true);
-        configuration.setPagingDirectory(workingDirectory + "messages/paging");
+		configuration.setJournalType(JournalType.NIO);
+		configuration.setBindingsDirectory(workingDirectory + "messages/binding");
+		configuration.setCreateBindingsDir(true);
         configuration.setPersistenceEnabled(false);
         configuration.setSecurityEnabled(false);
+        configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.getAddressesSettings().put(address, addressSettings);
-//        configuration.getAcceptorConfigurations().add(transportConfiguration);
         configuration.getAcceptorConfigurations().add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
 
+//		Map<String, Object> connectionParams = new HashMap<String, Object>();
+//		connectionParams.put("port", 5445);
+//		connectionParams.put("host", "localhost");
+//		TransportConfiguration transportConfiguration = 
+//		    new TransportConfiguration(
+//		    NettyAcceptorFactory.class.getName(), connectionParams);
+//        configuration.getAcceptorConfigurations().add(transportConfiguration);
+        
         server = HornetQServers.newHornetQServer(configuration);
         server.start();
 
@@ -74,28 +82,23 @@ public class MessageBusServer {
 	}
 	
 	protected void initialize() throws Exception {
-		messageBusSession = sf.createSession(true, true);
-
+		messageBusSession = sf.createSession(false, true, true);
 		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address)); 
 		if (!queueQuery.isExists())
 			messageBusSession.createQueue(address, address, true);
+		messageBusSession.close();
 		
+		messageBusSession = sf.createSession();
 		producer = messageBusSession.createProducer(address);
-		
 		messageBusSession.start();
 	}
 	
-	protected void createCosumer(String name) {
+	protected void createCosumer(String name) throws Exception {
 		if (consumers == null)
 			consumers = new ConcurrentHashMap<>();
 
-		try {
-			ClientConsumer consumer = messageBusSession.createConsumer(address, String.format("receiver = '%s'", name));
-			consumers.put(name, consumer);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.out);
-		}
+		ClientConsumer consumer = messageBusSession.createConsumer(address, String.format("receiver = '%s'", name));
+		consumers.put(name, consumer);
 	}
 	
 	protected static ClientSession getSession() {
@@ -119,13 +122,15 @@ public class MessageBusServer {
 			consumers.entrySet().forEach(entry -> {
 				try {
 					entry.getValue().close();
-				} catch (Exception e) {
-					e.printStackTrace(System.out);
-				}
+				} catch (Exception e) {	}
 			});
 		if (sf != null)
 			sf.close();
 		if (server != null)
 			server.stop();
+	}
+
+	protected void openProducer() throws Exception {
+		producer = messageBusSession.createProducer(address);
 	}
 }

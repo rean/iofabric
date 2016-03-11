@@ -3,7 +3,6 @@ package com.iotracks.iofabric.message_bus;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.client.ClientConsumer;
 import org.hornetq.api.core.client.ClientMessage;
 
@@ -21,7 +20,7 @@ public class MessageReceiver {
 		listener = null;
 	}
 
-	protected List<Message> getMessages() {
+	protected List<Message> getMessages() throws Exception {
 		List<Message> result = new ArrayList<>();
 		
 		if (consumer != null || listener == null) {
@@ -34,18 +33,15 @@ public class MessageReceiver {
 		return result;
 	}
 
-	protected Message getMessage() {
+	protected Message getMessage() throws Exception {
 		if (consumer == null || listener != null)
 			return null;
 
 		Message result = null; 
-		try {
-			ClientMessage msg = consumer.receiveImmediate();
-			if (msg != null)
-				result = new Message(msg.getBytesProperty("message"));
-		} catch (HornetQException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.out);
+		ClientMessage msg = consumer.receiveImmediate();
+		if (msg != null) {
+			msg.acknowledge();
+			result = new Message(msg.getBytesProperty("message"));
 		}
 		return result;
 	}
@@ -65,8 +61,7 @@ public class MessageReceiver {
 		try {
 			consumer.setMessageHandler(listener);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.out);
+			listener = null;
 		}
 	}
 	
@@ -76,9 +71,7 @@ public class MessageReceiver {
 				return;
 			listener = null;
 			consumer.setMessageHandler(null);
-		} catch (Exception e) {
-			e.printStackTrace(System.out);
-		}
+		} catch (Exception e) {}
 	}
 	
 	protected void close() {
@@ -87,9 +80,6 @@ public class MessageReceiver {
 		disableRealTimeReceiving();
 		try {
 			consumer.close();
-		} catch (HornetQException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.out);
-		}
+		} catch (Exception e) {}
 	}
 }

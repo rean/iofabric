@@ -1,13 +1,12 @@
 package com.iotracks.iofabric.message_bus;
 
-import java.io.ByteArrayOutputStream;
-
 import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.bouncycastle.util.Arrays;
 
 import com.iotracks.iofabric.utils.BytesUtil;
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 public class Message {
 	private final short VERSION = 4; 
@@ -314,8 +313,8 @@ public class Message {
 	}
 	
 	public byte[] getBytes() throws Exception {
-		ByteArrayOutputStream headerBaos = new ByteArrayOutputStream();
-		ByteArrayOutputStream dataBaos = new ByteArrayOutputStream();
+		ByteOutputStream headerBaos = new ByteOutputStream(); 
+		ByteOutputStream dataBaos = new ByteOutputStream(); 
 		try {
 			//version
 			headerBaos.write(BytesUtil.shortToBytes((short) VERSION));
@@ -450,20 +449,17 @@ public class Message {
 				headerBaos.write(BytesUtil.integerToBytes(getContentData().length));
 				dataBaos.write(getContentData());
 			}
-			
+
+			byte[] result = new byte[headerBaos.size() + dataBaos.size()];
+			headerBaos.newInputStream().read(result, 0, 33);
+			dataBaos.newInputStream().read(result, 33, dataBaos.size());
+			return result;
 		} catch (Exception e) {
 			throw e;
+		} finally {
+			headerBaos.close();
+			dataBaos.close();
 		}
-		
-//		byte[] header = headerBaos.toByteArray();
-//		byte[] data = dataBaos.toByteArray();
-//		byte[] result = new byte[header.length + data.length];
-//		for (int i = 0; i < header.length; i++)
-//			result[i] = header[i];
-//		for (int i = 0; i < data.length; i++)
-//			result[header.length + i] = data[i];
-//		return result;
-		return Arrays.concatenate(headerBaos.toByteArray(), dataBaos.toByteArray());
 	}
 	
 	@Override

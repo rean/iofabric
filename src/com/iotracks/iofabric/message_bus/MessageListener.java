@@ -14,6 +14,10 @@ public class MessageListener implements MessageHandler{
 	
 	@Override
 	public void onMessage(ClientMessage msg) {
+		try {
+			msg.acknowledge();
+		} catch (Exception e) {}
+		
 		Message message = new Message(msg.getBytesProperty("message"));
 		callback.sendRealtimeMessage(message);
 	}

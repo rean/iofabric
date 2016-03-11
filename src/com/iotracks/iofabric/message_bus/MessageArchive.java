@@ -57,46 +57,38 @@ public class MessageArchive {
 			currentFileName = lastFile.getPath();
 	}
 	
-	private void openFiles(long timestamp) throws FileNotFoundException {
+	private void openFiles(long timestamp) throws Exception {
 		if (currentFileName.equals(""))
 			currentFileName = diskDirectory + name + "_" + timestamp + ".idx";
 		indexFile = new RandomAccessFile(new File(currentFileName), "rw");
 		dataFile = new RandomAccessFile(new File(currentFileName.substring(0, currentFileName.indexOf(".")) + ".iomsg"), "rw");
 	}
 	
-	protected void save(byte[] message, long timestamp) {
+	protected void save(byte[] message, long timestamp) throws Exception {
 		if (indexFile == null)
-			try {
-				openFiles(timestamp);
-			} catch (Exception e) {
-				e.printStackTrace(System.out);
-				return;
-			}
+			openFiles(timestamp);
 		
-		try {
-			if (indexFile.length() >= ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
-				close();
-				openFiles(timestamp);
-			}
-			indexFile.seek(indexFile.length());
-			dataFile.seek(dataFile.length());
-			long dataPos = dataFile.getFilePointer();
-			
-			indexFile.write(message, 0, HEADER_SIZE);
-			indexFile.writeLong(dataPos);
-			dataFile.write(message, HEADER_SIZE, message.length - HEADER_SIZE);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.out);
+		if (indexFile.length() >= ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
+			close();
+			openFiles(timestamp);
 		}
+		indexFile.seek(indexFile.length());
+		dataFile.seek(dataFile.length());
+		long dataPos = dataFile.getFilePointer();
+		
+		indexFile.write(message, 0, HEADER_SIZE);
+		indexFile.writeLong(dataPos);
+		dataFile.write(message, HEADER_SIZE, message.length - HEADER_SIZE);
 	}
 	
-	public void close() throws Exception {
-		currentFileName = "";
-		if (indexFile != null)
-			indexFile.close();
-		if (dataFile != null)
-			dataFile.close();
-		currentFileName = "";
+	public void close() {
+		try {
+			currentFileName = "";
+			if (indexFile != null)
+				indexFile.close();
+			if (dataFile != null)
+				dataFile.close();
+			currentFileName = "";
+		} catch (Exception e) {}
 	}
 }
