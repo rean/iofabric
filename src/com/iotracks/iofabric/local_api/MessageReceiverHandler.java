@@ -63,7 +63,7 @@ public class MessageReceiverHandler {
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
-		MessageBus bus = new MessageBus();
+		MessageBus bus = MessageBus.getInstance();
 		List<Message> messageList = bus.getMessages(receiverId);
 		int msgCount = 0;
 		for(Message msg : messageList){

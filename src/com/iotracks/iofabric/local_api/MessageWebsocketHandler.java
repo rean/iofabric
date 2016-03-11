@@ -44,7 +44,7 @@ public class MessageWebsocketHandler {
 
 	private final String MODULE_NAME = "Local API";
 	private static int tryCount = 0;
-	private static Map<ChannelHandlerContext, String> messageContextMap = new HashMap<ChannelHandlerContext, String>();
+	private static Map<ChannelHandlerContext, Message> messageContextMap = new HashMap<ChannelHandlerContext, Message>();
 	private static final String WEBSOCKET_PATH = "/v2/message/socket";
 
 	private WebSocketServerHandshaker handshaker;
@@ -122,7 +122,7 @@ public class MessageWebsocketHandler {
 				if(hasContextInMap(ctx)){
 					System.out.println("In context true");
 
-					MessageBus messageBus = new MessageBus();
+					MessageBus messageBus = MessageBus.getInstance();
 					Message messageWithId = messageBus.publishMessage(message);
 					LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getId());
 					LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getTimestamp());
@@ -168,7 +168,7 @@ public class MessageWebsocketHandler {
 		}
 	}
 
-	private void saveNotAckMessage(ChannelHandlerContext ctx, String message){
+	private void saveNotAckMessage(ChannelHandlerContext ctx, Message message){
 		messageContextMap.put(ctx, message);
 	}
 
@@ -198,7 +198,7 @@ public class MessageWebsocketHandler {
 	public void sendRealTimeMessage(ChannelHandlerContext ctx){
 		System.out.println("trycount:  "+ tryCount);
 		tryCount++;
-		String message = messageContextMap.get(ctx);
+		Message message = messageContextMap.get(ctx);
 		ByteBuf buffer1 = Unpooled.buffer(126);
 		int length = 50;
 		buffer1.writeByte(OPCODE_MSG);
@@ -207,7 +207,7 @@ public class MessageWebsocketHandler {
 		ctx.channel().write(new TextWebSocketFrame(buffer1));
 	}
 
-	public void sendRealTimeMessage(String receiverId, String message){
+	public void sendRealTimeMessage(String receiverId, Message message){
 		LoggingService.logInfo(MODULE_NAME,"In MessageWebsocketHandler : sendRealTimeMessage");
 		tryCount++;
 		LoggingService.logInfo(MODULE_NAME,"Count" + tryCount);
