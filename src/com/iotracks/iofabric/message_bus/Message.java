@@ -187,6 +187,132 @@ public class Message {
 		}
 	}
 	
+	// from rawBytes
+	public Message(byte[] header, byte[] data) {
+		super();
+		
+		version = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 0, 2));
+		if (version != VERSION) {
+			// TODO: incompatible version
+			return;
+		}
+		
+		int pos = 0;
+		
+		int size = header[2];
+		if (size > 0) {
+			id = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+		
+		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 3, 5));
+		if (size > 0) {
+			tag = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[5];
+		if (size > 0) {
+			messageGroupId = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[6];
+		if (size > 0) {
+			sequenceNumber = BytesUtil.bytesToInteger(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[7];
+		if (size > 0) {
+			sequenceTotal = BytesUtil.bytesToInteger(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[8];
+		if (size > 0) {
+			priority = data[pos];
+			pos += size;
+		}
+
+		size = header[9];
+		if (size > 0) {
+			timestamp = BytesUtil.bytesToLong(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[10];
+		if (size > 0) {
+			publisher = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 11, 13));
+		if (size > 0) {
+			authIdentifier = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 13, 15));
+		if (size > 0) {
+			authGroup = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[15];
+		if (size > 0) {
+			chainPosition = BytesUtil.bytesToLong(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 16, 18));
+		if (size > 0) {
+			hash = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 18, 20));
+		if (size > 0) {
+			previousHash = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 20, 22));
+		if (size > 0) {
+			nonce = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[22];
+		if (size > 0) {
+			difficultyTarget = BytesUtil.bytesToInteger(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[23];
+		if (size > 0) {
+			infoType = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = header[24];
+		if (size > 0) {
+			infoFormat = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToInteger(Arrays.copyOfRange(header, 25, 29));
+		if (size > 0) {
+			contextData = Arrays.copyOfRange(data, pos, pos + size);
+			pos += size;
+		}
+
+		size = BytesUtil.bytesToInteger(Arrays.copyOfRange(header, 29, 33));
+		if (size > 0) {
+			contentData = Arrays.copyOfRange(data, pos, pos + size);
+		}
+	}
+	
 	public String getId() {
 		return id;
 	}
