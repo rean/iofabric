@@ -1,13 +1,16 @@
 package com.iotracks.iofabric.message_bus;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.hornetq.utils.IDGenerator;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
@@ -114,6 +117,15 @@ public class MessageBus {
 					}
 			}
 		});
+	}
+	
+	public synchronized List<Message> messageQuery(String publisher, String receiver, long from, long to) {
+		Route route = routes.get(publisher); 
+		if (to < from || route == null || !route.getReceivers().contains(receiver))
+			return null;
+
+		List<Message> result = publishers.get(publisher).messageQuery(from, to);
+		return result;
 	}
 	
 	public synchronized void updateRoutes() {
@@ -257,7 +269,7 @@ public class MessageBus {
 		new ElementManager().loadFromApi();
 		try {
 			LoggingService.setupLogger();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			System.out.println("Error starting logging service\n" + e.getMessage());
 			System.exit(1);
 		}
@@ -266,7 +278,7 @@ public class MessageBus {
 		
 		// ********************************************
 		
-		messageBus.testPublishSimultaneously();	
+		System.out.println(messageBus.messageQuery("DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V", "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh", 1457727913251l, 1457728865998l).size());
 		
 		// ********************************************
 
@@ -314,9 +326,23 @@ public class MessageBus {
 		}
 	}
 	
+	private void testDuplicateIds() {
+		final int number = 200000;
+		Set<String> ids = new HashSet<>();
+		System.out.println("STARTED");
+		for (int i = 0; i < number; i++) {
+			String id = idGenerator.getNextId();
+			if (id.equals("") || ids.contains(id))
+				System.out.println(id);
+			else
+				ids.add(id);
+		}
+		System.out.println("DONE!");
+	}
+	
 	private volatile int threadsCount;
 	private void testPublishSimultaneously() throws Exception {
-		int maxThreads = 20;
+		int maxThreads = 1;
 		int messagesPerThread = 20000;
 		
 		Runnable sendMessage = () -> {

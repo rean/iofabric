@@ -1,5 +1,7 @@
 package com.iotracks.iofabric.message_bus;
 
+import java.util.List;
+
 import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientProducer;
 import org.hornetq.api.core.client.ClientSession;
@@ -52,5 +54,9 @@ public class MessagePublisher {
 		try {
 			archive.close();
 		} catch (Exception e) {}
+	}
+
+	public List<Message> messageQuery(long from, long to) {
+		return archive.messageQuery(from, to);
 	}
 }

@@ -4,7 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
 
+import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class MessageArchive {
@@ -34,8 +39,8 @@ public class MessageArchive {
 		
 		FilenameFilter filter = new FilenameFilter() {
 			@Override
-			public boolean accept(File dir, String name) {
-				return name.substring(name.indexOf(".")).equals(".idx");
+			public boolean accept(File dir, String fileName) {
+				return fileName.substring(0, name.length()).equals(name) && fileName.substring(fileName.indexOf(".")).equals(".idx");
 			}
 		};
 		
@@ -90,5 +95,87 @@ public class MessageArchive {
 				dataFile.close();
 			currentFileName = "";
 		} catch (Exception e) {}
+	}
+	
+	private int getDataSize(byte[] header) {
+		int size = 0;
+		size = header[2];
+		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 3, 5));
+		size += header[5];
+		size += header[6];
+		size += header[7];
+		size += header[8];
+		size += header[9];
+		size += header[10];
+		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 11, 13));
+		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 13, 15));
+		size += header[15];
+		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 16, 18));
+		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 18, 20));
+		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 20, 22));
+		size += header[22];
+		size += header[23];
+		size += header[24];
+		size += BytesUtil.bytesToInteger(Arrays.copyOfRange(header, 25, 29));
+		size += BytesUtil.bytesToInteger(Arrays.copyOfRange(header, 29, 33));
+		return size;
+	}
+
+	public List<Message> messageQuery(long from, long to) {
+		List<Message> result = new ArrayList<>();
+		
+		File workingDirectory = new File(diskDirectory);
+		FilenameFilter filter = new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String fileName) {
+				return fileName.substring(0, name.length()).equals(name) && fileName.substring(fileName.indexOf(".")).equals(".idx");
+			}
+		};
+		File[] listOfFiles = workingDirectory.listFiles(filter);
+		Arrays.sort(listOfFiles);
+		
+		Stack<File> resultSet = new Stack<>();
+		int i = listOfFiles.length - 1;
+		for (; i >= 0; i--) {
+			File file = listOfFiles[i];
+			if (!file.isFile())
+				continue;
+			long timestamp = Long.parseLong(file.getName().substring(name.length() + 1, file.getName().indexOf(".")));
+			if (timestamp < from)
+				break;
+			if (timestamp >= from && timestamp <= to)
+				resultSet.push(file);
+		}
+		if (i >= 0)
+			resultSet.push(listOfFiles[i]);
+		
+		while (!resultSet.isEmpty()) {
+			File file = resultSet.pop();
+			String fileName = file.getName();
+			try {
+				RandomAccessFile indexFile = new RandomAccessFile(new File(diskDirectory + fileName), "r");
+				RandomAccessFile dataFile = new RandomAccessFile(new File(diskDirectory + fileName.substring(0, fileName.indexOf(".")) + ".iomsg"), "r");
+				while (indexFile.getFilePointer() < indexFile.length()) {
+					byte[] header = new byte[HEADER_SIZE];
+					byte[] dataPosBytes = new byte[Long.BYTES];
+					
+					indexFile.read(header, 0, HEADER_SIZE);
+					long dataPos = indexFile.readLong();
+					int dataSize = getDataSize(header);
+					byte[] data = new byte[dataSize];
+					dataFile.read(data, 0, dataSize);
+					Message message = new Message(header, data);
+					if (message.getTimestamp() < from)
+						continue;
+					result.add(message);
+				}
+				indexFile.close();
+				dataFile.close();
+			} catch (Exception e) {
+				e.printStackTrace(System.out);
+			}
+		}
+		
+		return result;
 	}
 }
