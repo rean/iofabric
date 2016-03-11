@@ -1,5 +1,7 @@
 package com.iotracks.iofabric.local_api;
 
+import com.iotracks.iofabric.utils.logging.LoggingService;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -10,9 +12,13 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 
 public final class LocalApiServer {
+	private final String MODULE_NAME = "Local API";
+
+	EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+	EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 	static final boolean SSL = System.getProperty("ssl") != null;
-	static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "54321"));
+	static final int PORT = 54321;
 
 	public void start() throws Exception {
 		// Configure SSL.
@@ -24,24 +30,20 @@ public final class LocalApiServer {
 			sslCtx = null;
 		}
 
-		EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-		EventLoopGroup workerGroup = new NioEventLoopGroup();
-		try {
-			ServerBootstrap b = new ServerBootstrap();
-			b.group(bossGroup, workerGroup)
-			.channel(NioServerSocketChannel.class)
-			//.handler(new LoggingHandler(LogLevel.INFO))
-			.childHandler(new LocalApiServerPipelineFactory(sslCtx));
+		ServerBootstrap b = new ServerBootstrap();
+		b.group(bossGroup, workerGroup)
+		.channel(NioServerSocketChannel.class)
+		.childHandler(new LocalApiServerPipelineFactory(sslCtx));
 
-			Channel ch = b.bind(PORT).sync().channel();
+		Channel ch = b.bind(PORT).sync().channel();	
+		LoggingService.logInfo(MODULE_NAME, "Local api server started at port: " + PORT + "\n");
 
-			System.out.println("Open your web browser and navigate to " +
-					(SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
+		ch.closeFuture().sync();
+	}
 
-			ch.closeFuture().sync();
-		} finally {
-			bossGroup.shutdownGracefully();
-			workerGroup.shutdownGracefully();
-		}
+	protected void stop() throws Exception {
+		bossGroup.shutdownGracefully();
+		workerGroup.shutdownGracefully();
+		LoggingService.logInfo(MODULE_NAME, "Local api server stopped\n");
 	}
 }

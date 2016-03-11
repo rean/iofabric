@@ -2,6 +2,7 @@ package com.iotracks.iofabric.local_api;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.HOST;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -13,9 +14,13 @@ import javax.json.JsonObjectBuilder;
 
 import org.bouncycastle.util.Arrays;
 
+import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.message_bus.MessagePublisher;
 import com.iotracks.iofabric.utils.BytesUtil;
+import com.iotracks.iofabric.utils.configuration.Configuration;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -37,21 +42,22 @@ public class MessageWebsocketHandler {
 	private static final Byte OPCODE_MSG = 0xD;
 	private static final Byte OPCODE_RECEIPT = 0xE;
 
-	private int tryCount = 0;
-	private static Map<ChannelHandlerContext, Message> messageContextMap = new HashMap<ChannelHandlerContext, Message>();
+	private final String MODULE_NAME = "Local API";
+	private static int tryCount = 0;
+	private static Map<ChannelHandlerContext, String> messageContextMap = new HashMap<ChannelHandlerContext, String>();
 	private static final String WEBSOCKET_PATH = "/v2/message/socket";
 
 	private WebSocketServerHandshaker handshaker;
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		System.out.println("In MessageWebsocketHandler : handle");
-		System.out.println("Handshake start.... ");
+		LoggingService.logInfo(MODULE_NAME,"In MessageWebsocketHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
 
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
 		String publisherId = tokens[4].trim();
-		System.out.println("Publisher Id: "+ publisherId);
+		LoggingService.logInfo(MODULE_NAME,"Publisher Id: "+ publisherId);
 
 		synchronized (this) {
 			Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
@@ -62,20 +68,23 @@ public class MessageWebsocketHandler {
 		WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req), null, true);
 		handshaker = wsFactory.newHandshaker(req);
 		if (handshaker == null) {
-			System.out.println("In handshake = null...");
+			LoggingService.logInfo(MODULE_NAME,"In handshake = null...");
 			WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
 		} else {
-			System.out.println("In handshake else.....");
+			LoggingService.logInfo(MODULE_NAME,"In handshake else.....");
 			handshaker.handshake(ctx.channel(), req);
 		}
 
-		System.out.println("Handshake end....");
+		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
+		
+		sendRealTimeMessage(ctx);
+		return;
 	}
 
-	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
+	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
 
 		if (frame instanceof PingWebSocketFrame) {
-			System.out.println("In websocket handleWebSocketFrame.....  PingWebSocketFrame... " );
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame.....  PingWebSocketFrame... " );
 			ByteBuf buffer = frame.content();
 			Byte opcode = buffer.readByte(); 
 			if(opcode == OPCODE_PING.intValue()){
@@ -88,7 +97,7 @@ public class MessageWebsocketHandler {
 		}
 
 		if (frame instanceof TextWebSocketFrame) {
-			System.out.println("In websocket handleWebSocketFrame.....  TextWebSocketFrame... " );
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame.....  TextWebSocketFrame... " );
 			ByteBuf input = frame.content();
 			if (!input.isReadable()) {
 				return;
@@ -103,37 +112,44 @@ public class MessageWebsocketHandler {
 
 			if(opcode == OPCODE_MSG.intValue()){
 				int length = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5));
-				System.out.println("Opcode: " + opcode + "Length: " + length);
+				LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode + "Length: " + length);
 				//Only as find in the length
 				//To check for if length is greater then what to do.
 				//Check if getting right message object or not
 				Message message = new Message(Arrays.copyOfRange(byteArray, 5, byteArray.length));
-				System.out.println("Right Opcode....");
+				LoggingService.logInfo(MODULE_NAME,"Right message format....");
+
 				if(hasContextInMap(ctx)){
-					MessageBus bus = new MessageBus();
-					Message messageWithId = bus.publishMessage(message);
-					System.out.println("Message id: " + messageWithId.getId());
-					System.out.println("Message id: " + messageWithId.getTimestamp());
+					System.out.println("In context true");
+
+					MessageBus messageBus = new MessageBus();
+					Message messageWithId = messageBus.publishMessage(message);
+					LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getId());
+					LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getTimestamp());
 
 					String messageId = messageWithId.getId();
 					Long msgTimestamp = messageWithId.getTimestamp();
-					ByteBuf buffer1 = Unpooled.buffer(126);
+					ByteBuf buffer1 = Unpooled.buffer(256);
 					buffer1.writeByte(OPCODE_RECEIPT);
-					buffer1.writeBytes(BytesUtil.stringToBytes(messageId));
 					buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
+					buffer1.writeBytes(BytesUtil.stringToBytes(messageId));
 					ctx.channel().write(new TextWebSocketFrame(buffer1));
 				}
+
+				return;
 			}
-			return;
+
 		}
 
 		if (frame instanceof TextWebSocketFrame) {
 			ByteBuf input = frame.content();
 			Byte opcode = input.readByte(); 
 			if(opcode == OPCODE_ACK.intValue()){
+				tryCount = 0;
 				messageContextMap.remove(ctx);
-				System.out.println("Received Acknowledment for message sent");
+				LoggingService.logInfo(MODULE_NAME,"Received acknowledment for message sent");
 			}else{
+				LoggingService.logInfo(MODULE_NAME,"Received no acknowledment... send again");
 				if(tryCount < 10){
 					sendRealTimeMessage(ctx);
 				}else{
@@ -145,14 +161,14 @@ public class MessageWebsocketHandler {
 
 		// Check for closing frame
 		if (frame instanceof CloseWebSocketFrame) {
-			System.out.println("In websocket handleWebSocketFrame..... CloseWebSocketFrame... " + ctx);
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame..... CloseWebSocketFrame... " + ctx);
 			ctx.channel().close();
 			removeContextFromMap(ctx);
 			return;
 		}
 	}
-	
-	private void saveNotAckMessage(ChannelHandlerContext ctx, Message message){
+
+	private void saveNotAckMessage(ChannelHandlerContext ctx, String message){
 		messageContextMap.put(ctx, message);
 	}
 
@@ -171,16 +187,18 @@ public class MessageWebsocketHandler {
 		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = messageMap.entrySet().iterator(); it.hasNext();) {
 			Map.Entry<String,ChannelHandlerContext> e = it.next();
 			if (ctx.equals(e.getValue())) {
-				System.out.println("Context found in map...");
+				LoggingService.logInfo(MODULE_NAME,"Context found in map...");
 				return true;
 			}
 		}
-		System.out.println("Context not found in map...");
+		LoggingService.logInfo(MODULE_NAME,"Context not found in map...");
 		return false;
 	}
-	
+
 	public void sendRealTimeMessage(ChannelHandlerContext ctx){
-		Message message = messageContextMap.get(ctx);
+		System.out.println("trycount:  "+ tryCount);
+		tryCount++;
+		String message = messageContextMap.get(ctx);
 		ByteBuf buffer1 = Unpooled.buffer(126);
 		int length = 50;
 		buffer1.writeByte(OPCODE_MSG);
@@ -188,17 +206,17 @@ public class MessageWebsocketHandler {
 		buffer1.writeBytes(BytesUtil.stringToBytes("This is my message to send"));
 		ctx.channel().write(new TextWebSocketFrame(buffer1));
 	}
-	
-	public void sendRealTimeMessage(String receiverId, Message message){
-		System.out.println("In MessageWebsocketHandler : sendRealTimeMessage");
+
+	public void sendRealTimeMessage(String receiverId, String message){
+		LoggingService.logInfo(MODULE_NAME,"In MessageWebsocketHandler : sendRealTimeMessage");
 		tryCount++;
-		System.out.println("Count" + tryCount);
+		LoggingService.logInfo(MODULE_NAME,"Count" + tryCount);
 		ChannelHandlerContext ctx = null;
 		Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
 		int length = 50;
 		if(messageMap.containsKey(receiverId)){
 			saveNotAckMessage(ctx, message);
-			System.out.println("Found container id in map...");
+			LoggingService.logInfo(MODULE_NAME,"Found container id in map...");
 			ctx = messageMap.get(receiverId);
 			messageContextMap.put(ctx, message);
 			ByteBuf buffer1 = Unpooled.buffer(126);
