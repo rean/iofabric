@@ -37,20 +37,20 @@ public class MessageIdGenerator {
 	
 	// uuid
 	private final int PRE_GENERATED_IDS_COUNT = 100000;
-	Queue<UUID> generatedIds = new LinkedList<>();
+	Queue<String> generatedIds = new LinkedList<>();
 	private final Runnable refill = () -> {
 		while (generatedIds.size() < PRE_GENERATED_IDS_COUNT)
-			generatedIds.offer(UUID.randomUUID());
+			generatedIds.offer(UUID.randomUUID().toString().replaceAll("-", ""));
 	};
 	
 	public synchronized String getNextId() {
 		while (generatedIds.size() == 0);
-		return generatedIds.poll().toString();
+		return generatedIds.poll();
 	}
 	
 	public MessageIdGenerator() {
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(refill, 0, 1, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
 	}
 	
 //			 			 1         2         3         4         5         6         7         8         9         0         1         2         3         4         5         6         7         
