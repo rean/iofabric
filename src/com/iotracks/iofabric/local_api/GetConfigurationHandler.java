@@ -13,6 +13,8 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
+import com.iotracks.iofabric.utils.logging.LoggingService;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -25,9 +27,10 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.CharsetUtil;
 
 public class GetConfigurationHandler {
+	private final String MODULE_NAME = "Local API";
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		System.out.println("In GetConfigurationHandler: handle");
+		LoggingService.logInfo(MODULE_NAME,"In GetConfigurationHandler: handle");
 
 		if (req.getMethod() != POST) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
@@ -37,14 +40,14 @@ public class GetConfigurationHandler {
 		HttpHeaders headers = req.headers();
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			System.out.println("header content type failure..." + headers.get("CONTENT_TYPE"));
+			LoggingService.logInfo(MODULE_NAME,"header content type failure..." + headers.get("CONTENT_TYPE"));
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
-		System.out.println("body :"+ requestBody);
+		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
@@ -54,14 +57,14 @@ public class GetConfigurationHandler {
 		}
 
 		String publisherId = jsonObject.getString("id");
-		System.out.println("In GetConfigurationHandler: handle - Publisher " + publisherId);
+		LoggingService.logInfo(MODULE_NAME,"In GetConfigurationHandler: handle - Publisher " + publisherId);
 
 		boolean elementFound = false;		
 
 		//Element found
 		for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
 			if(entry.getKey().equals(publisherId)){
-				System.out.println("Element found: status ok");
+				LoggingService.logInfo(MODULE_NAME,"Element found: status ok");
 				elementFound = true;
 				String containerConfig = entry.getValue();
 				JsonBuilderFactory factory = Json.createBuilderFactory(null);
@@ -69,7 +72,7 @@ public class GetConfigurationHandler {
 				builder.add("status", "okay");
 				builder.add("config", containerConfig);
 				String configData = builder.build().toString();
-				System.out.println("Config: "+ configData);
+				LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
 				ByteBuf	bytesData = ctx.alloc().buffer();
 				bytesData.writeBytes(configData.getBytes());
 				FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
@@ -80,7 +83,7 @@ public class GetConfigurationHandler {
 		}
 
 		if(elementFound == false) {
-			System.out.println("Element not found: status FORBIDDEN");
+			LoggingService.logInfo(MODULE_NAME,"Element not found: status FORBIDDEN");
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 		}
 

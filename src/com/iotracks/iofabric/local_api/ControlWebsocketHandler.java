@@ -6,6 +6,8 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.iotracks.iofabric.utils.logging.LoggingService;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,6 +21,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 
 public class ControlWebsocketHandler {
+	private final String MODULE_NAME = "Local API";
 
 	private static final Byte OPCODE_PING = 0x9; 
 	private static final Byte OPCODE_PONG = 0xA; 
@@ -31,14 +34,14 @@ public class ControlWebsocketHandler {
 	private WebSocketServerHandshaker handshaker;
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		System.out.println("In ControlWebsocketHandler : handle");
-		System.out.println("Handshake start.... ");
+		LoggingService.logInfo(MODULE_NAME,"In ControlWebsocketHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
 
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
 		String publisherId = tokens[4].trim();
-		System.out.println("Publisher Id: "+ publisherId);
+		LoggingService.logInfo(MODULE_NAME,"Publisher Id: "+ publisherId);
 
 		synchronized (this) {
 			Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
@@ -49,18 +52,18 @@ public class ControlWebsocketHandler {
 		WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req), null, true);
 		handshaker = wsFactory.newHandshaker(req);
 		if (handshaker == null) {
-			System.out.println("In handshake = null...");
+			LoggingService.logInfo(MODULE_NAME,"In handshake = null...");
 			WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
 		} else {
-			System.out.println("In handshake else.....");
+			LoggingService.logInfo(MODULE_NAME,"In handshake else.....");
 			handshaker.handshake(ctx.channel(), req);
 		}
 
-		System.out.println("Handshake end....");
+		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 
 		//Code for testing - To be removed later - start
 		if(publisherId.equals("viewer")){
-			System.out.println("Initiating the control signal...");
+			LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
 			initiateControlSignal();
 		}
 		//Code for testing - end
@@ -69,7 +72,7 @@ public class ControlWebsocketHandler {
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
 
 		if (frame instanceof PingWebSocketFrame) {
-			System.out.println("In websocket handleWebSocketFrame.....  PongWebSocketFrame... " );
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame.....  PongWebSocketFrame... " );
 			ByteBuf buffer = frame.content();
 			Byte opcode = buffer.readByte(); 
 			if(opcode == OPCODE_PING.intValue()){
@@ -82,10 +85,10 @@ public class ControlWebsocketHandler {
 		}
 
 		if (frame instanceof TextWebSocketFrame) {
-			System.out.println("In websocket handleWebSocketFrame.....  TextWebSocketFrame... " );
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame.....  TextWebSocketFrame... " );
 			ByteBuf buffer2 = frame.content();
 			Byte opcode = buffer2.readByte(); 
-			System.out.println("OPCODE Acknowledgment: " + opcode);
+			LoggingService.logInfo(MODULE_NAME,"OPCODE Acknowledgment: " + opcode);
 			if(opcode != OPCODE_ACK.intValue()){
 				if(intiateCount < 10){
 					initiateControlSignal();
@@ -93,7 +96,7 @@ public class ControlWebsocketHandler {
 					removeContextFromMap(ctx);
 				}
 			}else{
-				System.out.println("Acknowledgement received...");
+				LoggingService.logInfo(MODULE_NAME,"Acknowledgement received...");
 				intiateCount = 0;
 			}
 			return;
@@ -101,7 +104,7 @@ public class ControlWebsocketHandler {
 
 		// Check for closing frame
 		if (frame instanceof CloseWebSocketFrame) {
-			System.out.println("In websocket handleWebSocketFrame..... CloseWebSocketFrame... " + ctx);
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame..... CloseWebSocketFrame... " + ctx);
 			ctx.channel().close();
 			removeContextFromMap(ctx);
 			return;
@@ -123,29 +126,28 @@ public class ControlWebsocketHandler {
 		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = controlMap.entrySet().iterator(); it.hasNext();) {
 			Map.Entry<String,ChannelHandlerContext> e = it.next();
 			if (ctx.equals(e.getValue())) {
-				System.out.println("Context found in map...");
+				LoggingService.logInfo(MODULE_NAME,"Context found in map...");
 				return true;
 			}
 		}
-		System.out.println("Context not found in map...");
+		LoggingService.logInfo(MODULE_NAME,"Context not found in map...");
 		return false;
 	}
 
 	public void initiateControlSignal(){
-		System.out.println("In ControlWebsocketHandler : initiateControlSignal");
+		LoggingService.logInfo(MODULE_NAME,"In ControlWebsocketHandler : initiateControlSignal");
 		intiateCount++;
-		System.out.println("Count   " + intiateCount);
+		LoggingService.logInfo(MODULE_NAME,"Count   " + intiateCount);
 		//Receive control signals from field agent module
 		ChannelHandlerContext ctx = null;
 		String containerChangedId = "viewer";
 		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
 		
 		if(controlMap.containsKey(containerChangedId)){
-			System.out.println("Found container id in map...");
+			LoggingService.logInfo(MODULE_NAME,"Found container id in map...");
 			ctx = controlMap.get(containerChangedId);
 			ByteBuf buffer1 = Unpooled.buffer(126);
 			buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
-			System.out.println(ctx);
 			ctx.channel().write(new TextWebSocketFrame(buffer1));
 		}
 
