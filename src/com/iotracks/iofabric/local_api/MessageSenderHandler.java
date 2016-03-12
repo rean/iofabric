@@ -17,6 +17,7 @@ import org.bouncycastle.util.Arrays;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.sun.corba.se.impl.protocol.giopmsgheaders.MessageBase;
 
 import io.netty.buffer.ByteBuf;
@@ -31,10 +32,11 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.CharsetUtil;
 
 public class MessageSenderHandler {
+	private final String MODULE_NAME = "Local API";
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
 
-		System.out.println("In MessageSenderHandler : handle");		
+		LoggingService.logInfo(MODULE_NAME,"In MessageSenderHandler : handle");		
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
@@ -43,7 +45,7 @@ public class MessageSenderHandler {
 		}
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			System.out.println("header content type failure..." + headers.get("CONTENT_TYPE"));
+			LoggingService.logInfo(MODULE_NAME,"header content type failure..." + headers.get("CONTENT_TYPE"));
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
@@ -53,18 +55,18 @@ public class MessageSenderHandler {
 		String msgString = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
 		Message message = new Message(Arrays.copyOfRange(msgByteArray, 0, msgByteArray.length));
 		
-		System.out.println("body :"+ msgString);
+		LoggingService.logInfo(MODULE_NAME,"body :"+ msgString);
 		JsonReader reader = Json.createReader(new StringReader(msgString));
 		JsonObject jsonObject = reader.readObject();
 
 
 		if(validateMessage(jsonObject) != null){
-			System.out.println("Validation failure");
+			LoggingService.logInfo(MODULE_NAME,"Validation failure");
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
 
-		System.out.println("Validation Successful.. ");
+		LoggingService.logInfo(MODULE_NAME,"Validation Successful.. ");
 		MessageBus bus = MessageBus.getInstance();
 		Message messageWithId = bus.publishMessage(message);
 		
@@ -87,7 +89,7 @@ public class MessageSenderHandler {
 	}
 
 	private String validateMessage(JsonObject message){
-		System.out.println("In validateMessage...");
+		LoggingService.logInfo(MODULE_NAME,"In validateMessage...");
 
 		if(!message.containsKey("publisher")) return "Error: Missing input field publisher";
 		if(!message.containsKey("version")) return "Error: Missing input field version";

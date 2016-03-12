@@ -16,6 +16,7 @@ import javax.json.JsonReader;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.sun.corba.se.impl.protocol.giopmsgheaders.MessageBase;
 
 import io.netty.buffer.ByteBuf;
@@ -30,9 +31,11 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.CharsetUtil;
 
 public class MessageReceiverHandler {
+	
+	private final String MODULE_NAME = "Local API";
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		System.out.println("In MessageReceiverHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"In MessageReceiverHandler : handle");
 
 		if (req.getMethod() != POST) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
@@ -41,19 +44,19 @@ public class MessageReceiverHandler {
 		
 		HttpHeaders headers = req.headers();
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			System.out.println("header content type failure..." + headers.get("CONTENT_TYPE"));
+			LoggingService.logInfo(MODULE_NAME,"header content type failure..." + headers.get("CONTENT_TYPE"));
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
-		System.out.println("body :"+ requestBody);
+		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 		
 		if(!jsonObject.containsKey("id")){
-			System.out.println("id not found");
+			LoggingService.logInfo(MODULE_NAME,"id not found");
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 			return;
 		}
@@ -77,7 +80,7 @@ public class MessageReceiverHandler {
 		builder.add("messages", messagesArray);
 		
 		String configData = builder.build().toString();
-		System.out.println("Config: "+ configData);
+		LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
 		ByteBuf	bytesData = ctx.alloc().buffer();
 		bytesData.writeBytes(configData.getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
