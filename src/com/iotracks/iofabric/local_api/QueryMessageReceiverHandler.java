@@ -67,7 +67,7 @@ public class QueryMessageReceiverHandler {
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
 		
-		MessageBus bus = new MessageBus();
+		MessageBus bus = MessageBus.getInstance();
 		//TODO: change the method to QueryMessages
 		List<Message> messageList = bus.getMessages(receiverId);
 		int msgCount = 0;

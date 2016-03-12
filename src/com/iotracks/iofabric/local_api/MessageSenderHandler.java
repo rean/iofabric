@@ -65,7 +65,7 @@ public class MessageSenderHandler {
 		}
 
 		System.out.println("Validation Successful.. ");
-		MessageBus bus = new MessageBus();
+		MessageBus bus = MessageBus.getInstance();
 		Message messageWithId = bus.publishMessage(message);
 		
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
