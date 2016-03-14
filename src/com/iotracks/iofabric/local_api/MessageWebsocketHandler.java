@@ -2,24 +2,16 @@ package com.iotracks.iofabric.local_api;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.HOST;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.json.Json;
-import javax.json.JsonBuilderFactory;
-import javax.json.JsonObjectBuilder;
-
 import org.bouncycastle.util.Arrays;
 
-import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
-import com.iotracks.iofabric.message_bus.MessagePublisher;
 import com.iotracks.iofabric.utils.BytesUtil;
-import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -76,7 +68,7 @@ public class MessageWebsocketHandler {
 		}
 
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
-		
+
 		sendRealTimeMessage(ctx);
 		return;
 	}
@@ -113,9 +105,6 @@ public class MessageWebsocketHandler {
 			if(opcode == OPCODE_MSG.intValue()){
 				int length = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5));
 				LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode + "Length: " + length);
-				//Only as find in the length
-				//To check for if length is greater then what to do.
-				//Check if getting right message object or not
 				Message message = new Message(Arrays.copyOfRange(byteArray, 5, byteArray.length));
 				LoggingService.logInfo(MODULE_NAME,"Right message format....");
 
