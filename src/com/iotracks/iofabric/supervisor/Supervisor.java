@@ -74,7 +74,7 @@ public class Supervisor {
 		LoggingService.logInfo(MODULE_NAME, "starting field agent");
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.FIELD_AGENT, ModulesStatus.STARTING);
-		FieldAgent fieldAgent = new FieldAgent();
+		FieldAgent fieldAgent = FieldAgent.getInstance();
 		fieldAgent.start();
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.FIELD_AGENT, ModulesStatus.RUNNING);

@@ -35,7 +35,7 @@ public class ProcessManager implements Runnable {
 	private final String MODULE_NAME = "Process Manager";
 	private final int MONITOR_CONTAINERS_STATUS_FREQ_SECONDS = 10;
 	private DockerClient dockerClient;
-	private final ElementManager elementManager = new ElementManager();
+	private ElementManager elementManager;
 
 	private boolean init() {
 		if (!dockerConnected()) { 
@@ -206,6 +206,8 @@ public class ProcessManager implements Runnable {
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to connect to docker daemon");
 		}
+		
+		elementManager = ElementManager.getInstance();
 		
 		LoggingService.logInfo(MODULE_NAME, "initializing...");
 		while (!init()) {

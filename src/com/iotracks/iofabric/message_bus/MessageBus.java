@@ -10,8 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.hornetq.utils.IDGenerator;
-
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
@@ -32,6 +30,7 @@ public class MessageBus {
 	private MessageIdGenerator idGenerator;
 	private ScheduledExecutorService scheduler;
 	private static MessageBus instance;
+	private ElementManager elementManager;
 	
 	private MessageBus() {
 	}
@@ -129,7 +128,7 @@ public class MessageBus {
 	}
 	
 	public synchronized void updateRoutes() {
-		Map<String, Route> newRoutes = ElementManager.getRoutes();
+		Map<String, Route> newRoutes = elementManager.getRoutes();
 		List<String> newPublishers = new ArrayList<>();
 		List<String> newReceivers = new ArrayList<>();
 		if (newRoutes != null) {
@@ -230,6 +229,9 @@ public class MessageBus {
 	public void start() {
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.MESSAGE_BUS, ModulesStatus.STARTING);
 		
+		elementManager = ElementManager.getInstance();
+		elementManager.loadFromApi();
+		
 		messageBusServer = new MessageBusServer();
 		try {
 			messageBusServer.startServer();
@@ -243,7 +245,7 @@ public class MessageBus {
 			return;
 		}
 		
-		routes = ElementManager.getRoutes();
+		routes = elementManager.getRoutes();
 		
 		init();
 
@@ -266,7 +268,6 @@ public class MessageBus {
 	
 	public static void main(String[] args) throws Exception {
 		Configuration.loadConfig();
-		new ElementManager().loadFromApi();
 		try {
 			LoggingService.setupLogger();
 		} catch (Exception e) {
