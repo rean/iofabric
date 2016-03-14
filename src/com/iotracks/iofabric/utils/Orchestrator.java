@@ -15,7 +15,7 @@ import javax.json.JsonObject;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class Orchestrator {
-	private String apiUrl = "https://iotracks.com/api/v1/";
+	private String apiUrl = "http://127.0.0.1:12345/api/v2/";
 	
 	public Orchestrator() {
 	}

@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.json.JsonObject;
 
 import com.iotracks.iofabric.element.ElementManager;
+import com.iotracks.iofabric.field_agent.controller.APIServer;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -140,5 +141,8 @@ public class FieldAgent {
 	}
 	
 	public static void main(String[] args) {
+		APIServer server = new APIServer();
+		server.start();
+		while (true);
 	}
 }
