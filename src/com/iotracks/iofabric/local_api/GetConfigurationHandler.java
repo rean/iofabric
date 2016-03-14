@@ -24,24 +24,27 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.CharsetUtil;
 
 public class GetConfigurationHandler {
 	private final String MODULE_NAME = "Local API";
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In GetConfigurationHandler: handle");
+		LoggingService.logInfo(MODULE_NAME,"In Get Configuration Handler: handle");
 
 		if (req.getMethod() != POST) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
 			return;
 		}
 
 		HttpHeaders headers = req.headers();
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			LoggingService.logInfo(MODULE_NAME,"header content type failure..." + headers.get("CONTENT_TYPE"));
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+			String errorMsg = " Incorrect content/data ";
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
 			return;
 		}
 
@@ -50,22 +53,20 @@ public class GetConfigurationHandler {
 		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
-
-		if(!jsonObject.containsKey("id")){
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+		if(getErrorMessageInReq(jsonObject) != null){
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+			String errorMsg = getErrorMessageInReq(jsonObject);
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
 			return;
 		}
 
-		String publisherId = jsonObject.getString("id");
-		LoggingService.logInfo(MODULE_NAME,"In GetConfigurationHandler: handle - Publisher " + publisherId);
+		String receiverId = jsonObject.getString("id");
+		LoggingService.logInfo(MODULE_NAME,"In GetConfigurationHandler: handle - Publisher " + receiverId);
 
-		boolean elementFound = false;		
-
-		//Element found
 		for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
-			if(entry.getKey().equals(publisherId)){
+			if(entry.getKey().equals(receiverId)){
 				LoggingService.logInfo(MODULE_NAME,"Element found: status ok");
-				elementFound = true;
 				String containerConfig = entry.getValue();
 				JsonBuilderFactory factory = Json.createBuilderFactory(null);
 				JsonObjectBuilder builder = factory.createObjectBuilder();
@@ -79,19 +80,27 @@ public class GetConfigurationHandler {
 				HttpHeaders.setContentLength(res, bytesData.readableBytes());
 				sendHttpResponse( ctx, req, res); 
 				return;
+			}else{
+				ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+				String errorMsg = "No configuration found for the id" + receiverId;
+				LoggingService.logInfo(MODULE_NAME,"Element not found");
+				errorMsgBytes.writeBytes(errorMsg.getBytes());
+				sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+				return;
 			}
-		}
-
-		if(elementFound == false) {
-			LoggingService.logInfo(MODULE_NAME,"Element not found: status FORBIDDEN");
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
 		}
 
 	}
 
+	private String getErrorMessageInReq(JsonObject jsonObject){
+		String error = null;
+		if(!jsonObject.containsKey("id")) return " Id not found ";
+		if(jsonObject.getString("id").equals(null) || jsonObject.getString("id").trim().equals("")) return " Id value not found ";
+		return error;
+	}
+
 	private static void sendHttpResponse(
-			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
-		// Generate an error page if response getStatus code is not OK (200).
+			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) throws Exception{
 		if (res.getStatus().code() != 200) {
 			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
 			res.content().writeBytes(buf);
@@ -99,7 +108,6 @@ public class GetConfigurationHandler {
 			HttpHeaders.setContentLength(res, res.content().readableBytes());
 		}
 
-		// Send the response and close the connection if necessary.
 		ChannelFuture f = ctx.channel().writeAndFlush(res);
 		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
 			f.addListener(ChannelFutureListener.CLOSE);

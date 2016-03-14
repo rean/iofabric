@@ -1,15 +1,26 @@
 package com.iotracks.iofabric.local_api;
 
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import io.netty.util.CharsetUtil;
 
 
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
@@ -36,7 +47,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	}
 
 	@Override
-	public void channelReadComplete(ChannelHandlerContext ctx) {
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception{
 		LoggingService.logInfo(MODULE_NAME, "In LocalApiServerHandler: Channel read complete");
 		ctx.flush();
 	}
@@ -71,6 +82,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get queried messages" );
 			QueryMessageReceiverHandler queryReceiver = new QueryMessageReceiverHandler();
 			queryReceiver.handle(ctx, req);
+			return;
 		}
 
 		String uri = req.getUri();
@@ -82,17 +94,24 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Open control websocket" );
 			ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
 			controlSocket.handle(ctx, req);
+			return;
 		}
 
 		if (url.equals("/v2/message/socket")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Open message websocket" );
 			MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
 			messageSocket.handle(ctx, req);
+			return;
 		}
-
+		
+		ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+		String errorMsg = " Request not found ";
+		errorMsgBytes.writeBytes(errorMsg.getBytes());
+		sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
+		return;
 	}
 
-	private String findContextMapName(ChannelHandlerContext ctx){
+	private String findContextMapName(ChannelHandlerContext ctx) throws Exception{
 		String mapName = null;
 
 		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
@@ -114,6 +133,21 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		}
 
 		return mapName;
+	}
+	
+	private static void sendHttpResponse(
+			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) throws Exception{
+		if (res.getStatus().code() != 200) {
+			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
+			res.content().writeBytes(buf);
+			buf.release();
+			HttpHeaders.setContentLength(res, res.content().readableBytes());
+		}
+
+		ChannelFuture f = ctx.channel().writeAndFlush(res);
+		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
+			f.addListener(ChannelFutureListener.CLOSE);
+		}
 	}
 
 }

@@ -1,15 +1,17 @@
 package com.iotracks.iofabric.local_api;
 
+import java.net.InetAddress;
+
 public class LocalApiStatus {
-	private String currentIpAddress;
+	private InetAddress currentIpAddress;
 	private int openConfigSocketsCount;
 	private int openMessageSocketsCount;
 	
-	public String getCurrentIpAddress() {
+	public InetAddress getCurrentIpAddress() {
 		return currentIpAddress;
 	}
 	
-	public LocalApiStatus setCurrentIpAddress(String currentIpAddress) {
+	public LocalApiStatus setCurrentIpAddress(InetAddress currentIpAddress) {
 		this.currentIpAddress = currentIpAddress;
 		return this;
 	}
