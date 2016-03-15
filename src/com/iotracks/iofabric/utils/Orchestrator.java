@@ -5,25 +5,28 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.net.ssl.HttpsURLConnection;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class Orchestrator {
 	private String apiUrl = "http://127.0.0.1:12345/api/v2/";
+	private String instanceId;
+	private String accessToken;
 	
 	public Orchestrator() {
+		instanceId = Configuration.getInstanceId();
+		accessToken = Configuration.getAccessToken();
 	}
 
 	public boolean ping() {
 		try {
-			JsonObject data = JSON.getJSON(apiUrl + "status");
-			return data.get("status").equals("ok");
+			JsonObject result = JSON.getJSON(apiUrl + "status");
+			return result.getString("status").equals("ok");
 		} catch (Exception e) {
 			return false;
 		} 
@@ -39,6 +42,19 @@ public class Orchestrator {
 		return result;
 	}
 	
+	private HttpURLConnection getConnection(String url, boolean secure) {
+		try {
+			HttpURLConnection httpRequest;
+			if (secure) 
+				httpRequest = (HttpsURLConnection) new URL(url).openConnection();
+			else
+				httpRequest = (HttpURLConnection) new URL(url).openConnection();
+			return httpRequest;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
 	public JsonObject doCommand(String command, Map<String, Object> queryParams, Map<String, Object> postParams) throws Exception {
 		JsonObject result = null;
 		
@@ -46,8 +62,8 @@ public class Orchestrator {
 		
 		uri.append("instance/")
 			.append(command)
-			.append("/id/").append(Configuration.getInstanceId())
-			.append("/token/").append(Configuration.getAccessToken());
+			.append("/id/").append(instanceId)
+			.append("/token/").append(accessToken);
 		
 		if (queryParams != null)
 			queryParams.entrySet().forEach(entry -> {
@@ -69,9 +85,8 @@ public class Orchestrator {
 			});
 		byte[] postDataBytes = postData.toString().getBytes();
 		
-		HttpURLConnection httpRequest;
 		try {
-			httpRequest = (HttpURLConnection) new URL(uri.toString()).openConnection();
+			HttpURLConnection httpRequest = getConnection(uri.toString(), false);
 			httpRequest.setRequestMethod("POST");
 			httpRequest.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 			httpRequest.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -85,30 +100,5 @@ public class Orchestrator {
 		
 		return result;
 	}
-	
-	public static void main(String[] args) throws Exception {
-		Orchestrator orchestrator = new Orchestrator();
-		Configuration.loadConfig();
-		
-		Map<String, Object> query = new HashMap<>();
-		query.put("id", "qk7PnPVpDTGmx3zWNR8zNP34");
-		query.put("token", "0b51a84b066a049228ea3e0b14f424720842c132153b2fa7091c21a1129534d4");
-		
-		Map<String, Object> post = new HashMap<>();
-		post.put("daemonstatus", "running");
-		post.put("daemonlaststart", 1234567890);
-		post.put("cpuusage", 24.71);
-		
-		JsonObject result = orchestrator.doCommand("containerlist", query, null);
-		JsonArray listArray = result.getJsonArray("containerlist");
-		for (int i = 0; i < listArray.size(); i++) {
-			System.out.println(i);
-			JsonObject listItem = listArray.getJsonObject(i);
-			listItem.forEach((key, value) -> {
-				System.out.println("\t" + key + " : " + value.toString());
-			});
-			System.out.println();
-		}
-		
-	}
+
 }

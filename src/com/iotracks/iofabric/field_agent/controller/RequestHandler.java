@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -62,6 +63,7 @@ public class RequestHandler implements HttpHandler {
 	
 	@Override
 	public void handle(HttpExchange ex) throws IOException {
+		LoggingService.logInfo("CONTROLLER", ex.getRequestURI().toString());
 		String response = responseFromFile(); 
 		ex.sendResponseHeaders(200, response.length());
 		try {

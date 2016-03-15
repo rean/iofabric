@@ -19,6 +19,10 @@ public class Constants {
 		FAILED_VERIFICATION, FAILED_LOGIN, CONNECTED
 	}
 
+	public enum ContollerStatus {
+		NOT_PROVISIONED, BROKEN, OK
+	}
+	
 	public static final int NUMBER_OF_MODULES = 6;
 
 	public static final int RESOURCE_CONSUMPTION_MANAGER = 0;

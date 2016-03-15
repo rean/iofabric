@@ -75,7 +75,7 @@ public class CommandLineParser {
 			}
 			String provisionKey = args[1];
 			result.append("Provisioning with key \"" + provisionKey + "\"...");
-			result.append(new FieldAgent().doProvisioning(provisionKey));
+			result.append(FieldAgent.getInstance().doProvisioning(provisionKey));
 
 			return result.toString();
 		}

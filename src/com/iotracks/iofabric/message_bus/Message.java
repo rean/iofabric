@@ -1,11 +1,18 @@
 package com.iotracks.iofabric.message_bus;
 
+import java.io.StringReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 import javax.json.Json;
+import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 
 import org.bouncycastle.util.Arrays;
 
 import com.iotracks.iofabric.utils.BytesUtil;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 public class Message {
@@ -58,7 +65,58 @@ public class Message {
 	// from json
 	public Message(JsonObject json) {
 		super();
-		// TODO: from json
+		if (json.containsKey("id"))
+			setId(json.getString("id"));
+		if (json.containsKey("tag"))
+			setTag(json.getString("tag"));
+		if (json.containsKey("groupid"))
+			setMessageGroupId(json.getString("groupid"));
+		if (json.containsKey("sequencenumber"))
+			setSequenceNumber(json.getInt("sequencenumber"));
+		if (json.containsKey("sequencetotal"))
+			setSequenceTotal(json.getInt("sequencetotal"));
+		if (json.containsKey("priority"))
+			setPriority((byte) json.getInt("priority"));
+		if (json.containsKey("timestamp"))
+			setTimestamp(json.getJsonNumber("timestamp").longValue());
+		if (json.containsKey("publisher"))
+			setPublisher(json.getString("publisher"));
+		if (json.containsKey("authid"))
+			setAuthIdentifier(json.getString("authid"));
+		if (json.containsKey("authgroup"))
+			setAuthGroup(json.getString("authgroup"));
+		if (json.containsKey("chainposition"))
+			setChainPosition(json.getJsonNumber("chainposition").longValue());
+		if (json.containsKey("hash"))
+			setHash(json.getString("hash"));
+		if (json.containsKey("previoushash"))
+			setPreviousHash(json.getString("previoushash"));
+		if (json.containsKey("nonce"))
+			setNonce(json.getString("nonce"));
+		if (json.containsKey("difficultytarget"))
+			setDifficultyTarget(json.getInt("difficultytarget"));
+		if (json.containsKey("infotype"))
+			setInfoType(json.getString("infotype"));
+		if (json.containsKey("infoformat"))
+			setInfoFormat(json.getString("infoformat"));
+		if (json.containsKey("contextdata"))
+			if (getInfoFormat().equalsIgnoreCase("base64")) {
+				try {
+					byte[] decoded = Base64.getDecoder().decode(json.getString("contextdata"));
+					setContextData(decoded);
+				} catch (Exception e) {
+					LoggingService.logWarning("Message Constructor", "not base 64!");
+				}
+			}
+		if (json.containsKey("contentdata"))
+			if (getInfoFormat().equalsIgnoreCase("base64")) {
+				try {
+					byte[] decoded = Base64.getDecoder().decode(json.getString("contentdata"));
+					setContentData(decoded);
+				} catch (Exception e) {
+					LoggingService.logWarning("Message Constructor", "not base 64!");
+				}
+			}
 	}
 	
 	// from rawBytes

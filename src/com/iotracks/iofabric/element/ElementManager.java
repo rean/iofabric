@@ -13,11 +13,29 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class ElementManager {
 
-	private static List<Element> elements = new ArrayList<>();
-	private static Map<String, Route> routes = new HashMap<>();
-	private static Map<String, String> configs = new HashMap<>();
-	private static List<Registry> registries = new ArrayList<>();
+	private List<Element> elements;
+	private Map<String, Route> routes;
+	private Map<String, String> configs;
+	private List<Registry> registries;
+	private static ElementManager instance = null;
 
+	private ElementManager() {
+		elements = new ArrayList<>();
+		routes = new HashMap<>();
+		configs = new HashMap<>();
+		registries = new ArrayList<>();
+	}
+	
+	public static ElementManager getInstance() {
+		if (instance == null) {
+			synchronized (ElementManager.class) {
+				if (instance == null)
+					instance = new ElementManager();
+			}
+		}
+		return instance;
+	}
+	
 	public void loadFromApi() {
 		synchronized (ElementManager.class) {
 			while (!elements.isEmpty())
@@ -34,19 +52,19 @@ public class ElementManager {
 		}
 	}
 
-	public static Map<String, Route> getRoutes() {
+	public Map<String, Route> getRoutes() {
 		synchronized (ElementManager.class) {
 			return routes;
 		}
 	}
 
-	public static Map<String, String> getConfigs() {
+	public Map<String, String> getConfigs() {
 		synchronized (ElementManager.class) {
 			return configs;
 		}
 	}
 
-	public static List<Registry> getRegistries() {
+	public List<Registry> getRegistries() {
 		synchronized (ElementManager.class) {
 			return registries;
 		}
@@ -69,7 +87,7 @@ public class ElementManager {
 				r.setUserName(registry.getString("username"));
 				r.setPassword(registry.getString("password"));
 				r.setUserEmail(registry.getString("useremail"));
-				ElementManager.registries.add(r);
+				this.registries.add(r);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -86,7 +104,7 @@ public class ElementManager {
 				String id = config.getString("id");
 				String configString = config.getString("config");
 				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
-				ElementManager.configs.put(id, configString);
+				this.configs.put(id, configString);
 				for (Element element : elements)
 					if (element.getElementId().equals(id)) {
 						element.setLastUpdated(lastUpdated);
@@ -116,7 +134,7 @@ public class ElementManager {
 					String receiver = receivers.getString(j);
 					elementRoute.getReceivers().add(receiver);
 				}
-				ElementManager.routes.put(container, elementRoute);
+				this.routes.put(container, elementRoute);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -155,6 +173,26 @@ public class ElementManager {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void setRegistries(List<Registry> registries) {
+		synchronized (ElementManager.class) {
+			this.registries = registries;
+		}
+	}
+
+	public void setConfigs(Map<String, String> configs) {
+		synchronized (ElementManager.class) {
+			this.configs = configs;
+		}
+	}
+
+	public void setElements(List<Element> elements) {
+		this.elements = elements;
+	}
+
+	public void setRoutes(Map<String, Route> routes) {
+		this.routes = routes;
 	}
 
 }
