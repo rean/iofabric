@@ -22,7 +22,7 @@ public class LocalApi {
 	
 	public static void main(String[] args) throws Exception {
 		Configuration.loadConfig();
-		new ElementManager().loadFromApi();
+		ElementManager.getInstance().loadFromApi();
 		
 		LoggingService.logInfo("Main", "configuration loaded.");
 		MessageBus messageBus = MessageBus.getInstance();
@@ -63,7 +63,7 @@ public class LocalApi {
 
 	public void retrieveContainerConfig() {
 		try {
-			ConfigurationMap.containerConfigMap = ElementManager.getConfigs();
+			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to retrieve containers configuration\n" + e.getMessage());
 		}	  

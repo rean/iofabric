@@ -53,6 +53,7 @@ public class GetConfigurationHandler {
 		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
+		
 		if(getErrorMessageInReq(jsonObject) != null){
 			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = getErrorMessageInReq(jsonObject);

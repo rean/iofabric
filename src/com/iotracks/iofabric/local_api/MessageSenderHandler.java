@@ -53,14 +53,14 @@ public class MessageSenderHandler {
 		}
 
 		ByteBuf msgBytes = req.content();
-		byte[] msgByteArray = msgBytes.array();
 		String msgString = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
 		
 		LoggingService.logInfo(MODULE_NAME,"body :"+ msgString);
 		JsonReader reader = Json.createReader(new StringReader(msgString));
 		JsonObject jsonObject = reader.readObject();
 
-		if(!validateMessage(jsonObject).equals(null)){
+		if(validateMessage(jsonObject) != null){
+			LoggingService.logInfo(MODULE_NAME,"Validation Error...");
 			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = validateMessage(jsonObject);
 			errorMsgBytes.writeBytes(errorMsg.getBytes());
@@ -71,8 +71,10 @@ public class MessageSenderHandler {
 		//Publish message on message bus
 		LoggingService.logInfo(MODULE_NAME,"Message validation successful.. ");
 		MessageBus bus = MessageBus.getInstance();
-		Message message = new Message(Arrays.copyOfRange(msgByteArray, 0, msgByteArray.length));
+		Message message = new Message(jsonObject);
 		Message messageWithId = bus.publishMessage(message);
+		
+		LoggingService.logInfo(MODULE_NAME,"id " + messageWithId.getId() + "timestamp" + messageWithId.getTimestamp());
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
@@ -88,22 +90,20 @@ public class MessageSenderHandler {
 
 		sendHttpResponse( ctx, req, res); 
 		return;
-
-
 	}
 
 	private String validateMessage(JsonObject message) throws Exception{
 		LoggingService.logInfo(MODULE_NAME,"In validateMessage...");
 
-		if(!message.containsKey("publisher")) return "Error: Missing input field publisher";
-		if(!message.containsKey("version")) return "Error: Missing input field version";
-		if(!message.containsKey("infotype")) return "Error: Missing input field infotype";
-		if(!message.containsKey("infoformat")) return "Error: Missing input field infoformat";
-		if(!message.containsKey("contentdata")) return "Error: Missing input field contentdata";
+		if(!message.containsKey("publisher")) return "Error: Missing input field publisher ";
+		if(!message.containsKey("version")) return "Error: Missing input field version ";
+		if(!message.containsKey("infotype")) return "Error: Missing input field infotype ";
+		if(!message.containsKey("infoformat")) return "Error: Missing input field infoformat ";
+		if(!message.containsKey("contentdata")) return "Error: Missing input field contentdata ";
 
-		if((message.getString("publisher").trim().equals(""))) return "Error: Missing input field value publisher";
-		if((message.getString("infotype").trim().equals(""))) return "Error: Missing input field value infotype";
-		if((message.getString("infoformat").trim().equals(""))) return "Error: Missing input field value infoformat";
+		if((message.getString("publisher").trim().equals(""))) return "Error: Missing input field value publisher ";
+		if((message.getString("infotype").trim().equals(""))) return "Error: Missing input field value infotype ";
+		if((message.getString("infoformat").trim().equals(""))) return "Error: Missing input field value infoformat ";
 
 		String version = message.get("version").toString();
 		if(!(version.matches("[0-9]+"))){
@@ -113,35 +113,35 @@ public class MessageSenderHandler {
 		if(message.containsKey("sequencenumber")){
 			String sNum = message.get("sequencenumber").toString();
 			if(!(sNum.matches("[0-9]+"))){
-				return "Error: Invalid  value for field sequence number";
+				return "Error: Invalid  value for field sequence number ";
 			}
 		}
 
 		if(message.containsKey("sequencetotal")){
 			String stot = message.get("sequencetotal").toString();
 			if(!(stot.matches("[0-9]+"))){
-				return "Error: Invalid  value for field sequence total";
+				return "Error: Invalid  value for field sequence total ";
 			}
 		}
 
 		if(message.containsKey("priority")){
 			String priority = message.get("priority").toString();
 			if(!(priority.matches("[0-9]+"))){
-				return "Error: Invalid  value for field priority";
+				return "Error: Invalid  value for field priority ";
 			}
 		}
 
 		if(message.containsKey("chainposition")){
 			String chainPos = message.get("chainposition").toString();
 			if(!(chainPos.matches("[0-9]+"))){
-				return "Error: Invalid  value for field chain position";
+				return "Error: Invalid  value for field chain position ";
 			}
 		}
 
 		if(message.containsKey("difficultytarget")){
 			String difftarget = message.get("difficultytarget").toString();
-			if(!(difftarget.matches("[0-9]+"))){
-				return "Error: Invalid  value for field difficulty target";
+			if(!(difftarget.matches("[0-9]*.?[0-9]*"))){
+				return "Error: Invalid  value for field difficulty target ";
 			}
 		}
 

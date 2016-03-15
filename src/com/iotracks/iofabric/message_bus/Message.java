@@ -17,7 +17,7 @@ import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 public class Message {
 	private final short VERSION = 4; 
-	
+
 	private String id;
 	private String tag;
 	private String messageGroupId;
@@ -61,7 +61,7 @@ public class Message {
 		contentData = null;
 		contextData = null;		
 	}
-	
+
 	// from json
 	public Message(JsonObject json) {
 		super();
@@ -118,25 +118,25 @@ public class Message {
 				}
 			}
 	}
-	
+
 	// from rawBytes
 	public Message(byte[] rawBytes) {
 		super();
-		
+
 		version = BytesUtil.bytesToShort(Arrays.copyOfRange(rawBytes, 0, 2));
 		if (version != VERSION) {
 			// TODO: incompatible version
 			return;
 		}
-		
+
 		int pos = 33;
-		
+
 		int size = rawBytes[2];
 		if (size > 0) {
 			id = BytesUtil.bytesToString(Arrays.copyOfRange(rawBytes, pos, pos + size));
 			pos += size;
 		}
-		
+
 		size = BytesUtil.bytesToShort(Arrays.copyOfRange(rawBytes, 3, 5));
 		if (size > 0) {
 			tag = BytesUtil.bytesToString(Arrays.copyOfRange(rawBytes, pos, pos + size));
@@ -244,25 +244,25 @@ public class Message {
 			contentData = Arrays.copyOfRange(rawBytes, pos, pos + size);
 		}
 	}
-	
+
 	// from rawBytes
 	public Message(byte[] header, byte[] data) {
 		super();
-		
+
 		version = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 0, 2));
 		if (version != VERSION) {
 			// TODO: incompatible version
 			return;
 		}
-		
+
 		int pos = 0;
-		
+
 		int size = header[2];
 		if (size > 0) {
 			id = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
 			pos += size;
 		}
-		
+
 		size = BytesUtil.bytesToShort(Arrays.copyOfRange(header, 3, 5));
 		if (size > 0) {
 			tag = BytesUtil.bytesToString(Arrays.copyOfRange(data, pos, pos + size));
@@ -370,7 +370,7 @@ public class Message {
 			contentData = Arrays.copyOfRange(data, pos, pos + size);
 		}
 	}
-	
+
 	public String getId() {
 		return id;
 	}
@@ -488,14 +488,14 @@ public class Message {
 	public void setContentData(byte[] contentData) {
 		this.contentData = contentData;
 	}
-	
+
 	private int getLength(String str) {
 		if (str == null)
 			return 0;
 		else
 			return str.length();
 	}
-	
+
 	public byte[] getBytes() throws Exception {
 		ByteOutputStream headerBaos = new ByteOutputStream(); 
 		ByteOutputStream dataBaos = new ByteOutputStream(); 
@@ -508,19 +508,19 @@ public class Message {
 			headerBaos.write((byte) (len & 0xff));
 			if (len > 0)
 				dataBaos.write(BytesUtil.stringToBytes(getId()));
-			
+
 			// tag
 			len = getLength(getTag());
 			headerBaos.write(BytesUtil.shortToBytes((short) (len & 0xffff)));
 			if (len > 0)
 				dataBaos.write(BytesUtil.stringToBytes(getTag()));
-			
+
 			//groupid
 			len = getLength(getMessageGroupId());
 			headerBaos.write((byte) (len & 0xff));
 			if (len > 0)
 				dataBaos.write(BytesUtil.stringToBytes(getMessageGroupId()));
-			
+
 			// seq no
 			if (getSequenceNumber() == 0)
 				headerBaos.write(0);
@@ -528,7 +528,7 @@ public class Message {
 				dataBaos.write(BytesUtil.integerToBytes(getSequenceNumber()));
 				headerBaos.write(4);
 			}
-			
+
 			// seq total
 			if (getSequenceTotal() == 0)
 				headerBaos.write(0);
@@ -536,8 +536,8 @@ public class Message {
 				dataBaos.write(BytesUtil.integerToBytes(getSequenceTotal()));
 				headerBaos.write(4);
 			}
-			
-			
+
+
 			// priority
 			if (getPriority() == 0)
 				headerBaos.write(0);
@@ -545,7 +545,7 @@ public class Message {
 				headerBaos.write(1);
 				dataBaos.write(getPriority());
 			}
-			
+
 			//timestamp
 			if (getTimestamp() == 0)
 				headerBaos.write(0);
@@ -553,7 +553,7 @@ public class Message {
 				headerBaos.write(8);
 				dataBaos.write(BytesUtil.longToBytes(getTimestamp()));
 			}
-			
+
 			// publisher
 			len = getLength(getPublisher());
 			headerBaos.write((byte) (len & 0xff));
@@ -571,7 +571,7 @@ public class Message {
 			headerBaos.write(BytesUtil.shortToBytes((short) (len & 0xffff)));
 			if (len > 0)
 				dataBaos.write(BytesUtil.stringToBytes(getAuthGroup()));
-			
+
 			// chainPosition
 			if (getChainPosition() == 0)
 				headerBaos.write(0);
@@ -579,7 +579,7 @@ public class Message {
 				headerBaos.write(8);
 				dataBaos.write(BytesUtil.longToBytes(getChainPosition()));
 			}
-			
+
 			// hash
 			len = getLength(getHash());
 			headerBaos.write(BytesUtil.shortToBytes((short) (len & 0xffff)));
@@ -597,7 +597,7 @@ public class Message {
 			headerBaos.write(BytesUtil.shortToBytes((short) (len & 0xffff)));
 			if (len > 0) 
 				dataBaos.write(BytesUtil.stringToBytes(getNonce()));
-				
+
 			// difficultyTarget
 			if (getDifficultyTarget() == 0)
 				headerBaos.write(0);
@@ -617,7 +617,7 @@ public class Message {
 			headerBaos.write((byte) (len & 0xff));
 			if (len > 0)
 				dataBaos.write(BytesUtil.stringToBytes(getInfoFormat()));
-			
+
 			// contextData
 			if (getContextData() == null)
 				headerBaos.write(BytesUtil.integerToBytes(0));
@@ -625,7 +625,7 @@ public class Message {
 				headerBaos.write(BytesUtil.integerToBytes(getContextData().length));
 				dataBaos.write(getContextData());
 			}
-			
+
 			// contentData
 			if (getContentData() == null)
 				headerBaos.write(BytesUtil.integerToBytes(0));
@@ -645,12 +645,12 @@ public class Message {
 			dataBaos.close();
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		JsonObject result = Json.createObjectBuilder().add("id", id == null ? "" : id)
 				.add("tag", tag == null ? "" : tag)
-				.add("messageGroupId", messageGroupId)
+				.add("messageGroupId", messageGroupId == null ? "" : messageGroupId)
 				.add("sequenceNumber", sequenceNumber)
 				.add("sequenceTotal", sequenceTotal)
 				.add("priority", priority)
@@ -666,7 +666,7 @@ public class Message {
 				.add("difficultyTarget", difficultyTarget)
 				.add("informationType", infoType == null ? "" : infoType)
 				.add("informationFormat", infoFormat == null ? "" : infoFormat)
-				.add("contextData", BytesUtil.byteArrayToString(contextData))
+				.add("contextData", contextData == null ? "" : BytesUtil.byteArrayToString(contextData))
 				.add("contentData", BytesUtil.byteArrayToString(contentData))
 				.build();
 
