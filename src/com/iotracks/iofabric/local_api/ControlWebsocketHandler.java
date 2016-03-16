@@ -11,10 +11,10 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
@@ -90,7 +90,7 @@ public class ControlWebsocketHandler {
 			return;
 		}
 
-		if (frame instanceof BinaryWebSocketFrame) {
+		if (frame instanceof TextWebSocketFrame) {
 			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame: Text Frame " );
 			ByteBuf buffer2 = frame.content();
 			if (buffer2.readableBytes() == 1) {
@@ -164,7 +164,7 @@ public class ControlWebsocketHandler {
 			ctx = controlMap.get(containerChangedId);
 			ByteBuf buffer1 = ctx.alloc().buffer();
 			buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
-			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+			ctx.channel().write(new TextWebSocketFrame(buffer1));
 		}
 
 	}

@@ -4,6 +4,7 @@ import java.net.URI;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
@@ -14,6 +15,7 @@ import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -21,7 +23,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 public class WebSocketClient {
 
-	static final String URL = System.getProperty("url", "ws://127.0.0.1:54322/v2/message/socket/id/viewer");
+	static final String URL = System.getProperty("url", "ws://127.0.0.1:54321/v2/message/socket/id/viewer");
 
 	public static void main(String[] args) throws Exception {
 		URI uri = new URI(URL);
@@ -87,4 +89,3 @@ public class WebSocketClient {
 		//		}
 	}
 }
-
