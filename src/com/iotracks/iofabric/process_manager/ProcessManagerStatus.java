@@ -3,9 +3,13 @@ package com.iotracks.iofabric.process_manager;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+
+import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.utils.Constants.DockerStatus;
-import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 
 public class ProcessManagerStatus {
@@ -21,6 +25,33 @@ public class ProcessManagerStatus {
 		runningElementsCount = 0;
 		dockerStatus = DockerStatus.RUNNING;
 		registriesCount = 0;
+	}
+	
+	public String getJsonElementsStatus() {
+		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+		elementsStatus.entrySet().forEach(entry -> {
+			ElementStatus status = entry.getValue();
+			JsonObjectBuilder objectBuilder = Json.createObjectBuilder()
+					.add("id", entry.getKey())
+					.add("status", status.getStatus().toString())
+					.add("starttime", status.getStartTime())
+					.add("operatingduration", status.getOperatingDuration());
+			arrayBuilder.add(objectBuilder);
+					
+		});
+		return arrayBuilder.toString();
+	}
+
+	public String getJsonRegistriesStatus() {
+		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+		registriesStatus.entrySet().forEach(entry -> {
+			JsonObjectBuilder objectBuilder = Json.createObjectBuilder()
+					.add("url", entry.getKey().getUrl())
+					.add("linkstatus", entry.getValue().toString());
+			arrayBuilder.add(objectBuilder);
+					
+		});
+		return arrayBuilder.toString();
 	}
 
 	public int getRunningElementsCount() {
@@ -46,17 +77,19 @@ public class ProcessManagerStatus {
 		return this;
 	}
 
-	public ElementStatus getElementsStatus(String elementId) {
-		synchronized (elementsStatus) {
-			return elementsStatus.get(elementId);
-		}
-	}
-
 	public ProcessManagerStatus setElementsStatus(String elementId, ElementStatus status) {
 		synchronized (elementsStatus) {
 			this.elementsStatus.put(elementId, status);
 		}
 		return this;
+	}
+	
+	public ElementStatus getElementStatus(String elementId) {
+		synchronized (elementsStatus) {
+			if (!this.elementsStatus.containsKey(elementId))
+				this.elementsStatus.put(elementId, new ElementStatus());
+		}
+		return elementsStatus.get(elementId);
 	}
 
 	public void removeElementStatus(String elementId) {
