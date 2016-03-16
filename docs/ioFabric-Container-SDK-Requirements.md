@@ -51,7 +51,7 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide convenience functions for changing base64 encoded data to raw bytes
 
 
-####C&35;
+####C&#35;
 
 * Provide a class for messages according to the ioMessage Specification document
 * Provide a standard observer pattern implementation for developers to receive incoming real-time control and message communication
