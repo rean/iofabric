@@ -1,8 +1,5 @@
 package com.iotracks.iofabric.message_bus;
 
-import java.io.StringReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import javax.json.Json;
@@ -12,7 +9,6 @@ import org.bouncycastle.util.Arrays;
 
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 public class Message {
 	private final short VERSION = 4; 
@@ -666,8 +662,8 @@ public class Message {
 				.add("difficultyTarget", difficultyTarget)
 				.add("informationType", infoType == null ? "" : infoType)
 				.add("informationFormat", infoFormat == null ? "" : infoFormat)
-				.add("contextData", contextData == null ? "" : BytesUtil.byteArrayToString(contextData))
-				.add("contentData", BytesUtil.byteArrayToString(contentData))
+				.add("contextData", contextData == null ? "" : Base64.getEncoder().encodeToString(contextData))
+				.add("contentData", contentData == null ? "" : Base64.getEncoder().encodeToString(contentData))
 				.build();
 
 		return result.toString();
