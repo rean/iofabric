@@ -4,12 +4,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.lang.management.ManagementFactory;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.Start;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -17,21 +16,32 @@ public class ResourceConsumptionManager extends Thread {
 	private boolean running;
 	private final long GET_USAGE_DATA_FREQ_SECONDS = 5;
 	private String MODULE_NAME = "Resource Consumption Manager";
+	private float diskLimit, cpuLimit, memoryLimit;
 
 	private Runnable getUsageData = () -> {
 		LoggingService.logInfo(MODULE_NAME, "get usage data");
-		// TODO : check for violations
+
+		float memoryUsage = getMemoryUsage();
+		float cpuUsage = getCpuUsage();
+		float diskUsage = getDiskUsage();
 		StatusReporter.setResourceConsumptionManagerStatus()
-				.setMemoryUsage(getMemoryUsage())
-				.setCpuUsage(getCpuUsage())
-				.setDiskUsage(getDiskUsage())
-				.setMemoryViolation(false)
-				.setDiskViolation(false)
-				.setCpuViolation(false);
+				.setMemoryUsage(memoryUsage)
+				.setCpuUsage(cpuUsage)
+				.setDiskUsage(diskUsage)
+				.setMemoryViolation(memoryUsage > memoryLimit)
+				.setDiskViolation(diskUsage > diskLimit)
+				.setCpuViolation(cpuUsage > cpuLimit);
+
 	};
 
 	public ResourceConsumptionManager() {
 		this.setName(MODULE_NAME);
+	}
+	
+	public void updateConfig() {
+		diskLimit = Configuration.getDiskLimit();
+		cpuLimit = Configuration.getCpuLimit();
+		memoryLimit = Configuration.getMemoryLimit();
 	}
 
 	private float getMemoryUsage() {
@@ -124,28 +134,19 @@ public class ResourceConsumptionManager extends Thread {
 
 		return length / 1024f / 1024f / 1024f;
 	}
-
+	
 	@Override
 	public void run() {
 		running = true;
 
-		// TODO : check for violations 
-		StatusReporter.setResourceConsumptionManagerStatus()
-				.setMemoryUsage(getMemoryUsage())
-				.setCpuUsage(getCpuUsage())
-				.setDiskUsage(getDiskUsage())
-				.setMemoryViolation(false)
-				.setDiskViolation(false)
-				.setCpuViolation(false);
-
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
+		updateConfig();
+		
+		Supervisor.scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 
 		LoggingService.logInfo(MODULE_NAME, "started");
 		while (running)
 			;
-		scheduler.shutdownNow();
 	}
 
 	public void stopRunning() {
