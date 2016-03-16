@@ -13,11 +13,22 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
-import com.iotracks.iofabric.command_line.CommandLineClient;
+import org.hornetq.api.core.TransportConfiguration;
+import org.hornetq.api.core.client.ClientConsumer;
+import org.hornetq.api.core.client.ClientMessage;
+import org.hornetq.api.core.client.ClientProducer;
+import org.hornetq.api.core.client.ClientSession;
+import org.hornetq.api.core.client.ClientSessionFactory;
+import org.hornetq.api.core.client.HornetQClient;
+import org.hornetq.api.core.client.ServerLocator;
+import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
+
 import com.iotracks.iofabric.command_line.CommandLineParser;
-import com.iotracks.iofabric.command_line.CommandLineServer;
+import com.iotracks.iofabric.message_bus.MessageBusServer;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -26,12 +37,64 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class Start {
 
-	private static CommandLineClient client;
-	private static Thread commandlineListener;
+	private static void sendCommand(String... args) {
+		Map<String, Object> connectionParams = new HashMap<>();
+		connectionParams.put("port", 55555);
+		connectionParams.put("host", "localhost");
 
-	private static boolean isAnotherInstanceRunning() {
-		client = new CommandLineClient();
-		return client.startClient();
+        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(
+        		new TransportConfiguration(NettyConnectorFactory.class.getName(), connectionParams));
+        ClientSessionFactory sf = null;
+        try {
+            sf = serverLocator.createSessionFactory();
+        } catch (Exception e) {
+        	return;
+        }
+        
+		if (args.length > 0 && args[0].equals("start")) {
+			System.out.println("iofabric is already running.");
+			sf.close();
+			System.exit(1);
+		}
+		String command = "";
+		for (String str : args)
+			command += str + " ";
+
+		if (command.trim().equals(""))
+			command = "help";
+		if (command.trim().startsWith("stop")) {
+			System.out.println("Stopping iofabric service...");
+			System.out.flush();
+		}
+        
+		ClientSession session = null;
+		try {
+			session = sf.createSession();
+			ClientConsumer consumer = session.createConsumer(MessageBusServer.address,
+					String.format("receiver = '%s'", "iofabric.commandline.response"));
+			ClientProducer producer = session.createProducer(MessageBusServer.address);
+			session.start();
+
+			ClientMessage message = session.createMessage(false);
+			message.putStringProperty("command", command);
+			message.putObjectProperty("receiver", "iofabric.commandline.command");
+			producer.send(message);
+			if (!args[0].equals("stop")) {
+				ClientMessage received = consumer.receive();
+				received.acknowledge();
+				String response = received.getStringProperty("response");
+				System.out.println(response);
+			}
+			producer.close();
+			consumer.close();
+		} catch (Exception e) {
+			// DO NOTHING
+		} finally {
+			if (sf != null) {
+				sf.close();
+			}
+		}
+		System.exit(0);
 	}
 
 	private static void setupEnvironment() {
@@ -65,32 +128,8 @@ public class Start {
 		}
 
 		setupEnvironment();
-
-		if (isAnotherInstanceRunning()) {
-			if (args.length > 0 && args[0].equals("start")) {
-				System.out.println("iofabric is already running.");
-				System.exit(1);
-			}
-			
-			String command = "";
-			for (String str : args)
-				command += str + " ";
-
-			if (command.trim().equals(""))
-				command = "help";
-			client.sendMessage(command.trim());
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-			}
-			if (command.trim().startsWith("stop")) {
-				System.out.println("Stopping iofabric service...");
-				System.out.flush();
-			}
-			client.stopClient();
-			System.out.println();
-			System.exit(0);
-		}
+		
+		sendCommand(args);
 
 		if (args.length > 0) {
 			if (args[0].equals("help") || args[0].equals("--help") || args[0].equals("-h") || args[0].equals("-?") || 
@@ -132,10 +171,6 @@ public class Start {
 		}
 		
 		
-		LoggingService.logInfo("Main", "starting command line listener");
-		commandlineListener = new Thread(new CommandLineServer(), "Command Line Server");
-		commandlineListener.start();
-
 		LoggingService.logInfo("Main", "starting supervisor");
 		Supervisor supervisor = new Supervisor();
 		supervisor.start();
