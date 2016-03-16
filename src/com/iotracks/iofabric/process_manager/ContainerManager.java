@@ -1,5 +1,6 @@
 package com.iotracks.iofabric.process_manager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,60 +16,23 @@ import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import com.iotracks.iofabric.element.Element;
-import com.iotracks.iofabric.process_manager.ContainerTask.Tasks;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class ContainerManager implements Runnable {
+public class ContainerManager {
 
-	private ContainerTask task;
-	private String containerId;
 	private DockerClient dockerClient;
+	private String containerId;
+	private ContainerTask task;
 
-	private static Object imagePullLock = new Object();
-	
 	private final String MODULE_NAME = "Container Manager";
 	private final String IOFABRIC_HOST = "iofabric:127.0.0.1";
 
-	public ContainerManager(ContainerTask task) {
-		this.task = task;
+	public ContainerManager() {
 	}
 	
-	public void run() {
-		try {
-			dockerLogin();
-		} catch (Exception e) {
-			// login failed. cannot continue!
-			return;
-		}
-		
-		if (task.action.equals(Tasks.ADD)) {
-			try { // TODO: check for remaining remove commands. may cause conflicts!
-				addElement();
-				ContainerTaskManager.removeTask(task);
-				startElement();
-			} catch (Exception e){}
-		} else if (task.action.equals(Tasks.REMOVE)) {
-			containerId = task.data.toString();
-			try {
-				stopContainer();
-				removeContainer();
-				ContainerTaskManager.removeTask(task);
-			} catch (Exception e) {
-			}
-		} else if (task.action.equals(Tasks.UPDATE)) {  // TODO: check for remaining remove commands. may cause conflicts!
-			containerId = ((Element) task.data).getContainerId();
-			updateContainer();
-		}
-
-		try {
-			dockerClient.close();
-		} catch (Exception e) {
-		}
-	}
-
 	private boolean containerExists() {
 		try {
 			dockerClient.inspectContainerCmd(containerId).exec();
@@ -101,7 +65,7 @@ public class ContainerManager implements Runnable {
 	private void addElement() {
 		// TODO : pull image and create container
 		Element element = (Element) task.data;
-		StatusReporter.setProcessManagerStatus().setElementsStatus(element.getElementId(), ElementStatus.BUILDING);
+		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.BUILDING);
 		LoggingService.logInfo(MODULE_NAME, "building \"" + element.getImageName() + "\"");
 		
 		List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
@@ -123,13 +87,11 @@ public class ContainerManager implements Runnable {
 			req.withTag(tag);
 
 		try {
-			synchronized (imagePullLock) {
-				LoggingService.logInfo(MODULE_NAME, "pulling \"" + element.getImageName() + "\" from registry");
-				PullImageResultCallback res = new PullImageResultCallback();
-				res = req.exec(res);
-				res.awaitSuccess();
-				LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" pulled", element.getImageName()));
-			}
+			LoggingService.logInfo(MODULE_NAME, "pulling \"" + element.getImageName() + "\" from registry");
+			PullImageResultCallback res = new PullImageResultCallback();
+			res = req.exec(res);
+			res.awaitSuccess();
+			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" pulled", element.getImageName()));
 
 			LoggingService.logInfo(MODULE_NAME, "creating container");
 			RestartPolicy restartPolicy = RestartPolicy.onFailureRestart(10);
@@ -158,29 +120,27 @@ public class ContainerManager implements Runnable {
 			LoggingService.logInfo(MODULE_NAME, "created");
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME, ex.getMessage());
-			StatusReporter.setProcessManagerStatus().setElementsStatus(element.getElementId(), ElementStatus.FAILED_VERIFICATION);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.FAILED_VERIFICATION);
 			throw ex;
 		}
 	}
 
 	private void startElement() {
 		Element element = (Element) task.data;
-		StatusReporter.setProcessManagerStatus().setElementsStatus(element.getElementId(), ElementStatus.STARTING);
+		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STARTING);
 		LoggingService.logInfo(MODULE_NAME, String.format("starting container \"%s\"", element.getImageName()));
-		// TODO
 		try {
 			dockerClient.startContainerCmd(element.getContainerId()).exec();
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" started", element.getImageName()));
-			StatusReporter.setProcessManagerStatus().setElementsStatus(element.getElementId(), ElementStatus.RUNNING);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.RUNNING);
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME,
 					String.format("container \"%s\" not found - %s", element.getImageName(), ex.getMessage()));
-			StatusReporter.setProcessManagerStatus().setElementsStatus(element.getElementId(), ElementStatus.STOPPED);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STOPPED);
 		}
 	}
 	
 	private void stopContainer() {
-		// TODO: stop container
 		LoggingService.logInfo(MODULE_NAME, String.format("stopping container \"%s\"", containerId));
 		try {
 			dockerClient.stopContainerCmd(containerId).exec();
@@ -191,7 +151,6 @@ public class ContainerManager implements Runnable {
 	}
 
 	private void removeContainer() {
-		// TODO: remove container
 		if (!containerExists())
 			return;
 		LoggingService.logInfo(MODULE_NAME, String.format("removing container \"%s\"", containerId));
@@ -204,16 +163,65 @@ public class ContainerManager implements Runnable {
 		}
 	}
 
-	private void updateContainer() {
-		// TODO: update container
+	private void updateContainer() throws Exception {
+//		stopContainer();
+		removeContainer();
+		addElement();
+		startElement();
+	}
+
+	public boolean execute(ContainerTask task) {
 		try {
-			stopContainer();
-			removeContainer();
-			addElement();
-			ContainerTaskManager.removeTask(task);
-			startElement();
+			dockerLogin();
 		} catch (Exception e) {
-			
+			return false;
 		}
+
+		this.task = task;
+		switch (task.action) {
+			case ADD:
+				try {
+					addElement();
+					startElement();
+					return true;
+				} catch (Exception e) {
+					return false;
+				} finally {
+					try {
+						dockerClient.close();
+					} catch (IOException e) {
+					}
+				}
+	
+			case REMOVE:
+				containerId = task.data.toString();
+				try {
+//					stopContainer();
+					removeContainer();
+					return true;
+				} catch (Exception e) {
+					return false;
+				} finally {
+					try {
+						dockerClient.close();
+					} catch (IOException e) {
+					}
+				}
+	
+			case UPDATE:
+				containerId = ((Element) task.data).getContainerId();
+				try {
+					updateContainer();
+					return true;
+				} catch (Exception e) {
+					return false;
+				} finally {
+					try {
+						dockerClient.close();
+					} catch (IOException e) {
+					}
+				}
+		}
+		return true;
 	}
 }
