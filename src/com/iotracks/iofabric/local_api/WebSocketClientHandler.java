@@ -12,6 +12,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
@@ -23,6 +24,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 	private static final Byte OPCODE_ACK = 0xB; 
 	private static final Byte OPCODE_MSG = 0xD;
 	private static final Byte OPCODE_CONTROL_SIGNAL = 0xC;
+	private static final Byte OPCODE_RECEIPT = 0xE;
 
 	private final WebSocketClientHandshaker handshaker;
 	private ChannelPromise handshakeFuture;
@@ -62,19 +64,19 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 
 		if(msg instanceof WebSocketFrame){
 			WebSocketFrame frame = (WebSocketFrame)msg;
-			if(frame instanceof TextWebSocketFrame){
+			if(frame instanceof BinaryWebSocketFrame){
 				handleWebSocketFrame(ctx,  frame);
 			}
 			return;
 		}
-		//	sendRealTimeMessageTest(ctx);
+		sendRealTimeMessageTest(ctx);
 		return;
 
 	}
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
 		System.out.println("In client handleWebSocketFrame.....");
-		if (frame instanceof TextWebSocketFrame) {
+		if (frame instanceof BinaryWebSocketFrame) {
 			System.out.println("In websocket client.....  TextWebSocketFrame... " );
 			ByteBuf input = frame.content();
 			if (!input.isReadable()) {
@@ -87,15 +89,30 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 
 			Byte opcode = byteArray[0];
 			System.out.println("Opcode: " + opcode);
-			if(opcode == OPCODE_MSG){
-				int length = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5));
-				String id = BytesUtil.bytesToString(Arrays.copyOfRange(byteArray, 5, byteArray.length));
-				System.out.println("Opcode: " + opcode + "  id: " + id + "  length: " + length) ;
-				ByteBuf buffer1 = Unpooled.buffer(126);
-				buffer1.writeByte(88);
-				ctx.channel().writeAndFlush(new TextWebSocketFrame(buffer1));			}
+			if(opcode.intValue() == OPCODE_RECEIPT){
+				int size = byteArray[1];
+				int pos = 3;
+				if (size > 0) {
+					String messageId = BytesUtil.bytesToString(Arrays.copyOfRange(byteArray, pos, pos + size));
+					System.out.println("Message Id: " + messageId + "\n");
+					pos += size;
+				}
+
+				size = byteArray[2];
+				if (size > 0) {
+					long timeStamp = BytesUtil.bytesToLong(Arrays.copyOfRange(byteArray, pos, pos + size));
+					System.out.println("Timestamp: " + timeStamp + "\n");
+					pos += size;
+				}
+				
+				System.out.println("Receipt received.. Message send complete");
+			}
 		}
 		return;
+
+	}
+
+	private void readReceipt(){
 
 	}
 
@@ -108,23 +125,23 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		//Actual Message
 		short version = 4;//version
 		String id = " "; //id
-		String tag = "Bosch Camera"; //tag
-		String messageGroupId = ""; //messageGroupId
+		String tag = "Bosch Camera 8798797"; //tag
+		String messageGroupId = "group1"; //messageGroupId
 		Integer seqNum = 1; //sequence number
 		Integer seqTot = 1; //sequence total
-		Integer priority = 0; //priority 
+		Integer priority = 5; //priority 
 		Long timestamp = (long)0; //timestamp
 		String publisher = "viewer"; //publisher
-		String authid = ""; //authid
-		String authGroup = ""; //auth group
-		Integer chainPos = 0; //chain position
+		String authid = "auth"; //authid
+		String authGroup = "authgrp"; //auth group
+		Integer chainPos = 10; //chain position
 		String hash = "";  //hash
 		String prevHash = ""; //previous hash
 		String nounce = "";  //nounce
-		Integer diffTarget = 0;//difficultytarget
+		Integer diffTarget = 30;//difficultytarget
 		String infotype = "image/jpeg"; //infotype
 		String infoformat = "base64"; //infoformat
-		String contextData = "";
+		String contextData = "gghh";
 		String contentData = "sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328";
 
 		/*****************************************************************************************************/
@@ -133,69 +150,27 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 
 		//Length
 		buffer1.writeByte(id.getBytes().length); //id
-
-		byte[] tagLength = new byte[2];	//tag
-		for (int i = 0; i < 2; ++i) {
-			tagLength[i] = (byte) (tag.getBytes().length >> (2 - i - 1 << 3));
-		}
-		buffer1.writeBytes(tagLength);
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)tag.getBytes().length)); //tag
 		buffer1.writeByte(messageGroupId.getBytes().length); //messageGroupId
-		buffer1.writeByte(seqNum.toString().getBytes().length); //sequence number
-		buffer1.writeByte(seqTot.toString().getBytes().length); //sequence total
-		buffer1.writeByte(priority.toString().getBytes().length); //priority
-		buffer1.writeByte(timestamp.toString().getBytes().length); //timestamp
+		buffer1.writeByte(BytesUtil.integerToBytes(seqNum).length); //sequence number
+		buffer1.writeByte(BytesUtil.integerToBytes(seqTot).length); //sequence total
+		buffer1.writeByte(BytesUtil.integerToBytes(priority).length); //priority
+		buffer1.writeByte(BytesUtil.longToBytes(timestamp).length); //timestamp
 		buffer1.writeByte(publisher.getBytes().length); //publisher
-
-		byte[] authIdLength = new byte[2];	//authid
-		for (int i = 0; i < 2; ++i) {
-			authIdLength[i] = (byte) (authid.toString().getBytes().length >> (2 - i - 1 << 3));
-		}
-		buffer1.writeBytes(authIdLength);
-
-		byte[] authGrpLength = new byte[2];	//auth group
-		for (int i = 0; i < 2; ++i) {
-			authGrpLength[i] = (byte) (authGroup.toString().getBytes().length >> (2 - i - 1 << 3));
-		}
-		buffer1.writeBytes(authGrpLength);
-
-		buffer1.writeByte(chainPos.toString().getBytes().length); //chain position
-
-		byte[] hashLength = new byte[2];	//hash
-		for (int i = 0; i < 2; ++i) {
-			hashLength[i] = (byte) (hash.toString().getBytes().length >> (2 - i - 1 << 3));
-		}
-		buffer1.writeBytes(hashLength);
-
-		byte[] prevHashLength = new byte[2];	//hash previous
-		for (int i = 0; i < 2; ++i) {
-			prevHashLength[i] = (byte) (prevHash.toString().getBytes().length >> (2 - i - 1 << 3));
-		}
-		buffer1.writeBytes(prevHashLength);
-
-		byte[] nounceLength = new byte[2];	//nounce
-		for (int i = 0; i < 2; ++i) {
-			nounceLength[i] = (byte) (nounce.toString().getBytes().length >> (2 - i - 1 << 3));
-		}
-		buffer1.writeBytes(nounceLength);
-
-		buffer1.writeByte(diffTarget.toString().getBytes().length); //difficultytarget
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)authid.getBytes().length)); //auth id
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)authGroup.getBytes().length)); //auth group
+		buffer1.writeByte(BytesUtil.integerToBytes(chainPos).length); //chain position
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)hash.getBytes().length)); //hash
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)prevHash.getBytes().length)); //hash previous
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)nounce.getBytes().length)); //nounce
+		buffer1.writeByte(BytesUtil.integerToBytes(diffTarget).length); //difficultytarget
 		buffer1.writeByte(infotype.getBytes().length); //infotype
 		buffer1.writeByte(infoformat.getBytes().length); //infoformat
-
-		byte[] contextdataLength = new byte[4];	//contextdata
-		for (int i = 0; i < 4; ++i) {
-			contextdataLength[i] = (byte) (contextData.getBytes().length >> (4 - i - 1 << 3));
-		}
-		buffer1.writeBytes(contextdataLength);
-
-		byte[] contentdataLength = new byte[4];	//contentdata
-		for (int i = 0; i < 4; ++i) {
-			contentdataLength[i] = (byte) (contentData.getBytes().length >> (4 - i - 1 << 3));
-		}
-		buffer1.writeBytes(contentdataLength);
+		buffer1.writeBytes(BytesUtil.integerToBytes(contextData.getBytes().length)); //contextData
+		buffer1.writeBytes(BytesUtil.integerToBytes(contentData.getBytes().length)); //contentData
 
 		/********************************************************************/
-		// Message to byets conversion
+		// Message to bytes conversion
 		buffer1.writeBytes(BytesUtil.stringToBytes(id)); //id
 		buffer1.writeBytes(BytesUtil.stringToBytes(tag)); //tag
 		buffer1.writeBytes(BytesUtil.stringToBytes(messageGroupId)); //messageGroupId
@@ -216,10 +191,11 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		buffer1.writeBytes(BytesUtil.stringToBytes(contextData)); //contextdata
 		buffer1.writeBytes(BytesUtil.stringToBytes(contentData)); //contentdata
 
-		ctx.channel().writeAndFlush(new TextWebSocketFrame(buffer1));
+		ctx.channel().writeAndFlush(new BinaryWebSocketFrame(buffer1));
 		System.out.println("sendRealTimeMessageTest : done");
 		return;
 	}
+
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
