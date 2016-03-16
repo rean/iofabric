@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import javax.json.Json;
-import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 
 import org.bouncycastle.util.Arrays;
@@ -105,7 +104,7 @@ public class Message {
 					byte[] decoded = Base64.getDecoder().decode(json.getString("contextdata"));
 					setContextData(decoded);
 				} catch (Exception e) {
-					LoggingService.logWarning("Message Constructor", "not base 64!");
+					LoggingService.logWarning("Message Constructor", "context data is not base 64!");
 				}
 			}
 		if (json.containsKey("contentdata"))
@@ -114,7 +113,7 @@ public class Message {
 					byte[] decoded = Base64.getDecoder().decode(json.getString("contentdata"));
 					setContentData(decoded);
 				} catch (Exception e) {
-					LoggingService.logWarning("Message Constructor", "not base 64!");
+					LoggingService.logWarning("Message Constructor", "content data is not base 64!");
 				}
 			}
 	}
@@ -648,7 +647,8 @@ public class Message {
 
 	@Override
 	public String toString() {
-		JsonObject result = Json.createObjectBuilder().add("id", id == null ? "" : id)
+		JsonObject result = Json.createObjectBuilder()
+				.add("id", id == null ? "" : id)
 				.add("tag", tag == null ? "" : tag)
 				.add("messageGroupId", messageGroupId == null ? "" : messageGroupId)
 				.add("sequenceNumber", sequenceNumber)
