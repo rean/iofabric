@@ -6,13 +6,21 @@ public class Element {
 	private final String elementId;
 	private final String imageName;
 	private List<PortMapping> portMappings;
-	private long startTime;
 	private long lastModified;
 	private long lastUpdated;
 	private String containerId;
-	private Registry registry;
+	private String registry;
 	private String containerIpAddress;
+	private boolean rebuild;
 	
+	public boolean isRebuild() {
+		return rebuild;
+	}
+
+	public void setRebuild(boolean rebuild) {
+		this.rebuild = rebuild;
+	}
+
 	public String getContainerIpAddress() {
 		return containerIpAddress;
 	}
@@ -21,11 +29,11 @@ public class Element {
 		this.containerIpAddress = containerIpAddress;
 	}
 
-	public Registry getRegistry() {
+	public String getRegistry() {
 		return registry;
 	}
 
-	public void setRegistry(Registry registry) {
+	public void setRegistry(String registry) {
 		this.registry = registry;
 	}
 
@@ -49,14 +57,6 @@ public class Element {
 
 	public void setPortMappings(List<PortMapping> portMappings) {
 		this.portMappings = portMappings;
-	}
-
-	public long getStartTime() {
-		return startTime;
-	}
-
-	public void setStartTime(long startTime) {
-		this.startTime = startTime;
 	}
 
 	public long getLastModified() {
