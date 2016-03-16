@@ -29,25 +29,30 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.CharsetUtil;
 
 public class QueryMessageReceiverHandler {
 	private final String MODULE_NAME = "Local API";
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In MessageReceiverHandler : handle");
-
-		if (req.getMethod() != POST) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
-			return;
-		}
+		LoggingService.logInfo(MODULE_NAME,"In QueryMessageReceiverHandler : handle");
 
 		HttpHeaders headers = req.headers();
-		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			LoggingService.logInfo(MODULE_NAME,"header content type failure..." + headers.get("CONTENT_TYPE"));
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+
+		if (req.getMethod() != POST) {
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
 			return;
 		}
+
+		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+			String errorMsg = " Incorrect content/data format ";
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+			return;
+		}
+
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
@@ -55,15 +60,18 @@ public class QueryMessageReceiverHandler {
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
-		if(validateMessageQuery(jsonObject) != null){
-			LoggingService.logInfo(MODULE_NAME,"Validation failure");
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+		if(validateMessageQueryInput(jsonObject) != null){
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+			String errorMsg = validateMessageQueryInput(jsonObject);
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
 			return;
 		}
 
+		LoggingService.logInfo(MODULE_NAME,"Validation success... ");
 		String receiverId = jsonObject.getString("id");
-		long timeframeStart = Long.parseLong(jsonObject.getString("timeframestart"));
-		long timeframeEnd = Long.parseLong(jsonObject.getString("timeframeend"));
+		long timeframeStart = Long.parseLong(jsonObject.get("timeframestart").toString());
+		long timeframeEnd = Long.parseLong(jsonObject.get("timeframeend").toString());
 		JsonArray publishersArray = jsonObject.getJsonArray("publishers");
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
@@ -72,14 +80,17 @@ public class QueryMessageReceiverHandler {
 
 		MessageBus bus = MessageBus.getInstance();
 		int msgCount = 0;
+
 		for(JsonValue jsonPubValue : publishersArray){
 			String publisherId = jsonPubValue.toString();
 			List<Message> messageList = bus.messageQuery(publisherId, receiverId, timeframeStart, timeframeEnd);
-			
-			for(Message msg : messageList){
-				String msgJson = msg.toString();
-				messagesArray.add(msgJson);
-				msgCount++;
+
+			if(messageList != null){
+				for(Message msg : messageList){
+					String msgJson = msg.toString();
+					messagesArray.add(msgJson);
+					msgCount++;
+				}
 			}
 		}
 
@@ -99,7 +110,7 @@ public class QueryMessageReceiverHandler {
 
 	}
 
-	private String validateMessageQuery(JsonObject message){
+	private String validateMessageQueryInput(JsonObject message){
 		LoggingService.logInfo(MODULE_NAME,"In validateMessageQuery...");
 		if(!message.containsKey("id")){
 			LoggingService.logInfo(MODULE_NAME,"id not found");
@@ -116,6 +127,18 @@ public class QueryMessageReceiverHandler {
 			return "Error: Missing input field publishers";
 		}
 
+		try{
+			Long.parseLong(message.get("timeframestart").toString());
+		}catch(Exception e){
+			return "Error: Invalid value of timeframestart";
+		}
+
+		try{
+			Long.parseLong(message.get("timeframeend").toString());
+		}catch(Exception e){
+			return "Error: Invalid value of timeframeend";
+		}
+
 		if((message.getString("id").trim().equals(""))) return "Error: Missing input field value id";
 
 		return null;
@@ -123,7 +146,6 @@ public class QueryMessageReceiverHandler {
 
 	private static void sendHttpResponse(
 			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
-		// Generate an error page if response getStatus code is not OK (200).
 		if (res.getStatus().code() != 200) {
 			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
 			res.content().writeBytes(buf);
@@ -131,7 +153,6 @@ public class QueryMessageReceiverHandler {
 			HttpHeaders.setContentLength(res, res.content().readableBytes());
 		}
 
-		// Send the response and close the connection if necessary.
 		ChannelFuture f = ctx.channel().writeAndFlush(res);
 		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
 			f.addListener(ChannelFutureListener.CLOSE);

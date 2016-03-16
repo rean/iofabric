@@ -102,28 +102,119 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 	public void sendRealTimeMessageTest(ChannelHandlerContext ctx){
 		System.out.println("In clienttest : sendRealTimeMessageTest");
 
-		int length = 50;
 		ByteBuf buffer1 = Unpooled.buffer(126);
 		buffer1.writeByte(OPCODE_MSG);
-		buffer1.writeBytes(BytesUtil.integerToBytes(length));
 
-		byte[] msgArray = new byte[256];
-		msgArray[5] = 22;
-		msgArray[6] = 100;
-		msgArray[7] = 111;
-		msgArray[8] = 1;
-		msgArray[23] = Byte.parseByte("11");
-		msgArray[24] = Byte.parseByte("22");
-		msgArray[25] = Byte.parseByte("13");
-		msgArray[26] = Byte.parseByte("23");
-		msgArray[27] = Byte.parseByte("33");
-		msgArray[28] = Byte.parseByte("43");
-		msgArray[29] = Byte.parseByte("14");
-		msgArray[30] = Byte.parseByte("24");
-		msgArray[31] = Byte.parseByte("34");
-		msgArray[32] = Byte.parseByte("44");
+		//Actual Message
+		short version = 4;//version
+		String id = " "; //id
+		String tag = "Bosch Camera"; //tag
+		String messageGroupId = ""; //messageGroupId
+		Integer seqNum = 1; //sequence number
+		Integer seqTot = 1; //sequence total
+		Integer priority = 0; //priority 
+		Long timestamp = (long)0; //timestamp
+		String publisher = "viewer"; //publisher
+		String authid = ""; //authid
+		String authGroup = ""; //auth group
+		Integer chainPos = 0; //chain position
+		String hash = "";  //hash
+		String prevHash = ""; //previous hash
+		String nounce = "";  //nounce
+		Integer diffTarget = 0;//difficultytarget
+		String infotype = "image/jpeg"; //infotype
+		String infoformat = "base64"; //infoformat
+		String contextData = "";
+		String contentData = "sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328";
 
-		buffer1.writeBytes(msgArray);
+		/*****************************************************************************************************/
+		//Version
+		buffer1.writeBytes(BytesUtil.shortToBytes(version)); //version
+
+		//Length
+		buffer1.writeByte(id.getBytes().length); //id
+
+		byte[] tagLength = new byte[2];	//tag
+		for (int i = 0; i < 2; ++i) {
+			tagLength[i] = (byte) (tag.getBytes().length >> (2 - i - 1 << 3));
+		}
+		buffer1.writeBytes(tagLength);
+		buffer1.writeByte(messageGroupId.getBytes().length); //messageGroupId
+		buffer1.writeByte(seqNum.toString().getBytes().length); //sequence number
+		buffer1.writeByte(seqTot.toString().getBytes().length); //sequence total
+		buffer1.writeByte(priority.toString().getBytes().length); //priority
+		buffer1.writeByte(timestamp.toString().getBytes().length); //timestamp
+		buffer1.writeByte(publisher.getBytes().length); //publisher
+
+		byte[] authIdLength = new byte[2];	//authid
+		for (int i = 0; i < 2; ++i) {
+			authIdLength[i] = (byte) (authid.toString().getBytes().length >> (2 - i - 1 << 3));
+		}
+		buffer1.writeBytes(authIdLength);
+
+		byte[] authGrpLength = new byte[2];	//auth group
+		for (int i = 0; i < 2; ++i) {
+			authGrpLength[i] = (byte) (authGroup.toString().getBytes().length >> (2 - i - 1 << 3));
+		}
+		buffer1.writeBytes(authGrpLength);
+
+		buffer1.writeByte(chainPos.toString().getBytes().length); //chain position
+
+		byte[] hashLength = new byte[2];	//hash
+		for (int i = 0; i < 2; ++i) {
+			hashLength[i] = (byte) (hash.toString().getBytes().length >> (2 - i - 1 << 3));
+		}
+		buffer1.writeBytes(hashLength);
+
+		byte[] prevHashLength = new byte[2];	//hash previous
+		for (int i = 0; i < 2; ++i) {
+			prevHashLength[i] = (byte) (prevHash.toString().getBytes().length >> (2 - i - 1 << 3));
+		}
+		buffer1.writeBytes(prevHashLength);
+
+		byte[] nounceLength = new byte[2];	//nounce
+		for (int i = 0; i < 2; ++i) {
+			nounceLength[i] = (byte) (nounce.toString().getBytes().length >> (2 - i - 1 << 3));
+		}
+		buffer1.writeBytes(nounceLength);
+
+		buffer1.writeByte(diffTarget.toString().getBytes().length); //difficultytarget
+		buffer1.writeByte(infotype.getBytes().length); //infotype
+		buffer1.writeByte(infoformat.getBytes().length); //infoformat
+
+		byte[] contextdataLength = new byte[4];	//contextdata
+		for (int i = 0; i < 4; ++i) {
+			contextdataLength[i] = (byte) (contextData.getBytes().length >> (4 - i - 1 << 3));
+		}
+		buffer1.writeBytes(contextdataLength);
+
+		byte[] contentdataLength = new byte[4];	//contentdata
+		for (int i = 0; i < 4; ++i) {
+			contentdataLength[i] = (byte) (contentData.getBytes().length >> (4 - i - 1 << 3));
+		}
+		buffer1.writeBytes(contentdataLength);
+
+		/********************************************************************/
+		// Message to byets conversion
+		buffer1.writeBytes(BytesUtil.stringToBytes(id)); //id
+		buffer1.writeBytes(BytesUtil.stringToBytes(tag)); //tag
+		buffer1.writeBytes(BytesUtil.stringToBytes(messageGroupId)); //messageGroupId
+		buffer1.writeBytes(BytesUtil.integerToBytes(seqNum)); //sequence number
+		buffer1.writeBytes(BytesUtil.integerToBytes(seqTot)); //sequence total
+		buffer1.writeBytes(BytesUtil.integerToBytes(priority)); //priority
+		buffer1.writeBytes(BytesUtil.longToBytes(timestamp)); //timestamp
+		buffer1.writeBytes(BytesUtil.stringToBytes(publisher)); //publisher
+		buffer1.writeBytes(BytesUtil.stringToBytes(authid)); //authid
+		buffer1.writeBytes(BytesUtil.stringToBytes(authGroup)); //auth group
+		buffer1.writeBytes(BytesUtil.integerToBytes(chainPos)); //chain position
+		buffer1.writeBytes(BytesUtil.stringToBytes(hash)); //hash
+		buffer1.writeBytes(BytesUtil.stringToBytes(prevHash)); //previous hash
+		buffer1.writeBytes(BytesUtil.stringToBytes(nounce)); //nounce
+		buffer1.writeBytes(BytesUtil.integerToBytes(diffTarget)); //difficultytarget
+		buffer1.writeBytes(BytesUtil.stringToBytes(infotype)); //infotype
+		buffer1.writeBytes(BytesUtil.stringToBytes(infoformat)); //infoformat
+		buffer1.writeBytes(BytesUtil.stringToBytes(contextData)); //contextdata
+		buffer1.writeBytes(BytesUtil.stringToBytes(contentData)); //contentdata
 
 		ctx.channel().writeAndFlush(new TextWebSocketFrame(buffer1));
 		System.out.println("sendRealTimeMessageTest : done");

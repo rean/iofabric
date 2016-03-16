@@ -36,7 +36,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			handleHttpRequest(ctx, (FullHttpRequest) msg);
 		} else if (msg instanceof WebSocketFrame) {
 			String mapName = findContextMapName(ctx);
-			if(mapName.equals("control")){
+			if(mapName!=null && mapName.equals("control")){
 				ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
 				controlSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
 			}else{

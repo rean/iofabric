@@ -48,10 +48,12 @@ public class MessageWebsocketHandler {
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
-		String publisherId = tokens[4].trim();
-		LoggingService.logInfo(MODULE_NAME,"Publisher Id: "+ publisherId);
 
-		synchronized (this) {
+		if(tokens.length < 5){
+			LoggingService.logInfo(MODULE_NAME, " Id or Id value not found in the URL " );
+		}else {
+			String publisherId = tokens[4].trim();
+			LoggingService.logInfo(MODULE_NAME,"Publisher Id: "+ publisherId);
 			Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
 			messageMap.put(publisherId, ctx);
 		}
@@ -69,27 +71,36 @@ public class MessageWebsocketHandler {
 
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 
-		sendRealTimeMessage(ctx);
+		//For testing - start
+		//sendRealTimeMessage(ctx);
+		//For testing - end
 		return;
 	}
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
 
 		if (frame instanceof PingWebSocketFrame) {
-			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame.....  PingWebSocketFrame... " );
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame: Ping Frame" );
 			ByteBuf buffer = frame.content();
-			Byte opcode = buffer.readByte(); 
-			if(opcode == OPCODE_PING.intValue()){
-				if(hasContextInMap(ctx)){
-					ByteBuf buffer1 = Unpooled.buffer(126);
-					buffer1.writeByte(OPCODE_PONG.intValue());
-					ctx.channel().write(new PongWebSocketFrame(buffer1));
+			if (buffer.readableBytes() == 1) {
+				Byte opcode = buffer.readByte(); 
+				if(opcode == OPCODE_PING.intValue()){
+					if(hasContextInMap(ctx)){
+						ByteBuf buffer1 = ctx.alloc().buffer();
+						buffer1.writeByte(OPCODE_PONG.intValue());
+						LoggingService.logInfo(MODULE_NAME,"Pong frame send to the container" );
+						ctx.channel().write(new PongWebSocketFrame(buffer1));
+					}
 				}
-			}		
+			}else{
+				LoggingService.logInfo(MODULE_NAME,"Ping opcode not found" );		
+			}
+
+			return;
 		}
 
 		if (frame instanceof TextWebSocketFrame) {
-			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame.....  TextWebSocketFrame... " );
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame: Text Frame" );
 			ByteBuf input = frame.content();
 			if (!input.isReadable()) {
 				return;
@@ -99,35 +110,41 @@ public class MessageWebsocketHandler {
 			int readerIndex = input.readerIndex();
 			input.getBytes(readerIndex, byteArray);
 
-			Byte opcode = byteArray[0];
+			if(byteArray.length >= 5){
+				Byte opcode = byteArray[0];
+				if(opcode == OPCODE_MSG.intValue()){
+					LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode);
+					
+					Message message = null;
+					
+					try {
+						message = new Message(Arrays.copyOfRange(byteArray, 1, byteArray.length));
+					} catch (Exception e) {
+						LoggingService.logInfo(MODULE_NAME,"wrong message format." + e.getMessage());
+					}
+					LoggingService.logInfo(MODULE_NAME,"Right message format.");
 
+					if(hasContextInMap(ctx)){
+						System.out.println("In context true");
 
-			if(opcode == OPCODE_MSG.intValue()){
-				int length = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5));
-				LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode + "Length: " + length);
-				Message message = new Message(Arrays.copyOfRange(byteArray, 5, byteArray.length));
-				LoggingService.logInfo(MODULE_NAME,"Right message format....");
+						MessageBus messageBus = MessageBus.getInstance();
+						Message messageWithId = messageBus.publishMessage(message);
+						LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getId() + "Message timestamp: " + messageWithId.getTimestamp());
 
-				if(hasContextInMap(ctx)){
-					System.out.println("In context true");
+						String messageId = messageWithId.getId();
+						Long msgTimestamp = messageWithId.getTimestamp();
+						ByteBuf buffer1 = Unpooled.buffer(256);
+						buffer1.writeByte(OPCODE_RECEIPT);
+						buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
+						buffer1.writeBytes(BytesUtil.stringToBytes(messageId));
+						ctx.channel().write(new TextWebSocketFrame(buffer1));
+					}
 
-					MessageBus messageBus = MessageBus.getInstance();
-					Message messageWithId = messageBus.publishMessage(message);
-					LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getId());
-					LoggingService.logInfo(MODULE_NAME,"Message id: " + messageWithId.getTimestamp());
-
-					String messageId = messageWithId.getId();
-					Long msgTimestamp = messageWithId.getTimestamp();
-					ByteBuf buffer1 = Unpooled.buffer(256);
-					buffer1.writeByte(OPCODE_RECEIPT);
-					buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
-					buffer1.writeBytes(BytesUtil.stringToBytes(messageId));
-					ctx.channel().write(new TextWebSocketFrame(buffer1));
+					return;
 				}
-
+			}else{
 				return;
 			}
-
 		}
 
 		if (frame instanceof TextWebSocketFrame) {
