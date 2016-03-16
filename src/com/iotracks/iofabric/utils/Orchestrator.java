@@ -14,18 +14,41 @@ import javax.net.ssl.HttpsURLConnection;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class Orchestrator {
-	private String apiUrl = "http://127.0.0.1:12345/api/v2/";
-	private String instanceId;
-	private String accessToken;
+	public String controllerUrl; // = "http://127.0.0.1:12345/api/v2/";
+	public String instanceId;
+	public String accessToken;
 	
 	public Orchestrator() {
-		instanceId = Configuration.getInstanceId();
-		accessToken = Configuration.getAccessToken();
+		this.update();
+	}
+
+	public String getControllerUrl() {
+		return controllerUrl;
+	}
+
+	public void setControllerUrl(String controllerUrl) {
+		this.controllerUrl = controllerUrl;
+	}
+
+	public String getInstanceId() {
+		return instanceId;
+	}
+
+	public void setInstanceId(String instanceId) {
+		this.instanceId = instanceId;
+	}
+
+	public String getAccessToken() {
+		return accessToken;
+	}
+
+	public void setAccessToken(String accessToken) {
+		this.accessToken = accessToken;
 	}
 
 	public boolean ping() {
 		try {
-			JsonObject result = JSON.getJSON(apiUrl + "status");
+			JsonObject result = JSON.getJSON(controllerUrl + "status");
 			return result.getString("status").equals("ok");
 		} catch (Exception e) {
 			return false;
@@ -35,7 +58,7 @@ public class Orchestrator {
 	public JsonObject provision(String key) throws Exception {
 		JsonObject result = null;
 		try {
-			result = JSON.getJSON(apiUrl + "instance/provision/key/" + key);
+			result = JSON.getJSON(controllerUrl + "instance/provision/key/" + key);
 		} catch (Exception e) {
 			throw e;
 		} 
@@ -58,7 +81,7 @@ public class Orchestrator {
 	public JsonObject doCommand(String command, Map<String, Object> queryParams, Map<String, Object> postParams) throws Exception {
 		JsonObject result = null;
 		
-		StringBuilder uri = new StringBuilder(apiUrl);
+		StringBuilder uri = new StringBuilder(controllerUrl);
 		
 		uri.append("instance/")
 			.append(command)
@@ -99,6 +122,12 @@ public class Orchestrator {
 		}
 		
 		return result;
+	}
+
+	public void update() {
+		instanceId = Configuration.getInstanceId();
+		accessToken = Configuration.getAccessToken();
+		controllerUrl = Configuration.getControllerUrl();
 	}
 
 }

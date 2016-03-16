@@ -19,7 +19,7 @@ public class Constants {
 		FAILED_VERIFICATION, FAILED_LOGIN, CONNECTED
 	}
 
-	public enum ContollerStatus {
+	public enum ControllerStatus {
 		NOT_PROVISIONED, BROKEN, OK
 	}
 	

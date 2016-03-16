@@ -195,4 +195,21 @@ public class ElementManager {
 		this.routes = routes;
 	}
 
+	public boolean elementExists(String elementId) {
+		for (Element element : elements)
+			if (element.getElementId().equals(elementId))
+				return true;
+				
+		return false;
+	}
+
+	public void clearData() {
+		synchronized (ElementManager.class) {
+			elements.clear();
+			routes.clear();
+			configs.clear();
+			registries.clear();
+		}
+	}
+
 }

@@ -16,10 +16,10 @@ public class ContainerTask {
 	}
 	
 	@Override
-	public boolean equals(Object o) {
-		if (!o.getClass().equals(ContainerTask.class))
+	public boolean equals(Object other) {
+		if (!other.getClass().equals(ContainerTask.class))
 			return false;
-		ContainerTask ac = (ContainerTask) o;
+		ContainerTask ac = (ContainerTask) other;
 		return ac.action.equals(this.action) && ac.data.equals(data);
 	}
 	

@@ -16,11 +16,10 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
 		ByteBuf in = (ByteBuf) msg;
-
+		
 		String text = "";
-		while (in.isReadable()) {
+		while (in.isReadable())
 			text += (char) in.readByte();
-		}
 
 		System.out.print(text);
 		System.out.flush();
@@ -34,13 +33,12 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		cause.printStackTrace();
 		ctx.close();
 	}
 
 	public boolean sendMessage(String message) {
 		if (ctx != null) {
-            ChannelFuture cf = ctx.write(Unpooled.copiedBuffer(message, CharsetUtil.UTF_8));
+            ChannelFuture cf = ctx.write(Unpooled.copiedBuffer(message, CharsetUtil.US_ASCII));
             ctx.flush();
             if (!cf.isSuccess()) {
                 return false;

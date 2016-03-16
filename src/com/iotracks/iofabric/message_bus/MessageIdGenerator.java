@@ -3,9 +3,9 @@ package com.iotracks.iofabric.message_bus;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import com.iotracks.iofabric.supervisor.Supervisor;
 
 public class MessageIdGenerator {
 	private final char[] ALPHABETS_ARRAY = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ".toCharArray();
@@ -49,8 +49,7 @@ public class MessageIdGenerator {
 	}
 	
 	public MessageIdGenerator() {
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
+		Supervisor.scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
 	}
 	
 //			 			 1         2         3         4         5         6         7         8         9         0         1         2         3         4         5         6         7         

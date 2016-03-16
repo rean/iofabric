@@ -6,6 +6,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.field_agent.FieldAgent;
+import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
@@ -18,24 +19,36 @@ public class Supervisor {
 
 	private final String MODULE_NAME = "Supervisor";
 	private final int CHECK_MODULES_STATUS_FREQ_SECONDS = 2;
+	public static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
 	
 	private Thread processManager;
+	private ResourceConsumptionManager resourceConsumptionManager;
+	private FieldAgent fieldAgent;
+	@SuppressWarnings("unused")
+	private MessageBus messageBus;
 
 	public Supervisor() {
 	}
 
 	private final Runnable checkStatus = () -> {
-		LoggingService.logInfo(MODULE_NAME, "checking modules status");		
+		LoggingService.logInfo(MODULE_NAME, "checking modules status");
+
+		if (resourceConsumptionManager.getState() == State.TERMINATED) {
+			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.STARTING);
+			resourceConsumptionManager = new ResourceConsumptionManager();
+			resourceConsumptionManager.start();
+		}
+		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.RUNNING);
+
+
 		
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.RUNNING);
 		if (processManager.getState() == State.TERMINATED) {
 			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.STARTING);
 			processManager = new Thread(new ProcessManager(), "Process Manager");
 			processManager.start();
 		}
+		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.RUNNING);
 		
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.RUNNING);
-
 		if (Configuration.configChanged) {
 			// TODO: Update modules configuration.
 			try {
@@ -65,7 +78,7 @@ public class Supervisor {
 		LoggingService.logInfo(MODULE_NAME, "starting resource consumption manager");
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.STARTING);
-		ResourceConsumptionManager resourceConsumptionManager = new ResourceConsumptionManager();
+		resourceConsumptionManager = new ResourceConsumptionManager();
 		resourceConsumptionManager.start();
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.RUNNING);
@@ -74,7 +87,7 @@ public class Supervisor {
 		LoggingService.logInfo(MODULE_NAME, "starting field agent");
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.FIELD_AGENT, ModulesStatus.STARTING);
-		FieldAgent fieldAgent = FieldAgent.getInstance();
+		fieldAgent = FieldAgent.getInstance();
 		fieldAgent.start();
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.FIELD_AGENT, ModulesStatus.RUNNING);
@@ -85,13 +98,21 @@ public class Supervisor {
 				.setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.STARTING);
 		processManager = new Thread(new ProcessManager(), "Process Manager");
 		processManager.start();
-
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.PROCESS_MANAGER,	ModulesStatus.RUNNING);
-
+		
+		// starting Message Bus
+		LoggingService.logInfo(MODULE_NAME, "starting message bus");
+		StatusReporter.setSupervisorStatus()
+				.setModuleStatus(Constants.MESSAGE_BUS, ModulesStatus.STARTING);
+		messageBus = MessageBus.getInstance();
+		StatusReporter.setSupervisorStatus()
+				.setModuleStatus(Constants.MESSAGE_BUS,	ModulesStatus.RUNNING);
+		
+		
+		
 
 		// setting up scheduled executor to execute checkStatus
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 		scheduler.scheduleAtFixedRate(checkStatus, CHECK_MODULES_STATUS_FREQ_SECONDS, CHECK_MODULES_STATUS_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 

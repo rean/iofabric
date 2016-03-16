@@ -1,7 +1,6 @@
 package com.iotracks.iofabric.message_bus;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;

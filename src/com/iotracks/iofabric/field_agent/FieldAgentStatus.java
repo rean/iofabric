@@ -4,15 +4,15 @@ import com.iotracks.iofabric.utils.Constants;
 
 public class FieldAgentStatus {
 
-	private Constants.ContollerStatus contollerStatus;
+	private Constants.ControllerStatus contollerStatus;
 	private long lastCommandTime;
 	private boolean controllerVerified;
 
-	public Constants.ContollerStatus getContollerStatus() {
+	public Constants.ControllerStatus getContollerStatus() {
 		return contollerStatus;
 	}
 
-	public void setContollerStatus(Constants.ContollerStatus contollerStatus) {
+	public void setContollerStatus(Constants.ControllerStatus contollerStatus) {
 		this.contollerStatus = contollerStatus;
 	}
 

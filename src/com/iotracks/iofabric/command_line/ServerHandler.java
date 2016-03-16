@@ -1,5 +1,7 @@
 package com.iotracks.iofabric.command_line;
 
+import java.nio.charset.StandardCharsets;
+
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -24,8 +26,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         LoggingService.logInfo("UNIX", "COMMAND RECIEVED: " + command);
         String result = CommandLineParser.parse(command);
 
-        ByteBuf response = ctx.alloc().buffer();
-		response.writeBytes(result.getBytes());
+		ByteBuf response = ctx.alloc().buffer();
+		response.writeBytes(result.getBytes(StandardCharsets.US_ASCII));
 		final ChannelFuture f = ctx.writeAndFlush(response);
         f.addListener(new ChannelFutureListener() {
             @Override
