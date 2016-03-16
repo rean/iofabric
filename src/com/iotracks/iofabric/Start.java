@@ -16,6 +16,7 @@ import java.text.ParseException;
 import java.util.Set;
 
 import com.iotracks.iofabric.command_line.CommandLineClient;
+import com.iotracks.iofabric.command_line.CommandLineParser;
 import com.iotracks.iofabric.command_line.CommandLineServer;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
@@ -79,7 +80,7 @@ public class Start {
 				command = "help";
 			client.sendMessage(command.trim());
 			try {
-				Thread.sleep(50);
+				Thread.sleep(200);
 			} catch (InterruptedException e) {
 			}
 			if (command.trim().startsWith("stop")) {
@@ -91,10 +92,17 @@ public class Start {
 			System.exit(0);
 		}
 
-		if (args.length > 0 && !args[0].equals("start")) {
-			System.out.println("iofabric is not running.");
-			System.out.flush();
-			System.exit(1);
+		if (args.length > 0) {
+			if (args[0].equals("help") || args[0].equals("--help") || args[0].equals("-h") || args[0].equals("-?") || 
+					args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
+				System.out.println(CommandLineParser.parse(args[0]));
+				System.out.flush();
+				System.exit(0);
+			} else if (!args[0].equals("start")) {
+				System.out.println("iofabric is not running.");
+				System.out.flush();
+				System.exit(1);
+			}
 		}
 
 		try {
