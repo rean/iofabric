@@ -1,7 +1,7 @@
 package com.iotracks.iofabric.message_bus;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Base64;
-
 import javax.json.Json;
 import javax.json.JsonObject;
 
@@ -492,8 +492,8 @@ public class Message {
 	}
 
 	public byte[] getBytes() throws Exception {
-		ByteOutputStream headerBaos = new ByteOutputStream(); 
-		ByteOutputStream dataBaos = new ByteOutputStream(); 
+		ByteArrayOutputStream headerBaos = new ByteArrayOutputStream(); 
+		ByteArrayOutputStream dataBaos = new ByteArrayOutputStream(); 
 		try {
 			//version
 			headerBaos.write(BytesUtil.shortToBytes((short) VERSION));
@@ -629,10 +629,10 @@ public class Message {
 				dataBaos.write(getContentData());
 			}
 
-			byte[] result = new byte[headerBaos.size() + dataBaos.size()];
-			headerBaos.newInputStream().read(result, 0, 33);
-			dataBaos.newInputStream().read(result, 33, dataBaos.size());
-			return result;
+			ByteArrayOutputStream result = new ByteArrayOutputStream();
+			headerBaos.writeTo(result);
+			dataBaos.writeTo(result);
+			return result.toByteArray();
 		} catch (Exception e) {
 			throw e;
 		} finally {
