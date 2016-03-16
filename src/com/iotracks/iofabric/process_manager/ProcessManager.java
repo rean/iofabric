@@ -10,14 +10,9 @@ import java.util.Queue;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Container.Port;
-import com.github.dockerjava.api.model.Info;
-import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.PortMapping;
@@ -27,18 +22,17 @@ import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
-import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class ProcessManager implements Runnable {
 	
 	private final String MODULE_NAME = "Process Manager";
 	private final int MONITOR_CONTAINERS_STATUS_FREQ_SECONDS = 10;
-	private DockerClient dockerClient;
 	private ElementManager elementManager;
 	private Queue<ContainerTask> tasks;
 	public static Boolean updated = true;
 	private Object lock = new Object();
+	private DockerUtil docker;
 
 	private Container getContainer(List<Container> containers, String containerName) {
 		for (Container container : containers)
@@ -49,9 +43,9 @@ public class ProcessManager implements Runnable {
 	}
 	
 	private synchronized boolean updateElements() {
-		if (!dockerConnected()) { 
+		if (!docker.isConnected()) { 
 			try {
-				dockerConnect();
+				docker.connect();
 			} catch (Exception e) {
 				LoggingService.logWarning(MODULE_NAME, "unable to connect to docker daemon");
 				return false;
@@ -59,7 +53,7 @@ public class ProcessManager implements Runnable {
 		}
 		
 		synchronized (lock) {
-			List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
+			List<Container> containers = docker.getContainers();
 			List<Element> elements = elementManager.getElements();
 			for (Element element : elements) {
 				Container container = getContainer(containers, element.getElementId());
@@ -67,24 +61,25 @@ public class ProcessManager implements Runnable {
 					containers.remove(container);
 					element.setContainerId(container.getId());
 					
-					InspectContainerResponse inspect = dockerClient.inspectContainerCmd(container.getId()).exec();
-					element.setContainerIpAddress(inspect.getNetworkSettings().getIpAddress());
-					
-					ContainerState status = inspect.getState();
-					if (status.isRunning()) {
-						String date = status.getStartedAt();
-						int milli = Integer.parseInt(date.substring(20, 23));
-						date = date.substring(0, 10) + " " + date.substring(11, 19);
-						DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-						dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-						long started = 0;
-						try {
-							Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
-							started = local.getTime() + milli;
-						} catch (Exception e) {
+					try {
+						ContainerState status = docker.getContainerStatus(container.getId());
+						element.setContainerIpAddress(docker.getContainerIpAddress(container.getId()));
+						
+						if (status.isRunning()) {
+							String date = status.getStartedAt();
+							int milli = Integer.parseInt(date.substring(20, 23));
+							date = date.substring(0, 10) + " " + date.substring(11, 19);
+							DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+							dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+							long started = 0;
+							try {
+								Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
+								started = local.getTime() + milli;
+							} catch (Exception e) {
+							}
+							StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStartTime(started);
 						}
-						StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStartTime(started);
-					}
+					} catch (Exception e) {}
 					
 					long elementLastModified = element.getLastModified();
 					long containerCreated = container.getCreated();
@@ -124,21 +119,12 @@ public class ProcessManager implements Runnable {
 		return true;
 	}
 	
-	private boolean dockerConnected() {
-		try {
-			dockerClient.infoCmd().exec();
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-	
 	private final Runnable containersMonitor = () -> {
 		LoggingService.logInfo(MODULE_NAME, "monitoring containers");
 
-		if (!dockerConnected()) { 
+		if (!docker.isConnected()) { 
 			try {
-				dockerConnect();
+				docker.connect();
 			} catch (Exception e) {
 				LoggingService.logWarning(MODULE_NAME, "unable to connect to docker daemon");
 				return;
@@ -146,7 +132,7 @@ public class ProcessManager implements Runnable {
 		}
 		
 		synchronized (lock) {
-			List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
+			List<Container> containers = docker.getContainers();
 			for (Element element : elementManager.getElements())
 				if (getContainer(containers, element.getElementId()) == null)
 					addTask(Tasks.ADD, element);
@@ -157,31 +143,32 @@ public class ProcessManager implements Runnable {
 					addTask(Tasks.REMOVE, container.getId());
 					continue;
 				}
-				InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(container.getId())
-						.exec();
-				ContainerState status = containerInfo.getState();
-				String containerName = container.getNames()[0].substring(1);
-	
-				if (status.isRunning()) {
-					StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
-					LoggingService.logInfo(MODULE_NAME,
-							String.format("\"%s\": container is running", containerName));
-				} else {
-					StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.STOPPED);
-					LoggingService.logInfo(MODULE_NAME,
-							String.format("\"%s\": container stopped", containerName));
-					try {
-						LoggingService.logInfo(MODULE_NAME,
-								String.format("\"%s\": starting", containerName));
-						dockerClient.startContainerCmd(container.getId()).exec();
+				
+				try {
+					ContainerState status = docker.getContainerStatus(container.getId());
+					String containerName = container.getNames()[0].substring(1);
+		
+					if (status.isRunning()) {
 						StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
 						LoggingService.logInfo(MODULE_NAME,
-								String.format("\"%s\": started", containerName));
-					} catch (Exception startException) {
-						// unable to start the container, update it!
-						addTask(Tasks.UPDATE, container.getId());
+								String.format("\"%s\": container is running", containerName));
+					} else {
+						StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.STOPPED);
+						LoggingService.logInfo(MODULE_NAME,
+								String.format("\"%s\": container stopped", containerName));
+						try {
+							LoggingService.logInfo(MODULE_NAME,
+									String.format("\"%s\": starting", containerName));
+							docker.startContainer(container.getId());
+							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
+							LoggingService.logInfo(MODULE_NAME,
+									String.format("\"%s\": started", containerName));
+						} catch (Exception startException) {
+							// unable to start the container, update it!
+							addTask(Tasks.UPDATE, container.getId());
+						}
 					}
-				}
+				} catch (Exception e) {}
 			}
 		}
 	};
@@ -194,21 +181,6 @@ public class ProcessManager implements Runnable {
 		}
 	}
 	
-	private void dockerConnect() throws Exception {
-		DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder()
-				.withUri(Configuration.getDockerUrl())
-				.withDockerCertPath(Configuration.getControllerCert())
-				.build();
-		dockerClient = DockerClientBuilder.getInstance(config).build();
-
-		try {
-			Info info = dockerClient.infoCmd().exec();
-			LoggingService.logInfo(MODULE_NAME, "connected to docker daemon: " + info.getName());
-		} catch (Exception e) {
-			throw e;
-		}
-	}
-	
 	private Runnable checkUpdated = () -> {
 		if (updated)
 			updated = !updateElements();
@@ -216,8 +188,9 @@ public class ProcessManager implements Runnable {
 	
 	@Override
 	public void run() {
+		docker = DockerUtil.getInstance();
 		try {
-			dockerConnect();
+			docker.connect();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to connect to docker daemon");
 		}

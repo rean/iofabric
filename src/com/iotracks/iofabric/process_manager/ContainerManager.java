@@ -1,29 +1,26 @@
 package com.iotracks.iofabric.process_manager;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.RestartPolicy;
-import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.element.ElementManager;
+import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
-import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class ContainerManager {
 
-	private DockerClient dockerClient;
+	private DockerUtil docker;
 	private String containerId;
 	private ContainerTask task;
 
@@ -35,40 +32,32 @@ public class ContainerManager {
 	
 	private boolean containerExists() {
 		try {
-			dockerClient.inspectContainerCmd(containerId).exec();
+			docker.getContainerStatus(containerId);
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
+	
+	private void addElement() throws Exception {
+		Element element = (Element) task.data;
 
-	private void dockerLogin() throws Exception {
-		LoggingService.logInfo(MODULE_NAME, "logging in to registry");
 		try {
-			DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder()
-					.withUri("unix:///var/run/docker.sock")
-					.withDockerCertPath(Configuration.getControllerCert())
-					.withUsername("iointegrator")
-					.withPassword("0nTh3Edge2015")
-					.withEmail("admin@iotracks.com")
-					.withServerAddress("https://index.docker.io/v1/")
-					.build();
-			dockerClient = DockerClientBuilder.getInstance(config).build();
-
-			dockerClient.authCmd().exec();
+			Registry registry = ElementManager.getInstance().getRegistry(element.getRegistry());
+			if (registry == null) {
+				LoggingService.logWarning(MODULE_NAME, String.format("registry is not valid \"%s\"", element.getRegistry()));
+				throw new Exception();
+			}
+			docker.login(registry);
 		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "login failed - " + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "docker login failed : " + e.getMessage());
 			throw e;
 		}
-	}
 
-	private void addElement() {
-		// TODO : pull image and create container
-		Element element = (Element) task.data;
 		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.BUILDING);
 		LoggingService.logInfo(MODULE_NAME, "building \"" + element.getImageName() + "\"");
 		
-		List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
+		List<Container> containers = docker.getContainers();
 		Optional<Container> result = containers.stream()
 				.filter(c -> c.getNames()[0].trim().substring(1).equals(element.getElementId())).findFirst();
 		if (result.isPresent())
@@ -82,7 +71,7 @@ public class ContainerManager {
 			registry = sp[0];
 			tag = sp[1];
 		}
-		PullImageCmd req = dockerClient.pullImageCmd(registry).withAuthConfig(dockerClient.authConfig());
+		PullImageCmd req = docker.getDockerClient().pullImageCmd(registry).withAuthConfig(docker.getDockerClient().authConfig());
 		if (tag != null)
 			req.withTag(tag);
 
@@ -107,7 +96,7 @@ public class ContainerManager {
 				});
 			String[] extraHosts = { IOFABRIC_HOST };
 
-			CreateContainerResponse resp = dockerClient.createContainerCmd(element.getImageName())
+			CreateContainerResponse resp = docker.getDockerClient().createContainerCmd(element.getImageName())
 					.withCpuset("0")
 					.withExtraHosts(extraHosts)
 					.withExposedPorts(exposedPorts.toArray(new ExposedPort[0]))
@@ -130,7 +119,7 @@ public class ContainerManager {
 		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STARTING);
 		LoggingService.logInfo(MODULE_NAME, String.format("starting container \"%s\"", element.getImageName()));
 		try {
-			dockerClient.startContainerCmd(element.getContainerId()).exec();
+			docker.startContainer(element.getContainerId());
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" started", element.getImageName()));
 			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.RUNNING);
 		} catch (Exception ex) {
@@ -143,19 +132,19 @@ public class ContainerManager {
 	private void stopContainer() {
 		LoggingService.logInfo(MODULE_NAME, String.format("stopping container \"%s\"", containerId));
 		try {
-			dockerClient.stopContainerCmd(containerId).exec();
+			docker.stopContainer(containerId);
 			LoggingService.logInfo(MODULE_NAME, String.format("container \"%s\" stopped", containerId));
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, String.format("error stopping container \"%s\"", containerId));
 		}
 	}
 
-	private void removeContainer() {
+	private void removeContainer() throws Exception {
 		if (!containerExists())
 			return;
 		LoggingService.logInfo(MODULE_NAME, String.format("removing container \"%s\"", containerId));
 		try {
-			dockerClient.removeContainerCmd(containerId).withForce(true).exec();
+			docker.removeContainer(containerId);
 			LoggingService.logInfo(MODULE_NAME, String.format("container \"%s\" removed", containerId));
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, String.format("error removing container \"%s\"", containerId));
@@ -164,19 +153,21 @@ public class ContainerManager {
 	}
 
 	private void updateContainer() throws Exception {
-//		stopContainer();
+		stopContainer();
 		removeContainer();
 		addElement();
 		startElement();
 	}
 
 	public boolean execute(ContainerTask task) {
-		try {
-			dockerLogin();
-		} catch (Exception e) {
-			return false;
+		docker = DockerUtil.getInstance();
+		if (!docker.isConnected()) {
+			try {
+				docker.connect();
+			} catch (Exception e) {
+				return false;
+			}
 		}
-
 		this.task = task;
 		switch (task.action) {
 			case ADD:
@@ -187,25 +178,19 @@ public class ContainerManager {
 				} catch (Exception e) {
 					return false;
 				} finally {
-					try {
-						dockerClient.close();
-					} catch (IOException e) {
-					}
+					docker.close();
 				}
 	
 			case REMOVE:
 				containerId = task.data.toString();
 				try {
-//					stopContainer();
+					stopContainer();
 					removeContainer();
 					return true;
 				} catch (Exception e) {
 					return false;
 				} finally {
-					try {
-						dockerClient.close();
-					} catch (IOException e) {
-					}
+					docker.close();
 				}
 	
 			case UPDATE:
@@ -216,10 +201,7 @@ public class ContainerManager {
 				} catch (Exception e) {
 					return false;
 				} finally {
-					try {
-						dockerClient.close();
-					} catch (IOException e) {
-					}
+					docker.close();
 				}
 		}
 		return true;

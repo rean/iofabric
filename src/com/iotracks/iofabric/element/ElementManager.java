@@ -18,7 +18,7 @@ public class ElementManager {
 	private Map<String, String> configs;
 	private List<Registry> registries;
 	private static ElementManager instance = null;
-
+	
 	private ElementManager() {
 		elements = new ArrayList<>();
 		routes = new HashMap<>();
@@ -68,6 +68,14 @@ public class ElementManager {
 		synchronized (ElementManager.class) {
 			return registries;
 		}
+	}
+	
+	public Registry getRegistry(String name) {
+		for (Registry registry : registries) {
+			if (registry.getUrl().equals(name))
+				return registry;
+		}
+		return null;
 	}
 	
 	public void loadRegistries() {
