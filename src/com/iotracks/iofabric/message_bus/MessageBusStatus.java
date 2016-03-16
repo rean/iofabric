@@ -3,6 +3,10 @@ package com.iotracks.iofabric.message_bus;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+
 public class MessageBusStatus {
 	private long processedMessages;
 	private Map<String, Long> publishedMessagesPerElement;
@@ -39,6 +43,18 @@ public class MessageBusStatus {
 	public MessageBusStatus setAverageSpeed(float averageSpeed) {
 		this.averageSpeed = averageSpeed;
 		return this;
+	}
+	
+	public String getJsonPublishedMessagesPerElement() {
+		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+		publishedMessagesPerElement.entrySet().forEach(entry -> {
+			JsonObjectBuilder objectBuilder = Json.createObjectBuilder()
+					.add("id", entry.getKey())
+					.add("messagecount", entry.getValue());
+			arrayBuilder.add(objectBuilder);
+					
+		});
+		return arrayBuilder.toString();
 	}
 
 }
