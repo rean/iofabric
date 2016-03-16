@@ -46,25 +46,13 @@ public class CommandLineParser {
 
 		if (args[0].equals("deprovision")) {
 			result.append("Deprovisioning from controller...");
-			result.append("\nSuccess - tokens and identifiers and keys removed");
+			result.append(FieldAgent.getInstance().deProvision());
 
 			return result.toString();
 		}
 
 		if (args[0].equals("info")) {
-			result.append("Instance ID               : sdfh43t9EFHSD98hwefiuwefkshd890she");
-			result.append("\nIP Address                : 201.43.0.88");
-			result.append("\nNetwork Adapter           : eth0");
-			result.append("\nioFabric Controller       : http://iotracks.com/controllers/2398yef");
-			result.append("\nioFabric Certificate      : ~/temp/certs/abc.crt");
-			result.append("\nDocker URI                : unix:///var/run/docker.sock");
-			result.append("\nDisk Limit                : 14.5 GiB");
-			result.append("\nDisk Directory            : ~/temp/spool/");
-			result.append("\nMemory Limit              : 720 MiB");
-			result.append("\nCPU Limit                 : 74.8%");
-			result.append("\nLog Limit                 : 2.0 GiB");
-			result.append("\nLog Directory             : ~/temp/logs/");
-			result.append("\nLog File Count            : 10");
+			result.append(Configuration.getConfigReport());
 
 			return result.toString();
 		}
@@ -75,7 +63,7 @@ public class CommandLineParser {
 			}
 			String provisionKey = args[1];
 			result.append("Provisioning with key \"" + provisionKey + "\"...");
-			result.append(FieldAgent.getInstance().doProvisioning(provisionKey));
+			result.append(FieldAgent.getInstance().provision(provisionKey));
 
 			return result.toString();
 		}
@@ -118,60 +106,66 @@ public class CommandLineParser {
 
 	private static String showHelp() {
 		StringBuilder help = new StringBuilder();
-		help.append("Usage: iofabric [OPTIONS] COMMAND [arg...]\n");
-
-		help.append("\nOption                   GNU long option              Meaning");
-		help.append("\n======                   ===============              =======");
-		help.append("\n-h, -?                   --help                       Show this message");
-		help.append(
-				"\n-v                       --version                    Display the software version and license information\n\n");
-
-		help.append("\nCommand                  Arguments                    Meaning");
-		help.append("\n=======                  =========                    =======");
-		help.append("\nhelp                                                  Show this message");
-		help.append(
-				"\nversion                                               Display the software version and license information");
-		help.append(
-				"\nstatus                                                Display current status information about the software");
-		help.append(
-				"\nstart                                                 Start the ioFabric daemon which runs in the background");
-		help.append("\nstop                                                  Stop the ioFabric daemon");
-		help.append("\nrestart                                               Stop and then start the ioFabric daemon");
-		help.append(
-				"\nprovision                <provisioning key>           Attach this software to the configured ioFabric controller");
-		help.append(
-				"\ndeprovision                                           Detach this software from all ioFabric controllers");
-		help.append(
-				"\ninfo                                                  Display the current configuration and other information about the software");
-		help.append(
-				"\nconfig                   [OPTION] [VALUE]             Change the software configuration according to the options provided");
-		help.append(
-				"\n                         -d <#GB Limit>               Set the limit, in GiB, of disk space that the software is allowed to use");
-		help.append(
-				"\n                         -dl <dir>                    Set the directory to use for disk storage");
-		help.append(
-				"\n                         -m <#MB Limit>               Set the limit, in MiB, of memory that the software is allowed to use");
-		help.append(
-				"\n                         -p <#cpu % Limit>            Set the limit, in percentage, of CPU time that the software is allowed to use");
-		help.append(
-				"\n                         -a <uri>                     Set the uri of the fabric controller to which this software connects");
-		help.append(
-				"\n                         -ac <filepath>               Set the file path of the SSL/TLS certificate for validating the fabric controller identity");
-		help.append(
-				"\n                         -c <uri>                     Set the UNIX socket or network address that the Docker daemon is using");
-		help.append(
-				"\n                         -n <network adapter>         Set the name of the network adapter that holds the correct IP address of this machine");
-		help.append(
-				"\n							-l <#MB Limit>               Set the limit, in MiB, of disk space that the log files can consume");
-		help.append(
-				"\n							-ld <dir>                    Set the directory to use for log file storage");
-		help.append(
-				"\n							-lc <#log files>             Set the number of log files to evenly split the log storage limit\n\n");
+		help.append("Usage: iofabric [OPTIONS] COMMAND [arg...]\n" + 
+				"\n" + 
+				"Option           GNU long option         Meaning\n" + 
+				"======           ===============         =======\n" + 
+				"-h, -?           --help                  Show this message\n" + 
+				"-v               --version               Display the software version and\n" + 
+				"                                         license information\n" + 
+				"\n" + 
+				"\n" + 
+				"Command          Arguments               Meaning\n" + 
+				"=======          =========               =======\n" + 
+				"help                                     Show this message\n" + 
+				"version                                  Display the software version and\n" + 
+				"                                         license information\n" + 
+				"status                                   Display current status information\n" + 
+				"                                         about the software\n" + 
+				"start                                    Start the ioFabric daemon which\n" + 
+				"                                         runs in the background\n" + 
+				"stop                                     Stop the ioFabric daemon\n" + 
+				"restart                                  Stop and then start the ioFabric\n" + 
+				"                                         daemon\n" + 
+				"provision        <provisioning key>      Attach this software to the\n" + 
+				"                                         configured ioFabric controller\n" + 
+				"deprovision                              Detach this software from all\n" + 
+				"                                         ioFabric controllers\n" + 
+				"info                                     Display the current configuration\n" + 
+				"                                         and other information about the\n" + 
+				"                                         software\n" + 
+				"config           [OPTION] [VALUE]        Change the software configuration\n" + 
+				"                                         according to the options provided\n" + 
+				"                 -d <#GB Limit>          Set the limit, in GiB, of disk space\n" + 
+				"                                         that the software is allowed to use\n" + 
+				"                 -dl <dir>               Set the directory to use for disk\n" + 
+				"                                         storage\n" + 
+				"                 -m <#MB Limit>          Set the limit, in MiB, of memory that\n" + 
+				"                                         the software is allowed to use\n" + 
+				"                 -p <#cpu % Limit>       Set the limit, in percentage, of CPU\n" + 
+				"                                         time that the software is allowed\n" + 
+				"                                         to use\n" + 
+				"                 -a <uri>                Set the uri of the fabric controller\n" + 
+				"                                         to which this software connects\n" + 
+				"                 -ac <filepath>          Set the file path of the SSL/TLS\n" + 
+				"                                         certificate for validating the fabric\n" + 
+				"                                         controller identity\n" + 
+				"                 -c <uri>                Set the UNIX socket or network address\n" + 
+				"                                         that the Docker daemon is using\n" + 
+				"                 -n <network adapter>    Set the name of the network adapter\n" + 
+				"                                         that holds the correct IP address of \n" + 
+				"                                         this machine\n" + 
+				"                 -l <#MB Limit>          Set the limit, in MiB, of disk space\n" + 
+				"                                         that the log files can consume\n" + 
+				"                 -ld <dir>               Set the directory to use for log file\n" + 
+				"                                         storage\n" + 
+				"                 -lc <#log files>        Set the number of log files to evenly\n" + 
+				"                                         split the log storage limit\n" + 
+				"\n" + 
+				"\n" + 
+				"Report bugs to: kilton@iotracks.com\n" + 
+				"ioFabric home page: http://iotracks.com");
 		
-		
-		help.append("\nReport bugs to: kilton@iotracks.com");
-		help.append("\nioFabric home page: http://iotracks.com");
-
 		return help.toString();
 	}
 
