@@ -4,11 +4,10 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Queue;
 import java.util.TimeZone;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.DockerClient;
@@ -24,6 +23,7 @@ import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.process_manager.ContainerTask.Tasks;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
@@ -36,8 +36,19 @@ public class ProcessManager implements Runnable {
 	private final int MONITOR_CONTAINERS_STATUS_FREQ_SECONDS = 10;
 	private DockerClient dockerClient;
 	private ElementManager elementManager;
+	private Queue<ContainerTask> tasks;
+	public static Boolean updated = true;
+	private Object lock = new Object();
 
-	private boolean init() {
+	private Container getContainer(List<Container> containers, String containerName) {
+		for (Container container : containers)
+			if (container.getNames()[0].substring(1).equals(containerName))
+				return container;
+		
+		return null;
+	}
+	
+	private synchronized boolean updateElements() {
 		if (!dockerConnected()) { 
 			try {
 				dockerConnect();
@@ -47,67 +58,54 @@ public class ProcessManager implements Runnable {
 			}
 		}
 		
-		List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
-		List<Element> elements = new ArrayList<>();
-		elements = elementManager.getElements();
-		synchronized (ElementManager.class) {
-			if (elements != null) {
-				for (Element element : elements) {
-					Container container = null;
-					Optional<Container> result = containers.stream()
-							.filter(c -> c.getNames()[0].trim().substring(1).equals(element.getElementId())).findFirst();
-					if (result.isPresent())
-						container = result.get();
-
-					if (container != null) {
-						containers.remove(container);
-						element.setContainerId(container.getId());
-						
-						InspectContainerResponse inspect = dockerClient.inspectContainerCmd(container.getId()).exec();
-						element.setContainerIpAddress(inspect.getNetworkSettings().getIpAddress());
-						
-						ContainerState status = inspect.getState();
-						if (status.isRunning()) {
-							String date = status.getStartedAt();
-							int milli = Integer.parseInt(date.substring(20, 23));
-							date = date.substring(0, 10) + " " + date.substring(11, 19);
-							DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-							dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-							long started = 0;
-							try {
-								Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
-								started = local.getTime() + milli;
-							} catch (Exception e) {
-							}
-							element.setStartTime(started);
+		synchronized (lock) {
+			List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
+			List<Element> elements = elementManager.getElements();
+			for (Element element : elements) {
+				Container container = getContainer(containers, element.getElementId());
+				if (container != null) {
+					containers.remove(container);
+					element.setContainerId(container.getId());
+					
+					InspectContainerResponse inspect = dockerClient.inspectContainerCmd(container.getId()).exec();
+					element.setContainerIpAddress(inspect.getNetworkSettings().getIpAddress());
+					
+					ContainerState status = inspect.getState();
+					if (status.isRunning()) {
+						String date = status.getStartedAt();
+						int milli = Integer.parseInt(date.substring(20, 23));
+						date = date.substring(0, 10) + " " + date.substring(11, 19);
+						DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+						dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+						long started = 0;
+						try {
+							Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
+							started = local.getTime() + milli;
+						} catch (Exception e) {
 						}
-						
-						long elementLastModified = element.getLastModified();
-						long containerCreated = container.getCreated();
-						
-						List<PortMapping> containerPortMappings = new ArrayList<>();
-						Port[] containerPorts = container.getPorts(); 
-						if (containerPorts != null)
-							for (Port port : containerPorts) {
-								containerPortMappings.add(new PortMapping(port.getPublicPort().toString(), port.getPrivatePort().toString()));
-							}
-						
-						List<PortMapping> elementPortMappings = element.getPortMappings();
-						
-						if (!compareLists(elementPortMappings, containerPortMappings) || elementLastModified > containerCreated) {
-							update(Tasks.UPDATE, element);
-						}
-					} else {
-						update(Tasks.ADD, element);
+						StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStartTime(started);
 					}
+					
+					long elementLastModified = element.getLastModified();
+					long containerCreated = container.getCreated();
+					
+					List<PortMapping> containerPortMappings = new ArrayList<>();
+					Port[] containerPorts = container.getPorts(); 
+					if (containerPorts != null)
+						for (Port port : containerPorts) {
+							containerPortMappings.add(new PortMapping(port.getPublicPort().toString(), port.getPrivatePort().toString()));
+						}
+					
+					List<PortMapping> elementPortMappings = element.getPortMappings();
+					
+					if (!compareLists(elementPortMappings, containerPortMappings) || elementLastModified > containerCreated) {
+						addTask(Tasks.UPDATE, element);
+					}
+				} else {
+					addTask(Tasks.ADD, element);
 				}
 			}
 		}
-
-		containers.forEach(c -> {
-			update(Tasks.REMOVE, c.getId());
-		});
-
 		return true;
 	}
 	
@@ -147,41 +145,53 @@ public class ProcessManager implements Runnable {
 			}
 		}
 		
-		List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
-
-		containers.forEach(container -> {
-			InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(container.getId())
-					.exec();
-			ContainerState status = containerInfo.getState();
-			String containerName = container.getNames()[0].substring(1);
-
-			if (status.isRunning()) {
-				StatusReporter.setProcessManagerStatus().setElementsStatus(containerName, ElementStatus.RUNNING);
-				LoggingService.logInfo(MODULE_NAME,
-						String.format("\"%s\": container is running", containerName));
-			} else {
-				StatusReporter.setProcessManagerStatus().setElementsStatus(containerName,
-						ElementStatus.STOPPED);
-				LoggingService.logInfo(MODULE_NAME,
-						String.format("\"%s\": container stopped", containerName));
-				try {
+		synchronized (lock) {
+			List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).exec();
+			for (Element element : elementManager.getElements())
+				if (getContainer(containers, element.getElementId()) == null)
+					addTask(Tasks.ADD, element);
+			
+			for (Container container : containers) {
+				String elementId = container.getNames()[0].substring(1);
+				if (!elementManager.elementExists(elementId)) {
+					addTask(Tasks.REMOVE, container.getId());
+					continue;
+				}
+				InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(container.getId())
+						.exec();
+				ContainerState status = containerInfo.getState();
+				String containerName = container.getNames()[0].substring(1);
+	
+				if (status.isRunning()) {
+					StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
 					LoggingService.logInfo(MODULE_NAME,
-							String.format("\"%s\": starting", containerName));
-					dockerClient.startContainerCmd(container.getId()).exec();
-					StatusReporter.setProcessManagerStatus().setElementsStatus(containerName,
-							ElementStatus.RUNNING);
+							String.format("\"%s\": container is running", containerName));
+				} else {
+					StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.STOPPED);
 					LoggingService.logInfo(MODULE_NAME,
-							String.format("\"%s\": started", containerName));
-				} catch (Exception startException) {
-					// unable to start the container, update it!
-					update(Tasks.UPDATE, container.getId());
+							String.format("\"%s\": container stopped", containerName));
+					try {
+						LoggingService.logInfo(MODULE_NAME,
+								String.format("\"%s\": starting", containerName));
+						dockerClient.startContainerCmd(container.getId()).exec();
+						StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
+						LoggingService.logInfo(MODULE_NAME,
+								String.format("\"%s\": started", containerName));
+					} catch (Exception startException) {
+						// unable to start the container, update it!
+						addTask(Tasks.UPDATE, container.getId());
+					}
 				}
 			}
-		});
+		}
 	};
 	
-	public static void update(Tasks action, Object data) {
-		ContainerTaskManager.newTask(new ContainerTask(action, data));
+	private void addTask(Tasks action, Object data) {
+		ContainerTask task = new ContainerTask(action, data);
+		synchronized (tasks) {
+			if (!tasks.contains(task))
+				tasks.add(task);
+		}
 	}
 	
 	private void dockerConnect() throws Exception {
@@ -199,6 +209,11 @@ public class ProcessManager implements Runnable {
 		}
 	}
 	
+	private Runnable checkUpdated = () -> {
+		if (updated)
+			updated = !updateElements();
+	};
+	
 	@Override
 	public void run() {
 		try {
@@ -206,40 +221,25 @@ public class ProcessManager implements Runnable {
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to connect to docker daemon");
 		}
-		
+
+		tasks = new LinkedList<>();
 		elementManager = ElementManager.getInstance();
 		
-		LoggingService.logInfo(MODULE_NAME, "initializing...");
-		while (!init()) {
-			try {
-				Thread.sleep(100);
-			} catch (Exception e) {
-				
-			}
-		}
-		LoggingService.logInfo(MODULE_NAME, "initialization done");
-		
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(containersMonitor, 0, MONITOR_CONTAINERS_STATUS_FREQ_SECONDS,	TimeUnit.SECONDS);
+		Supervisor.scheduler.scheduleAtFixedRate(containersMonitor, 0, MONITOR_CONTAINERS_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
+		Supervisor.scheduler.scheduleAtFixedRate(checkUpdated, 0, 1, TimeUnit.SECONDS);
 		
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.RUNNING);
 		
-		int delay;
+		ContainerManager containerManager = new ContainerManager();
 		while (true) {
-			ContainerTask newTask = ContainerTaskManager.getTask();
-			if (newTask != null) {
-				delay = 50;
-				Thread taskThread = new Thread(new ContainerManager(newTask), "ContainerManager (" + newTask.action + ")");
-				ContainerTaskManager.updateTask(newTask, taskThread);
-				taskThread.start();
-			} else {
-				delay = 1000;
-				init();
+			ContainerTask newTask = null;
+			synchronized (tasks) {
+				newTask = tasks.poll();
 			}
-			try {
-				Thread.sleep(delay);
-			} catch (Exception e) {
-				
+			if (newTask != null) {
+				boolean taskResult = containerManager.execute(newTask);
+				if (!taskResult)
+					addTask(newTask.action, newTask.data);
 			}
 		}
 		
