@@ -4,15 +4,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -28,7 +28,6 @@ public class MessageBus {
 	private Map<String, MessagePublisher> publishers;
 	private Map<String, MessageReceiver> receivers;
 	private MessageIdGenerator idGenerator;
-	private ScheduledExecutorService scheduler;
 	private static MessageBus instance;
 	private ElementManager elementManager;
 	
@@ -95,6 +94,7 @@ public class MessageBus {
 	}
 
 	private void init() {
+		routes = elementManager.getRoutes();
 		idGenerator = new MessageIdGenerator();
 		publishers = new ConcurrentHashMap<>();
 		receivers = new ConcurrentHashMap<>();
@@ -178,6 +178,7 @@ public class MessageBus {
 	}
 	
 	private final Runnable calculateSpeed = () -> {
+		LoggingService.logInfo(MODULE_NAME, "calculating message processing speed");
 		System.gc();
 		
 		long now = System.currentTimeMillis();
@@ -189,9 +190,10 @@ public class MessageBus {
 	};
 	
 	private final Runnable checkMessageServerStatus = () -> {
+		LoggingService.logInfo(MODULE_NAME, "check message bus server status");
 		if (!messageBusServer.isServerActive()) {
 			LoggingService.logWarning(MODULE_NAME, "server is not active. restarting...");
-			stop(false);
+			stop();
 			try {
 				messageBusServer.startServer();
 				LoggingService.logInfo(MODULE_NAME, "server restarted");
@@ -226,14 +228,17 @@ public class MessageBus {
 		});
 	};
 	
+	public static void update() {
+		MessageBus.getInstance().updateRoutes();
+	}
+	
 	public void start() {
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.MESSAGE_BUS, ModulesStatus.STARTING);
-		
 		elementManager = ElementManager.getInstance();
-		elementManager.loadFromApi();
+//		elementManager.loadFromApi();
 		
 		messageBusServer = new MessageBusServer();
 		try {
+			LoggingService.logInfo(MODULE_NAME, "starting message bus server");
 			messageBusServer.startServer();
 			messageBusServer.initialize();
 		} catch (Exception e) {
@@ -242,23 +247,16 @@ public class MessageBus {
 			} catch (Exception e1) {}
 			LoggingService.logWarning(MODULE_NAME, "unable to start message bus server --> " + e.getMessage());
 			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.MESSAGE_BUS, ModulesStatus.STOPPED);
-			return;
 		}
 		
-		routes = elementManager.getRoutes();
-		
+		LoggingService.logInfo(MODULE_NAME, "starting message bus server");
 		init();
 
-		scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(calculateSpeed, 0, SPEED_CALCULATION_FREQ_MINUTES, TimeUnit.MINUTES);
-		scheduler.scheduleAtFixedRate(checkMessageServerStatus, 5, 5, TimeUnit.SECONDS);
-
-		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.MESSAGE_BUS, ModulesStatus.RUNNING);
+		Supervisor.scheduler.scheduleAtFixedRate(calculateSpeed, 0, SPEED_CALCULATION_FREQ_MINUTES, TimeUnit.MINUTES);
+		Supervisor.scheduler.scheduleAtFixedRate(checkMessageServerStatus, 5, 5, TimeUnit.SECONDS);
 	}
 	
-	public void stop(boolean shutdown) {
-		if (shutdown)
-			scheduler.shutdown();
+	public void stop() {
 		for (MessagePublisher publisher : publishers.values())
 			publisher.close();
 		try {
@@ -279,11 +277,11 @@ public class MessageBus {
 		
 		// ********************************************
 		
-		System.out.println(messageBus.messageQuery("DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V", "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh", 1457727913251l, 1457728865998l).size());
+		messageBus.testPublishSimultaneously();
 		
 		// ********************************************
 
-		messageBus.stop(true);
+		messageBus.stop();
 		System.exit(0);
 	}
 	
@@ -293,7 +291,7 @@ public class MessageBus {
 	private void testPublish() {
 		String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
 		String r = "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh";
-		enableRealTimeReceiving(r);
+//		enableRealTimeReceiving(r);
 		
 		Message m = new Message();
 		m.setTag("BB");
@@ -343,16 +341,24 @@ public class MessageBus {
 	
 	private volatile int threadsCount;
 	private void testPublishSimultaneously() throws Exception {
-		int maxThreads = 1;
-		int messagesPerThread = 20000;
+		int maxThreads = 50;
+		int messagesPerThread = 5000;
 		
 		Runnable sendMessage = () -> {
+			int delay = new Random().nextInt(20);
 			Message m = new Message();
 			String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
 			m.setPublisher(p);
-			for (int i = 0; i < messagesPerThread; i++)
+			for (int i = 0; i < messagesPerThread; i++) {
 				publishMessage(m);
-			threadsCount++;	
+				try {
+					Thread.sleep(delay);
+				} catch (Exception e) {} 
+			}
+			synchronized (MessageBus.class) {
+				threadsCount++;	
+				System.out.println(threadsCount + " DONE!");
+			}
 		};
 		
 		long start = System.currentTimeMillis();
