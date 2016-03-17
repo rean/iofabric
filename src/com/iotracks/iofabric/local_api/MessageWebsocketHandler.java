@@ -211,17 +211,10 @@ public class MessageWebsocketHandler {
 		tryCount++;
 		Message message = messageContextMap.get(ctx);
 		ByteBuf buffer1 = ctx.alloc().buffer();
-		//Send Opcode
+		int length = 50;
 		buffer1.writeByte(OPCODE_MSG);
-
-		//TODO: Send Total Length of IOMessage - 4 bytes ***** Do it for receiving too
-
-		//Version
-		buffer1.writeBytes(BytesUtil.shortToBytes(message.getVersion())); //version
-		//Send Length of Message
-		sendMessageFieldsLength(message, buffer1);
-		//Send Message
-		sendMessageFields(message, buffer1);
+		buffer1.writeBytes(BytesUtil.integerToBytes(length));
+		buffer1.writeBytes(BytesUtil.stringToBytes("This is my message to send"));
 		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 	}
 
