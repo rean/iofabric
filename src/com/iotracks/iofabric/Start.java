@@ -79,12 +79,13 @@ public class Start {
 			message.putStringProperty("command", command);
 			message.putObjectProperty("receiver", "iofabric.commandline.command");
 			producer.send(message);
-			if (!args[0].equals("stop")) {
-				ClientMessage received = consumer.receive();
-				received.acknowledge();
-				String response = received.getStringProperty("response");
-				System.out.println(response);
-			}
+			if (args[0].equals("stop"))
+				System.exit(0);
+			ClientMessage received = consumer.receive();
+			received.acknowledge();
+			String response = received.getStringProperty("response");
+			System.out.println(response);
+
 			producer.close();
 			consumer.close();
 		} catch (Exception e) {
