@@ -10,6 +10,7 @@ public class MessageCallback {
 	}
 	
 	public void sendRealtimeMessage(Message message) {
+		//TODO : send received message to container "name"
 		MessageWebsocketHandler handler = new MessageWebsocketHandler();
 		handler.sendRealTimeMessage(name, message);
 	}

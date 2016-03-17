@@ -43,6 +43,7 @@ public class Supervisor {
 
 		
 		if (processManager.getState() == State.TERMINATED) {
+			LoggingService.logWarning(MODULE_NAME, "process manager stopped. restarting...");
 			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.STARTING);
 			processManager = new Thread(new ProcessManager(), "Process Manager");
 			processManager.start();

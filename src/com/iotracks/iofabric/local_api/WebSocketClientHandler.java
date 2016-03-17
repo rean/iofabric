@@ -13,6 +13,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
@@ -68,8 +69,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 			}
 			return;
 		}
-	//	sendRealTimeMessageTest(ctx);
+		sendRealTimeMessageTest(ctx);
 		return;
+
 	}
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
@@ -127,12 +129,12 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		String messageGroupId = "group1"; //messageGroupId
 		Integer seqNum = 1; //sequence number
 		Integer seqTot = 1; //sequence total
-		byte priority = 5; //priority 
+		Integer priority = 5; //priority 
 		Long timestamp = (long)0; //timestamp
 		String publisher = "viewer"; //publisher
 		String authid = "auth"; //authid
 		String authGroup = "authgrp"; //auth group
-		Long chainPos = (long)10; //chain position
+		Integer chainPos = 10; //chain position
 		String hash = "";  //hash
 		String prevHash = ""; //previous hash
 		String nounce = "";  //nounce
@@ -157,7 +159,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		buffer1.writeByte(publisher.getBytes().length); //publisher
 		buffer1.writeBytes(BytesUtil.shortToBytes((short)authid.getBytes().length)); //auth id
 		buffer1.writeBytes(BytesUtil.shortToBytes((short)authGroup.getBytes().length)); //auth group
-		buffer1.writeByte(BytesUtil.longToBytes(chainPos).length); //chain position
+		buffer1.writeByte(BytesUtil.integerToBytes(chainPos).length); //chain position
 		buffer1.writeBytes(BytesUtil.shortToBytes((short)hash.getBytes().length)); //hash
 		buffer1.writeBytes(BytesUtil.shortToBytes((short)prevHash.getBytes().length)); //hash previous
 		buffer1.writeBytes(BytesUtil.shortToBytes((short)nounce.getBytes().length)); //nounce
@@ -174,12 +176,12 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		buffer1.writeBytes(BytesUtil.stringToBytes(messageGroupId)); //messageGroupId
 		buffer1.writeBytes(BytesUtil.integerToBytes(seqNum)); //sequence number
 		buffer1.writeBytes(BytesUtil.integerToBytes(seqTot)); //sequence total
-		buffer1.writeByte(priority); //priority
+		buffer1.writeBytes(BytesUtil.integerToBytes(priority)); //priority
 		buffer1.writeBytes(BytesUtil.longToBytes(timestamp)); //timestamp
 		buffer1.writeBytes(BytesUtil.stringToBytes(publisher)); //publisher
 		buffer1.writeBytes(BytesUtil.stringToBytes(authid)); //authid
 		buffer1.writeBytes(BytesUtil.stringToBytes(authGroup)); //auth group
-		buffer1.writeBytes(BytesUtil.longToBytes(chainPos)); //chain position
+		buffer1.writeBytes(BytesUtil.integerToBytes(chainPos)); //chain position
 		buffer1.writeBytes(BytesUtil.stringToBytes(hash)); //hash
 		buffer1.writeBytes(BytesUtil.stringToBytes(prevHash)); //previous hash
 		buffer1.writeBytes(BytesUtil.stringToBytes(nounce)); //nounce

@@ -156,10 +156,10 @@ public class MessageArchive {
 				RandomAccessFile dataFile = new RandomAccessFile(new File(diskDirectory + fileName.substring(0, fileName.indexOf(".")) + ".iomsg"), "r");
 				while (indexFile.getFilePointer() < indexFile.length()) {
 					byte[] header = new byte[HEADER_SIZE];
-					byte[] dataPosBytes = new byte[Long.BYTES];
+//					byte[] dataPosBytes = new byte[Long.BYTES];
 					
 					indexFile.read(header, 0, HEADER_SIZE);
-					long dataPos = indexFile.readLong();
+//					long dataPos = indexFile.readLong();
 					int dataSize = getDataSize(header);
 					byte[] data = new byte[dataSize];
 					dataFile.read(data, 0, dataSize);
