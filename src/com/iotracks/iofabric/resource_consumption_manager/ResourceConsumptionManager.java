@@ -12,14 +12,15 @@ import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class ResourceConsumptionManager extends Thread {
-	private boolean running;
+public class ResourceConsumptionManager {
 	private final long GET_USAGE_DATA_FREQ_SECONDS = 5;
 	private String MODULE_NAME = "Resource Consumption Manager";
 	private float diskLimit, cpuLimit, memoryLimit;
 
 	private Runnable getUsageData = () -> {
 		LoggingService.logInfo(MODULE_NAME, "get usage data");
+
+		updateConfig();
 
 		float memoryUsage = getMemoryUsage();
 		float cpuUsage = getCpuUsage();
@@ -34,10 +35,6 @@ public class ResourceConsumptionManager extends Thread {
 
 	};
 
-	public ResourceConsumptionManager() {
-		this.setName(MODULE_NAME);
-	}
-	
 	public void updateConfig() {
 		diskLimit = Configuration.getDiskLimit();
 		cpuLimit = Configuration.getCpuLimit();
@@ -135,26 +132,11 @@ public class ResourceConsumptionManager extends Thread {
 		return length / 1024f / 1024f / 1024f;
 	}
 	
-	@Override
-	public void run() {
-		running = true;
-
-		updateConfig();
-		
+	public void start() {
 		Supervisor.scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 
 		LoggingService.logInfo(MODULE_NAME, "started");
-		while (running)
-			;
 	}
-
-	public void stopRunning() {
-		running = false;
-	}
-
-	public boolean isRunning() {
-		return running;
-	}
-
+	
 }

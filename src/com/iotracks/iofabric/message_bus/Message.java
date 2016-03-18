@@ -668,4 +668,39 @@ public class Message {
 
 		return result.toString();
 	}
+	
+	public void decodeBase64(byte[] bytes) {
+		Message result = null;
+		try {
+			result = new Message(Base64.getDecoder().decode(bytes));
+			id = result.id;
+			tag = result.tag;
+			messageGroupId = result.messageGroupId;
+			sequenceNumber = result.sequenceNumber;
+			sequenceTotal = result.sequenceTotal;
+			priority = result.priority;
+			timestamp = result.timestamp;
+			publisher = result.publisher;
+			authIdentifier = result.authIdentifier;
+			authGroup = result.authGroup;
+			version = result.version;
+			chainPosition = result.chainPosition;
+			hash = result.hash;
+			previousHash = result.previousHash;
+			nonce = result.nonce;
+			difficultyTarget = result.difficultyTarget;
+			infoType = result.infoType;
+			infoFormat = result.infoFormat;
+			contextData = result.contextData;
+			contentData = result.contentData;
+		} catch (Exception e) {	}
+	}
+	
+	public byte[] encodeBase64() {
+		try {
+			return Base64.getEncoder().encode(this.getBytes());
+		} catch (Exception e) {
+			return null;
+		}
+	}
 }

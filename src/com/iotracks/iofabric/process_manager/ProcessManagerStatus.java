@@ -37,7 +37,6 @@ public class ProcessManagerStatus {
 					.add("starttime", status.getStartTime())
 					.add("operatingduration", status.getOperatingDuration());
 			arrayBuilder.add(objectBuilder);
-					
 		});
 		return arrayBuilder.toString();
 	}

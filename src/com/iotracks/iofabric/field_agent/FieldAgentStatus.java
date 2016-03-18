@@ -1,6 +1,7 @@
 package com.iotracks.iofabric.field_agent;
 
 import com.iotracks.iofabric.utils.Constants;
+import com.iotracks.iofabric.utils.Constants.ControllerStatus;
 
 public class FieldAgentStatus {
 
@@ -8,6 +9,10 @@ public class FieldAgentStatus {
 	private long lastCommandTime;
 	private boolean controllerVerified;
 
+	public FieldAgentStatus() {
+		contollerStatus = ControllerStatus.BROKEN;
+	}
+	
 	public Constants.ControllerStatus getContollerStatus() {
 		return contollerStatus;
 	}

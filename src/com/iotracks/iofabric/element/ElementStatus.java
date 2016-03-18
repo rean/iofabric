@@ -4,7 +4,6 @@ public class ElementStatus {
 
 	private com.iotracks.iofabric.utils.Constants.ElementStatus status;
 	private long startTime;
-	private long operatingDuration;
 
 	public com.iotracks.iofabric.utils.Constants.ElementStatus getStatus() {
 		return status;
@@ -23,10 +22,7 @@ public class ElementStatus {
 	}
 
 	public long getOperatingDuration() {
-		return operatingDuration;
+		return System.currentTimeMillis() - startTime;
 	}
 
-	public void setOperatingDuration(long operatingDuration) {
-		this.operatingDuration = operatingDuration;
-	}
 }

@@ -1,24 +1,29 @@
 package com.iotracks.iofabric.message_bus;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
+import com.iotracks.iofabric.field_agent.FieldAgent;
+import com.iotracks.iofabric.field_agent.FieldAgentStatus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
+import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
+import com.sun.org.apache.bcel.internal.classfile.Field;
 
-public class MessageBus {
+public class MessageBus implements Observer {
 	
 	private final String MODULE_NAME = "Message Bus";
 	private final int SPEED_CALCULATION_FREQ_MINUTES = 1;
@@ -30,6 +35,7 @@ public class MessageBus {
 	private MessageIdGenerator idGenerator;
 	private static MessageBus instance;
 	private ElementManager elementManager;
+	private Object updateLock = new Object();
 	
 	private MessageBus() {
 	}
@@ -101,21 +107,25 @@ public class MessageBus {
 
 		if (routes == null)
 			return;
-		
-		routes.entrySet().forEach(entry -> {
-			if (entry.getValue() != null && entry.getValue().getReceivers() != null) {
-				publishers.put(entry.getKey(), new MessagePublisher(entry.getKey(), entry.getValue()));
-				for (String receiver : entry.getValue().getReceivers())
-					if (!receivers.containsKey(receiver)) {
-						try {
-							messageBusServer.createCosumer(receiver);
-							receivers.put(receiver, new MessageReceiver(receiver));
-						} catch (Exception e) {
-							LoggingService.logWarning(MODULE_NAME + "(" + receiver + ")", "unable to start receiver module --> " + e.getMessage());
-						}
-					}
-			}
-		});
+		routes.entrySet().stream()
+			.filter(route -> route.getValue() != null)
+			.filter(route -> route.getValue().getReceivers() != null)
+			.forEach(entry -> {
+					publishers.put(entry.getKey(), new MessagePublisher(entry.getKey(), entry.getValue()));
+					receivers.putAll(entry.getValue().getReceivers()
+							.stream()
+							.filter(item -> !receivers.containsKey(item))
+							.collect(Collectors.toMap(item -> item, item -> {
+								try {
+									messageBusServer.createCosumer(item);
+								} catch (Exception e) {
+									LoggingService.logWarning(MODULE_NAME + "(" + item + ")",
+											"unable to start receiver module --> " + e.getMessage());
+								}
+								return new MessageReceiver(item);
+							})));
+			});
+
 	}
 	
 	public synchronized List<Message> messageQuery(String publisher, String receiver, long from, long to) {
@@ -125,56 +135,6 @@ public class MessageBus {
 
 		List<Message> result = publishers.get(publisher).messageQuery(from, to);
 		return result;
-	}
-	
-	public synchronized void updateRoutes() {
-		Map<String, Route> newRoutes = elementManager.getRoutes();
-		List<String> newPublishers = new ArrayList<>();
-		List<String> newReceivers = new ArrayList<>();
-		if (newRoutes != null) {
-			newRoutes.entrySet().forEach(entry -> {
-				if (entry.getValue() != null && entry.getValue().getReceivers() != null) {
-					newPublishers.add(entry.getKey());
-					for (String receiver : entry.getValue().getReceivers())
-						if (!newReceivers.contains(receiver)) {
-							newReceivers.add(receiver);
-						}
-				}
-			});
-		}
-		List<String> toRemove = new ArrayList<>();
-
-		publishers.entrySet().forEach(entry -> {
-			if (!newPublishers.contains(entry.getKey())) {
-				entry.getValue().close();
-				toRemove.add(entry.getKey());
-			}
-		});
-		toRemove.forEach(publisher -> {
-			publishers.remove(publisher);
-		});
-		toRemove.clear();
-		newPublishers.forEach(publisher -> {
-			if (!publishers.containsKey(publisher))
-				publishers.put(publisher, new MessagePublisher(publisher, newRoutes.get(publisher)));
-		});
-		
-		receivers.entrySet().forEach(entry -> {
-			if (!newReceivers.contains(entry.getKey())) {
-				entry.getValue().close();
-				toRemove.add(entry.getKey());
-			}
-		});
-		toRemove.forEach(receiver -> {
-			receivers.remove(receiver);
-		});
-		toRemove.clear();
-		newReceivers.forEach(receiver -> {
-			if (!receivers.containsKey(receiver))
-				receivers.put(receiver, new MessageReceiver(receiver));
-		});
-		
-		routes = newRoutes;
 	}
 	
 	private final Runnable calculateSpeed = () -> {
@@ -228,13 +188,45 @@ public class MessageBus {
 		});
 	};
 	
-	public static void update() {
-		MessageBus.getInstance().updateRoutes();
+	public void update() {
+		synchronized (updateLock) {
+			Map<String, Route> newRoutes = elementManager.getRoutes();
+			List<String> newPublishers = new ArrayList<>();
+			List<String> newReceivers = new ArrayList<>();
+			
+			if (newRoutes != null) {
+				newRoutes.entrySet()
+					.stream()
+					.filter(route -> route.getValue() != null)
+					.filter(route -> route.getValue().getReceivers() != null)
+					.forEach(entry -> {
+						newPublishers.add(entry.getKey());
+						newReceivers.addAll(entry.getValue().getReceivers()
+								.stream().filter(item -> !newReceivers.contains(item))
+								.collect(Collectors.toList()));
+					});
+			}
+
+			publishers.entrySet().removeIf(entry -> !newPublishers.contains(entry.getKey()));
+			publishers.putAll(
+					newPublishers.stream()
+					.filter(publisher -> !publishers.containsKey(publisher))
+					.collect(Collectors.toMap(publisher -> publisher, 
+							publisher -> new MessagePublisher(publisher, newRoutes.get(publisher)))));
+
+			receivers.entrySet().removeIf(entry -> !newReceivers.contains(entry.getKey()));
+			receivers.putAll(
+					newReceivers.stream()
+					.filter(receiver -> !receivers.containsKey(receiver))
+					.collect(Collectors.toMap(receiver -> receiver, 
+							receiver -> new MessageReceiver(receiver))));
+
+			routes = newRoutes;
+		}
 	}
 	
 	public void start() {
 		elementManager = ElementManager.getInstance();
-//		elementManager.loadFromApi();
 		
 		messageBusServer = new MessageBusServer();
 		try {
@@ -262,116 +254,6 @@ public class MessageBus {
 		try {
 			messageBusServer.stopServer();
 		} catch (Exception e) {}
-	}
-	
-	public static void main(String[] args) throws Exception {
-		Configuration.loadConfig();
-		try {
-			LoggingService.setupLogger();
-		} catch (Exception e) {
-			System.out.println("Error starting logging service\n" + e.getMessage());
-			System.exit(1);
-		}
-		LoggingService.logInfo("Main", "configuration loaded.");
-		MessageBus messageBus = MessageBus.getInstance();
-		
-		// ********************************************
-		
-		messageBus.testPublishSimultaneously();
-		
-		// ********************************************
-
-		messageBus.stop();
-		System.exit(0);
-	}
-	
-	
-	// tests
-	
-	private void testPublish() {
-		String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
-		String r = "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh";
-//		enableRealTimeReceiving(r);
-		
-		Message m = new Message();
-		m.setTag("BB");
-		m.setMessageGroupId("CC");
-		m.setSequenceNumber(1);
-		m.setSequenceTotal(2);
-		m.setPriority((byte) 3);
-		m.setPublisher(p);
-		m.setAuthIdentifier("EE");
-		m.setAuthGroup("FF");
-		m.setChainPosition(5);
-		m.setHash("GG");
-		m.setPreviousHash("HH");
-		m.setNonce("II");
-		m.setDifficultyTarget(6);
-		m.setInfoType("JJ");
-		m.setInfoFormat("KK");
-		m.setContextData(new byte[] {7, 7, 7, 7, 7});
-		m.setContentData(new byte[] {8, 8, 8, 8, 8});
-		System.out.println(m.toString());
-
-		long start = System.currentTimeMillis();
-		for (int i = 0; i < 10001; i++) {
-			publishMessage(m);
-		}
-		System.out.println(System.currentTimeMillis() - start);
-
-		List<Message> messages = getMessages(r);
-		for (Message message : messages) {
-			System.out.println(message);
-		}
-	}
-	
-	private void testDuplicateIds() {
-		final int number = 200000;
-		Set<String> ids = new HashSet<>();
-		System.out.println("STARTED");
-		for (int i = 0; i < number; i++) {
-			String id = idGenerator.getNextId();
-			if (id.equals("") || ids.contains(id))
-				System.out.println(id);
-			else
-				ids.add(id);
-		}
-		System.out.println("DONE!");
-	}
-	
-	private volatile int threadsCount;
-	private void testPublishSimultaneously() throws Exception {
-		int maxThreads = 50;
-		int messagesPerThread = 5000;
-		
-		Runnable sendMessage = () -> {
-			int delay = new Random().nextInt(20);
-			Message m = new Message();
-			String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
-			m.setPublisher(p);
-			for (int i = 0; i < messagesPerThread; i++) {
-				publishMessage(m);
-				try {
-					Thread.sleep(delay);
-				} catch (Exception e) {} 
-			}
-			synchronized (MessageBus.class) {
-				threadsCount++;	
-				System.out.println(threadsCount + " DONE!");
-			}
-		};
-		
-		long start = System.currentTimeMillis();
-		for (int i = 0; i < maxThreads; i++)
-			new Thread(sendMessage).start();
-		while (threadsCount != maxThreads);
-		long stop = System.currentTimeMillis();
-		System.out.println(stop - start);
-		System.out.println(String.format("%d messages sent ;)", maxThreads * messagesPerThread));
-
-		String r = "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh";
-		getMessages(r);
-		System.out.println();
 	}
 	
 }

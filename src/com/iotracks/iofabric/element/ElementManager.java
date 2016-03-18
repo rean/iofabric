@@ -196,11 +196,15 @@ public class ElementManager {
 	}
 
 	public void setElements(List<Element> elements) {
-		this.elements = elements;
+		synchronized (ElementManager.class) {
+			this.elements = elements;
+		}
 	}
 
 	public void setRoutes(Map<String, Route> routes) {
-		this.routes = routes;
+		synchronized (ElementManager.class) {
+			this.routes = routes;
+		}
 	}
 
 	public boolean elementExists(String elementId) {
@@ -218,6 +222,14 @@ public class ElementManager {
 			configs.clear();
 			registries.clear();
 		}
+	}
+
+	public Element getElementById(String elementId) {
+		for (Element element : elements)
+			if (element.getElementId().equals(elementId))
+				return element;
+				
+		return null;
 	}
 
 }

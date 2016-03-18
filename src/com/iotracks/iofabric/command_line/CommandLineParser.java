@@ -95,7 +95,7 @@ public class CommandLineParser {
 					result.append("\n\tOption : -" + e.getKey() + "\tValue : " + e.getValue());
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
-				result.append("error updating new config.\n" + e.getMessage());
+				result.append("error updating new config : " + e.getMessage());
 			}
 			
 			return result.toString();

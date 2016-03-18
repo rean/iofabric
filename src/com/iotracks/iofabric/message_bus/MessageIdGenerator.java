@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 import com.iotracks.iofabric.supervisor.Supervisor;
 
 public class MessageIdGenerator {
-	private final char[] ALPHABETS_ARRAY = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ".toCharArray();
+	private final char[] ALPHABETS_ARRAY = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789".toCharArray();
 	private String toBase58(long number) {
 		StringBuilder result = new StringBuilder();
 		while (number >= 58) {
@@ -56,8 +56,7 @@ public class MessageIdGenerator {
 //  			12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
 //  Double:		uWJ7hf5NAL7ufAjUbfwAfAwuwQfLNN9y9wyUQy5syYE3W9qJsWC3bEQu7WYUWJyUYNu3EbSfbCLWwdNsGsEYuqY35h79YoSqYh7bfYWGGNmWqYyWoummsdwodoqLyjGSwyfWhu3hb1Q1J9wWhdUbJufo9AACYJyuYG3E5mmTre6jpcs
 //	Float:		319jQQdmU33UhsMFqAEuBx
-//  Long:		ddQ8PjM6Lpn
-//	Integer:	85qLg4
+//  Long:		XZvFwUyHzQM
+//	Integer:	DRvaEH
 //	Elements:	rv8H3m2fdzKJrKNVGftmWFYDbvgb3tpv
-
 }

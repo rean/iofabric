@@ -1,7 +1,7 @@
 package com.iotracks.iofabric.field_agent;
 
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Paths;
@@ -16,6 +16,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+import javax.json.JsonWriter;
 
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
@@ -23,12 +24,10 @@ import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.field_agent.controller.APIServer;
-import com.iotracks.iofabric.message_bus.MessageBus;
-import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
-import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
+import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -43,6 +42,8 @@ public class FieldAgent {
 	private long lastGetChangesList;
 	private ElementManager elementManager;
 	private static FieldAgent instance;
+	private List<Observer> observers;
+	private boolean firstTime = true;
 
 	private FieldAgent() {
 		lastGetChangesList = 0;
@@ -70,7 +71,6 @@ public class FieldAgent {
 			return;
 		}
 		
-		getFabricConfig();
 		Map<String, Object> queryParams = new HashMap<>();
 		queryParams.put("timestamp", lastGetChangesList);
 		
@@ -87,34 +87,37 @@ public class FieldAgent {
 		lastGetChangesList = result.getJsonNumber("timestamp").longValue();
 
 		JsonObject changes = result.getJsonObject("changes");
-		if (changes.getBoolean("config")) {
-			// TODO: config changed
-		}
-		if (changes.getBoolean("containerlist")) {
+		boolean changed = false;
+		if (changes.getBoolean("config") || firstTime)
+			getFabricConfig();
+		
+		if (changes.getBoolean("containerlist") || firstTime) {
 			loadElementsList(false);
-			ProcessManager.updated = true;
+			changed = true;
 		}
-		if (changes.getBoolean("containerconfig")) {
+		if (changes.getBoolean("containerconfig") || firstTime) {
 			loadElementsConfig(false);
+			changed = true;
 		}
-		if (changes.getBoolean("routing")) {
+		if (changes.getBoolean("routing") || firstTime) {
 			loadRoutes(false);
-			MessageBus.update();
+			changed = true;
 		}
-		if (changes.getBoolean("registries")) {
+		if (changes.getBoolean("registries") || firstTime) {
 			loadRegistries(false);
+			changed = true;
 		}
+		if (changed)
+			notifyObservers();
+		
+		firstTime = false;
 	};
 	
-	public static void update() {
-		FieldAgent.getInstance().loadElementsList(false);
-		ProcessManager.updated = true;
-		FieldAgent.getInstance().loadElementsConfig(false);
-		FieldAgent.getInstance().loadRoutes(false);
-		MessageBus.update();
-		FieldAgent.getInstance().loadRegistries(false);
+	public void notifyObservers() {
+		for (Observer observer : observers)
+			observer.update();
 	}
-
+	
 	public void loadRegistries(boolean fromFile) {
 		LoggingService.logInfo(MODULE_NAME, "get registries");
 		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
@@ -122,11 +125,10 @@ public class FieldAgent {
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
+		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
 			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			return;
 		}
-		
 		
 		String filename = "registries.json";
 		try {
@@ -141,7 +143,7 @@ public class FieldAgent {
 					throw new Exception("error from fabric controller");
 
 				registriesList = result.getJsonArray("registries");
-				saveFile(registriesList.toString(), filesPath + filename);
+				saveFile(registriesList, filesPath + filename);
 			}
 
 			List<Registry> registries = new ArrayList<>(); 
@@ -170,7 +172,7 @@ public class FieldAgent {
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
+		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
 			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			return;
 		}
@@ -187,7 +189,7 @@ public class FieldAgent {
 				if (!result.getString("status").equals("ok"))
 					throw new Exception("error from fabric controller");
 				configs = result.getJsonArray("containerconfig");
-				saveFile(configs.toString(), filesPath + filename);
+				saveFile(configs, filesPath + filename);
 			}
 
 			Map<String, String> cfg = new HashMap<>();
@@ -211,7 +213,7 @@ public class FieldAgent {
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
+		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
 			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			return;
 		}
@@ -228,7 +230,7 @@ public class FieldAgent {
 				if (!result.getString("status").equals("ok"))
 					throw new Exception("error from fabric controller");
 				routes = result.getJsonArray("routing");
-				saveFile(routes.toString(), filesPath + filename);
+				saveFile(routes, filesPath + filename);
 			}
 
 			Map<String, Route> r = new HashMap<>();
@@ -259,7 +261,7 @@ public class FieldAgent {
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
+		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
 			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			return;
 		}
@@ -276,7 +278,7 @@ public class FieldAgent {
 				if (!result.getString("status").equals("ok"))
 					throw new Exception("error from fabric controller");
 				containers = result.getJsonArray("containerlist");
-				saveFile(containers.toString(), filesPath + filename);
+				saveFile(containers, filesPath + filename);
 			}
 
 			List<Element> elements = new ArrayList<>();
@@ -387,19 +389,31 @@ public class FieldAgent {
 		try {
 			if (!Files.exists(Paths.get(filename), LinkOption.NOFOLLOW_LINKS))
 				return null;
-			byte[] encoded = Files.readAllBytes(Paths.get(filename));
-			String lines = new String(encoded, StandardCharsets.US_ASCII);
-			String data = lines.substring(lines.indexOf('\n') + 1);
-			String checksum = lines.substring(1, lines.indexOf('"', 1));
-			if (!checksum(data).equals(checksum)) {
+			
+			JsonReader reader = Json.createReader(new FileReader(Paths.get(filename).toFile()));
+			JsonObject object = reader.readObject();
+			reader.close();
+			String checksum = object.getString("checksum");
+			JsonArray result = object.getJsonArray("data");
+			if (!checksum(result.toString()).equals(checksum))
 				return null;
-			}
-			JsonReader reader = Json.createReader(new StringReader(data));
-			JsonArray result = reader.readArray();			
 			return result;
 		} catch (Exception e) {
 			return null;
 		}
+	}
+	
+	private void saveFile(JsonArray data, String filename) {
+		try {
+			String checksum = checksum(data.toString());
+			JsonObject object = Json.createObjectBuilder()
+					.add("checksum", checksum)
+					.add("data", data)
+					.build();
+			JsonWriter writer = Json.createWriter(new FileWriter(Paths.get(filename).toFile()));
+			writer.writeObject(object);
+			writer.close();
+		} catch (Exception e) {}
 	}
 	
 	private void getFabricConfig() {
@@ -516,13 +530,6 @@ public class FieldAgent {
 		}
 	}
 	
-	private void saveFile(String data, String filename) {
-		try {
-			String checksum = checksum(data);
-			Files.write(Paths.get(filename), String.format("\"%s\"\n%s", checksum, data).getBytes());
-		} catch (Exception e) {}
-	}
-	
 	public String provision(String key) {
 		LoggingService.logInfo(MODULE_NAME, "provisioning");
 		try {
@@ -534,11 +541,17 @@ public class FieldAgent {
 			Configuration.setInstanceId(result.getString("id"));
 			Configuration.setAccessToken(result.getString("token"));
 			orchestrator.update();
-			update();
-			return String.format("\nSuccess - instance ID is %s\n", result.getString("id"));
+
+			loadElementsList(false);
+			loadElementsConfig(false);
+			loadRoutes(false);
+			loadRegistries(false);
+			notifyObservers();
+			
+			return String.format("\nSuccess - instance ID is %s", result.getString("id"));
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
-			return "\nFailure\n";
+			return "\nProvisioning failed";
 		}
 	}
 	
@@ -546,12 +559,12 @@ public class FieldAgent {
 		LoggingService.logInfo(MODULE_NAME, "deprovisioning");
 		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
-			return "\nFailure - not provisioned\n";
+			return "\nFailure - not provisioned";
 		}
 		
 		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
 			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
-			return "\nFailure - not connected to controller\n";
+			return "\nFailure - not connected to controller";
 		}
 		
 		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
@@ -559,8 +572,12 @@ public class FieldAgent {
 		Configuration.setAccessToken("");
 		orchestrator.update();
 		elementManager.clearData();
-		MessageBus.update();
-		return "\nSuccess - tokens and identifiers and keys removed\n";
+		notifyObservers();
+		return "\nSuccess - tokens and identifiers and keys removed";
+	}
+	
+	public void addObserver(Observer observer) {
+		observers.add(observer);
 	}
 	
 	public void start() {
@@ -568,6 +585,8 @@ public class FieldAgent {
 		APIServer server = new APIServer();
 		server.start();
 		// *******************************************
+		observers = new ArrayList<>();
+		
 		if (Configuration.getInstanceId() == null || Configuration.getInstanceId().equals("")
 				|| Configuration.getAccessToken() == null || Configuration.getAccessToken().equals(""))
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
@@ -576,28 +595,16 @@ public class FieldAgent {
 		orchestrator = new Orchestrator();
 		
 		Supervisor.scheduler.scheduleAtFixedRate(pingController, 0, CHECK_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
-
+		try {
+			Thread.sleep(200);
+		} catch (Exception e) {}
+		getFabricConfig();
 		if (!StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
 			loadElementsList(true);
 			loadElementsConfig(true);
 			loadRoutes(true);
 			loadRegistries(true);
 		}
-		
 		Supervisor.scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
-	}
-	
-	public static void main(String[] args) throws Exception {
-		Configuration.loadConfig();
-		LoggingService.setupLogger();
-		
-		FieldAgent fieldAgent = FieldAgent.getInstance();
-		APIServer server = new APIServer();
-		server.start();
-		fieldAgent.start();
-		fieldAgent.provision("AA");
-		fieldAgent.postFabricConfig();
-		
-		while (true);
 	}
 }

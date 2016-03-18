@@ -24,10 +24,12 @@ import org.hornetq.core.settings.impl.AddressFullMessagePolicy;
 import org.hornetq.core.settings.impl.AddressSettings;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 
 
 public class MessageBusServer {
 	
+	private final String MODULE_NAME = "Message Bus Server";
 	public static final String address = "iofabric.message_bus";
 	private ClientSessionFactory sf;
 	private HornetQServer server;
@@ -50,6 +52,7 @@ public class MessageBusServer {
 	}
 	
 	protected void startServer() throws Exception {
+		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
 		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
 		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
@@ -66,10 +69,13 @@ public class MessageBusServer {
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.getAddressesSettings().put(address, addressSettings);
+//        configuration.setThreadPoolMaxSize(1);
+//        configuration.setScheduledThreadPoolMaxSize(1);
 
 		Map<String, Object> connectionParams = new HashMap<>();
 		connectionParams.put("port", 55555);
 		connectionParams.put("host", "localhost");
+//		connectionParams.put("nio-remoting-threads", 3);
 		TransportConfiguration nettyConfig = new TransportConfiguration(NettyAcceptorFactory.class.getName(), connectionParams);
 
         HashSet<TransportConfiguration> transportConfig = new HashSet<>();
@@ -85,7 +91,16 @@ public class MessageBusServer {
 //        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
 
         sf = serverLocator.createSessionFactory();
+		LoggingService.logInfo(MODULE_NAME, "started");
+		
+		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook));
 	}
+	
+	private final Runnable shutdownHook = () -> {
+		try {
+			stopServer();
+		} catch (Exception e) {}
+	};
 	
 	protected void initialize() throws Exception {
 		messageBusSession = sf.createSession(false, true, true);
@@ -124,6 +139,7 @@ public class MessageBusServer {
 	}
 	
 	protected void stopServer() throws Exception {
+		LoggingService.logInfo(MODULE_NAME, "stopping...");
 		if (producer != null)
 			producer.close();
 		if (consumers != null)
@@ -136,6 +152,7 @@ public class MessageBusServer {
 			sf.close();
 		if (server != null)
 			server.stop();
+		LoggingService.logInfo(MODULE_NAME, "starting...");
 	}
 
 	protected void openProducer() throws Exception {

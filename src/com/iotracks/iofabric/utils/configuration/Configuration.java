@@ -40,7 +40,7 @@ public final class Configuration {
 	private static int logFileCount;
 	
 	public static boolean configChanged;
-	public static boolean debugging = false;
+	public static boolean debugging = true;
 
 	private static String getNode(String name) throws ConfigurationItemException {
 		NodeList nodes = configElement.getElementsByTagName(name);
@@ -328,7 +328,7 @@ public final class Configuration {
 				String.format("CPU Limit                 : %.2f%%\n", cpuLimit) + 
 				String.format("Log Limit                 : %.2f GiB\n", logDiskLimit) + 
 				"Log Directory             : " + logDiskDirectory + "\n" + 
-				String.format("Log File Count            : %d\n", logFileCount));
+				String.format("Log File Count            : %d", logFileCount));
 		return result.toString();
 	}
 
