@@ -13,11 +13,14 @@ public class ConfigurationMap {
 	}
 
 	public static ConfigurationMap getInstance(){
-		if(instance == null){
-			instance = new ConfigurationMap();
-			containerConfigMap = new HashMap<String, String>();
+		if (instance == null) {
+			synchronized (ConfigurationMap.class) {
+				if(instance == null){
+					instance = new ConfigurationMap();
+					containerConfigMap = new HashMap<String, String>();
+				}
+			}
 		}
-		
 		return instance;
 	}
 }

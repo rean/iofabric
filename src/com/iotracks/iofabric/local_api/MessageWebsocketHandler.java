@@ -34,8 +34,7 @@ public class MessageWebsocketHandler {
 	private static final Byte OPCODE_RECEIPT = 0xE;
 
 	private final String MODULE_NAME = "Local API";
-	private static int tryCount = 0;
-	private static Map<ChannelHandlerContext, Message> messageContextMap = new HashMap<ChannelHandlerContext, Message>();
+	private static int userCount = 0;
 	private static final String WEBSOCKET_PATH = "/v2/message/socket";
 
 	private WebSocketServerHandshaker handshaker;
@@ -105,7 +104,7 @@ public class MessageWebsocketHandler {
 			int readerIndex = input.readerIndex();
 			input.getBytes(readerIndex, byteArray);
 
-			if(byteArray.length >= 1){
+			if(byteArray.length >= 2){
 				Byte opcode = byteArray[0];
 				if(opcode == OPCODE_MSG.intValue()){
 					LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode);
@@ -115,11 +114,18 @@ public class MessageWebsocketHandler {
 						message = new Message(Arrays.copyOfRange(byteArray, 1, byteArray.length));
 						LoggingService.logInfo(MODULE_NAME,message.toString());
 					} catch (Exception e) {
-						LoggingService.logInfo(MODULE_NAME,"wrong message format." + e.getMessage());
+						LoggingService.logInfo(MODULE_NAME,"wrong message format  " + e.getMessage());
 					}
 
-					LoggingService.logInfo(MODULE_NAME,"Right message format.");
-
+					LoggingService.logInfo(MODULE_NAME,"Right message format");
+					
+					System.out.println("usercount" + userCount);
+					if(userCount >= 3){
+						System.out.println("Sending message back to the container viewer1 start.......");
+						sendRealTimeMessage( "viewer1",  message);
+					}
+					
+					userCount++;
 					if(hasContextInMap(ctx)){
 						LoggingService.logInfo(MODULE_NAME, "In context true");
 
@@ -142,6 +148,8 @@ public class MessageWebsocketHandler {
 						//Send opcode, id and timestamp
 						buffer1.writeBytes(messageId.getBytes()); 
 						buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
+						LoggingService.logInfo(MODULE_NAME,"Message Sent complete... Sending Receipt....");
+						
 						ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 					}
 					return;
@@ -156,16 +164,16 @@ public class MessageWebsocketHandler {
 			ByteBuf input = frame.content();
 			Byte opcode = input.readByte(); 
 			if(opcode == OPCODE_ACK.intValue()){
-				tryCount = 0;
-				messageContextMap.remove(ctx);
+				WebSocketMap.messageSendContextMap.remove(ctx);
 				LoggingService.logInfo(MODULE_NAME,"Received acknowledgment for message sent");
 			}else{
 				LoggingService.logInfo(MODULE_NAME,"Received no acknowledgment... send again");
+				int tryCount = WebSocketMap.messageSendContextMap.get(ctx).getSendTryCount();
 				if(tryCount < 10){
 					sendRealTimeMessage(ctx);
 				}else{
-					messageContextMap.remove(ctx);
-					removeContextFromMap(ctx);
+					WebSocketMap.messageSendContextMap.remove(ctx);
+					removeWebsocketContextFromMap(ctx);
 				}
 			}
 		}
@@ -174,16 +182,12 @@ public class MessageWebsocketHandler {
 		if (frame instanceof CloseWebSocketFrame) {
 			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame..... CloseWebSocketFrame... " + ctx);
 			ctx.channel().close();
-			removeContextFromMap(ctx);
+			removeWebsocketContextFromMap(ctx);
 			return;
 		}
 	}
 
-	private void saveNotAckMessage(ChannelHandlerContext ctx, Message message){
-		messageContextMap.put(ctx, message);
-	}
-
-	private void removeContextFromMap(ChannelHandlerContext ctx){
+	private void removeWebsocketContextFromMap(ChannelHandlerContext ctx){
 		Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
 		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = messageMap.entrySet().iterator(); it.hasNext();) {
 			Map.Entry<String,ChannelHandlerContext> e = it.next();
@@ -207,35 +211,45 @@ public class MessageWebsocketHandler {
 	}
 
 	private void sendRealTimeMessage(ChannelHandlerContext ctx){
+		
+		MessageSendContextCount messageContextAndCount = WebSocketMap.messageSendContextMap.get(ctx);
+		int tryCount = messageContextAndCount.getSendTryCount();
+		Message message = messageContextAndCount.getMessage();
+		
+		WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, tryCount++));
+		
 		System.out.println("trycount:  "+ tryCount);
-		tryCount++;
-		Message message = messageContextMap.get(ctx);
+		
 		ByteBuf buffer1 = ctx.alloc().buffer();
-		int length = 50;
+		//Send Opcode
 		buffer1.writeByte(OPCODE_MSG);
-		buffer1.writeBytes(BytesUtil.integerToBytes(length));
-		buffer1.writeBytes(BytesUtil.stringToBytes("This is my message to send"));
+
+		//TODO: Send Total Length of IOMessage - 4 bytes ***** Do it for receiving too
+
+		//Version
+		buffer1.writeBytes(BytesUtil.shortToBytes(message.getVersion())); //version
+		//Send Length of Message
+		sendMessageFieldsLength(message, buffer1);
+		//Send Message
+		sendMessageFields(message, buffer1);
 		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 	}
 
 	public void sendRealTimeMessage(String receiverId, Message message){
 		LoggingService.logInfo(MODULE_NAME,"In Message Websocket : sendRealTimeMessage");
-		tryCount++;
-		LoggingService.logInfo(MODULE_NAME,"Count" + tryCount);
 		ChannelHandlerContext ctx = null;
-		Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
+		Hashtable<String, ChannelHandlerContext> messageSocketMap = WebSocketMap.messageWebsocketMap;
 
-		if(messageMap.containsKey(receiverId)){
-			saveNotAckMessage(ctx, message);
+		if(messageSocketMap!=null && messageSocketMap.containsKey(receiverId)){
 			LoggingService.logInfo(MODULE_NAME,"Active real-time websocket found");
-			ctx = messageMap.get(receiverId);
-			messageContextMap.put(ctx, message);
+			ctx = messageSocketMap.get(receiverId);
+			WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, 1));
 			ByteBuf buffer1 = ctx.alloc().buffer();
 
 			//Send Opcode
 			buffer1.writeByte(OPCODE_MSG);
 
-			//TODO: Send Total Length of IOMessage - 4 bytes ***** Do it for receiving too
+			//TODO: Send Total Length of IOMessage - 4 bytes *****Do it for receiving too
 
 			//Version
 			buffer1.writeBytes(BytesUtil.shortToBytes(message.getVersion())); //version

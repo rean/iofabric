@@ -26,7 +26,6 @@ public class ControlWebsocketHandler {
 	private static final Byte OPCODE_PONG = 0xA; 
 	private static final Byte OPCODE_ACK = 0xB; 
 	private static final Byte OPCODE_CONTROL_SIGNAL = 0xC;
-	private static int intiateCount = 0;
 
 	private static final String WEBSOCKET_PATH = "/v2/control/socket";
 
@@ -96,31 +95,29 @@ public class ControlWebsocketHandler {
 			if (buffer2.readableBytes() == 1) {
 				Byte opcode = buffer2.readByte(); 
 				LoggingService.logInfo(MODULE_NAME,"OPCODE Acknowledgment: " + opcode);
-				if(opcode != OPCODE_ACK.intValue()){
-					if(intiateCount < 10){
-						initiateControlSignal();
-					}else{
-						LoggingService.logInfo(MODULE_NAME,"Removed stored context for real time messaging");
-						removeContextFromMap(ctx);
-					}
-				}else{
-					LoggingService.logInfo(MODULE_NAME,"Acknowledgement received...");
-					intiateCount = 0;
+				if(opcode == OPCODE_ACK.intValue()){
+					WebSocketMap.controlSignalSendContextMap.remove(ctx);
+					LoggingService.logInfo(MODULE_NAME,"Acknowledgement received... Done");
+					return;
 				}
-			}else{
-				if(intiateCount < 10){
-					initiateControlSignal();
-				}else{
-					LoggingService.logInfo(MODULE_NAME,"Removed stored context for real time messaging");
-					removeContextFromMap(ctx);
-				}
-				LoggingService.logInfo(MODULE_NAME,"Acknowledgement opcode not found" );		
 			}
+			
+			int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
+			if(tryCount < 10){
+				LoggingService.logInfo(MODULE_NAME,"Acknowledgment not received : Initiating control signal");
+				initiateControlSignal();
+			}else{
+				LoggingService.logInfo(MODULE_NAME,"Acknowledgment not received :  Initiating control signal expires");
+				LoggingService.logInfo(MODULE_NAME,"Removed stored context for real time messaging");
+				removeContextFromMap(ctx);
+			}
+			LoggingService.logInfo(MODULE_NAME,"Acknowledgement opcode not found" );		
+
 			return;
 		}
 
 		if (frame instanceof CloseWebSocketFrame) {
-			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame..... CloseWebSocketFrame... " + ctx);
+			LoggingService.logInfo(MODULE_NAME,"In websocket handleWebSocketFrame : CloseWebSocketFrame " + ctx);
 			ctx.channel().close();
 			removeContextFromMap(ctx);
 			return;
@@ -152,8 +149,6 @@ public class ControlWebsocketHandler {
 
 	public void initiateControlSignal(){
 		LoggingService.logInfo(MODULE_NAME,"In ControlWebsocketHandler : initiateControlSignal");
-		intiateCount++;
-		LoggingService.logInfo(MODULE_NAME,"Count   " + intiateCount);
 		//Receive control signals from field agent module
 		ChannelHandlerContext ctx = null;
 		String containerChangedId = "viewer";
@@ -161,6 +156,12 @@ public class ControlWebsocketHandler {
 
 		if(controlMap.containsKey(containerChangedId)){
 			LoggingService.logInfo(MODULE_NAME,"Found container id in map...");
+			if(WebSocketMap.controlSignalSendContextMap.contains(ctx)){
+				int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
+				WebSocketMap.controlSignalSendContextMap.put(ctx, tryCount++);
+			}else{
+				WebSocketMap.controlSignalSendContextMap.put(ctx, 1);
+			}
 			ctx = controlMap.get(containerChangedId);
 			ByteBuf buffer1 = ctx.alloc().buffer();
 			buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
