@@ -5,6 +5,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -21,10 +22,21 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.CharsetUtil;
-
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
+
+
 	private final String MODULE_NAME = "Local API";
+
+	private final EventExecutorGroup executor;
+
+	public LocalApiServerHandler(EventExecutorGroup executor) {
+		super(false);
+		this.executor = executor;
+	}
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -39,10 +51,12 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			if(mapName!=null && mapName.equals("control")){
 				ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
 				controlSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
-			}else{
+			}else if(mapName!=null && mapName.equals("message")){
 				MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
 				messageSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
 			}
+			
+			//TODO: Else
 		}
 	}
 
@@ -58,38 +72,33 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		if (req.getUri().equals("/v2/config/get")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get configuration" );
-			GetConfigurationHandler config = new GetConfigurationHandler();
-			config.handle( ctx,  req);
-			return;
+			Callable<? extends Object> callable = new GetConfigurationHandler(req, ctx.alloc().buffer());
+			runTask(callable, ctx, req);
 		}
 
 		if (req.getUri().equals("/v2/messages/next")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get next messages" );
-			MessageReceiverHandler receiver = new MessageReceiverHandler();
-			receiver.handle(ctx, req);
-			return;
+			Callable<? extends Object> callable = new MessageReceiverHandler(req, ctx.alloc().buffer());
+			runTask(callable, ctx, req);
 		}
-
 
 		if (req.getUri().equals("/v2/messages/new")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Send new message" );
-			MessageSenderHandler send = new MessageSenderHandler();
-			send.handle(ctx, req);
-			return;
+			Callable<? extends Object> callable = new MessageSenderHandler(req, ctx.alloc().buffer());
+			runTask(callable, ctx, req);
 		}
 		
 		if (req.getUri().equals("/v2/messages/query")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get queried messages" );
-			QueryMessageReceiverHandler queryReceiver = new QueryMessageReceiverHandler();
-			queryReceiver.handle(ctx, req);
-			return;
+			Callable<? extends Object> callable = new QueryMessageReceiverHandler(req, ctx.alloc().buffer());
+			runTask(callable, ctx, req);
 		}
-
+		
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
 		String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
-
+		
 		if (url.equals("/v2/control/socket")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Open control websocket" );
 			ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
@@ -103,12 +112,13 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			messageSocket.handle(ctx, req);
 			return;
 		}
-		
+
 		ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 		String errorMsg = " Request not found ";
 		errorMsgBytes.writeBytes(errorMsg.getBytes());
 		sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
 		return;
+
 	}
 
 	private String findContextMapName(ChannelHandlerContext ctx) throws Exception{
@@ -134,7 +144,21 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		return mapName;
 	}
-	
+
+	private void runTask(Callable<? extends Object> callable, ChannelHandlerContext ctx, FullHttpRequest req) {
+		final Future<? extends Object> future = executor.submit(callable);
+		future.addListener(new GenericFutureListener<Future<Object>>() {
+			public void operationComplete(Future<Object> future)
+					throws Exception {
+				if (future.isSuccess()) {
+					sendHttpResponse(ctx, req, (FullHttpResponse)future.get());
+				} else {
+					ctx.fireExceptionCaught(future.cause());
+				}
+			}
+		});
+	}
+
 	private static void sendHttpResponse(
 			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) throws Exception{
 		if (res.getStatus().code() != 200) {
