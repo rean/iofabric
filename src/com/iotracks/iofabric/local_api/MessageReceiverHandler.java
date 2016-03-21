@@ -1,12 +1,11 @@
 package com.iotracks.iofabric.local_api;
 
-import static io.netty.handler.codec.http.HttpMethod.POST;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static io.netty.handler.codec.http.HttpMethod.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpVersion.*;
 
 import java.io.StringReader;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -18,38 +17,39 @@ import javax.json.JsonReader;
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
+import com.sun.corba.se.impl.protocol.giopmsgheaders.MessageBase;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.util.CharsetUtil;
 
-public class MessageReceiverHandler implements Callable<Object> {
+public class MessageReceiverHandler {
 
 	private final String MODULE_NAME = "Local API";
-	
-	private final FullHttpRequest req;
-	private ByteBuf bytesData;
-	
-	public MessageReceiverHandler(FullHttpRequest req, ByteBuf	bytesData) {
-		this.req = req;
-		this.bytesData = bytesData;
-	}
-	
-	public Object handleMessageRecievedRequest() throws Exception{
+
+	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
 		LoggingService.logInfo(MODULE_NAME,"In MessageReceiverHandler : handle");
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
+			return;
 		}
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = " Incorrect content/data format ";
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+			return;
 		}
 
 		ByteBuf msgBytes = req.content();
@@ -59,9 +59,11 @@ public class MessageReceiverHandler implements Callable<Object> {
 		JsonObject jsonObject = reader.readObject();
 
 		if(getErrorMessageInReq(jsonObject) != null){
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = getErrorMessageInReq(jsonObject);
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+			return;
 		}
 		
 		String receiverId = jsonObject.getString("id");
@@ -69,16 +71,15 @@ public class MessageReceiverHandler implements Callable<Object> {
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
-		long lStartTime = System.currentTimeMillis();
 		MessageBus bus = MessageBus.getInstance();
 		List<Message> messageList = bus.getMessages(receiverId);
-		long lEndTime = System.currentTimeMillis();
-		long difference = lEndTime - lStartTime;
-		System.out.println("Message Bus Retrival elapsed milliseconds: " + difference);
+		
 		if(messageList == null){
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = "No message found";
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+			return;
 		}
 		
 		int msgCount = 0;
@@ -95,10 +96,14 @@ public class MessageReceiverHandler implements Callable<Object> {
 
 		String configData = builder.build().toString();
 		LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
+		ByteBuf	bytesData = ctx.alloc().buffer();
 		bytesData.writeBytes(configData.getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
-		return res;
+
+		sendHttpResponse( ctx, req, res); 
+		return;
+
 	}
 
 	private String getErrorMessageInReq(JsonObject jsonObject){
@@ -108,9 +113,18 @@ public class MessageReceiverHandler implements Callable<Object> {
 		return error;
 	}
 
-	@Override
-	public Object call() throws Exception {
-		// TODO Auto-generated method stub
-		return handleMessageRecievedRequest();
+	private static void sendHttpResponse(
+			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
+		if (res.getStatus().code() != 200) {
+			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
+			res.content().writeBytes(buf);
+			buf.release();
+			HttpHeaders.setContentLength(res, res.content().readableBytes());
+		}
+
+		ChannelFuture f = ctx.channel().writeAndFlush(res);
+		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
+			f.addListener(ChannelFutureListener.CLOSE);
+		}
 	}
 }

@@ -28,6 +28,7 @@ public class ControlWebsocketHandler {
 	private static final Byte OPCODE_CONTROL_SIGNAL = 0xC;
 
 	private static final String WEBSOCKET_PATH = "/v2/control/socket";
+
 	private WebSocketServerHandshaker handshaker;
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req){

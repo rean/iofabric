@@ -18,7 +18,7 @@ public final class LocalApiServer {
 	EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 	static final boolean SSL = System.getProperty("ssl") != null;
-	static final int PORT = 54321;
+	static final int PORT = 54322;
 
 	public void start() throws Exception {
 		// Configure SSL.
