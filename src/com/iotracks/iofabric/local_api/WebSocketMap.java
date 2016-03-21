@@ -2,8 +2,6 @@ package com.iotracks.iofabric.local_api;
 
 import java.util.Hashtable;
 
-import com.iotracks.iofabric.message_bus.Message;
-
 import io.netty.channel.ChannelHandlerContext;
 
 public class WebSocketMap {

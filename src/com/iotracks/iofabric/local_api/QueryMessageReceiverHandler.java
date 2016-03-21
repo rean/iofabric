@@ -6,6 +6,7 @@ import static io.netty.handler.codec.http.HttpVersion.*;
 
 import java.io.StringReader;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -21,38 +22,38 @@ import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.util.CharsetUtil;
 
-public class QueryMessageReceiverHandler {
+public class QueryMessageReceiverHandler implements Callable<Object> {
 	private final String MODULE_NAME = "Local API";
+	
+	private final FullHttpRequest req;
+	private ByteBuf bytesData;
 
-	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
+	public QueryMessageReceiverHandler(FullHttpRequest req, ByteBuf	bytesData) {
+		this.req = req;
+		this.bytesData = bytesData;
+	}
+
+	public Object handleMessageSenderRequest() throws Exception{
+		
 		LoggingService.logInfo(MODULE_NAME,"In QueryMessageReceiverHandler : handle");
 
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
-			return;
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = " Incorrect content/data format ";
-			errorMsgBytes.writeBytes(errorMsg.getBytes());
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
-			return;
+			bytesData.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
-
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
@@ -61,11 +62,9 @@ public class QueryMessageReceiverHandler {
 		JsonObject jsonObject = reader.readObject();
 
 		if(validateMessageQueryInput(jsonObject) != null){
-			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = validateMessageQueryInput(jsonObject);
-			errorMsgBytes.writeBytes(errorMsg.getBytes());
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
-			return;
+			bytesData.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
 		LoggingService.logInfo(MODULE_NAME,"Validation success... ");
@@ -100,14 +99,10 @@ public class QueryMessageReceiverHandler {
 
 		String configData = builder.build().toString();
 		LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
-		ByteBuf	bytesData = ctx.alloc().buffer();
 		bytesData.writeBytes(configData.getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
-
-		sendHttpResponse( ctx, req, res); 
-		return;
-
+		return res;
 	}
 
 	private String validateMessageQueryInput(JsonObject message){
@@ -144,18 +139,8 @@ public class QueryMessageReceiverHandler {
 		return null;
 	}
 
-	private static void sendHttpResponse(
-			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
-		if (res.getStatus().code() != 200) {
-			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
-			res.content().writeBytes(buf);
-			buf.release();
-			HttpHeaders.setContentLength(res, res.content().readableBytes());
-		}
-
-		ChannelFuture f = ctx.channel().writeAndFlush(res);
-		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
-			f.addListener(ChannelFutureListener.CLOSE);
-		}
+	@Override
+	public Object call() throws Exception {
+		return handleMessageSenderRequest();
 	}
 }

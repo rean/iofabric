@@ -1,11 +1,12 @@
 package com.iotracks.iofabric.local_api;
 
-import static io.netty.handler.codec.http.HttpMethod.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
-import static io.netty.handler.codec.http.HttpVersion.*;
+import static io.netty.handler.codec.http.HttpMethod.POST;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.StringReader;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
@@ -16,36 +17,41 @@ import javax.json.JsonReader;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.util.CharsetUtil;
 
-public class GetConfigurationHandler {
+public class GetConfigurationHandler implements Callable<Object> {
+
 	private final String MODULE_NAME = "Local API";
+	
+	private final FullHttpRequest req;
+	private ByteBuf bytesData;
+	
+	public GetConfigurationHandler(FullHttpRequest req, ByteBuf	bytesData) {
+		this.req = req;
+		this.bytesData = bytesData;
+	}
+	
 
-	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
+	public Object handleGetConfigurationRequest() {
 		LoggingService.logInfo(MODULE_NAME,"In Get Configuration Handler: handle");
 
 		if (req.getMethod() != POST) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
-			return;
+			//sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		HttpHeaders headers = req.headers();
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = " Incorrect content/data ";
-			errorMsgBytes.writeBytes(errorMsg.getBytes());
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
-			return;
+			bytesData.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			//sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+			//return;
 		}
 
 		ByteBuf msgBytes = req.content();
@@ -55,11 +61,11 @@ public class GetConfigurationHandler {
 		JsonObject jsonObject = reader.readObject();
 		
 		if(getErrorMessageInReq(jsonObject) != null){
-			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 			String errorMsg = getErrorMessageInReq(jsonObject);
-			errorMsgBytes.writeBytes(errorMsg.getBytes());
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
-			return;
+			bytesData.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			//sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+			//return;
 		}
 
 		String receiverId = jsonObject.getString("id");
@@ -75,22 +81,20 @@ public class GetConfigurationHandler {
 				builder.add("config", containerConfig);
 				String configData = builder.build().toString();
 				LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
-				ByteBuf	bytesData = ctx.alloc().buffer();
 				bytesData.writeBytes(configData.getBytes());
 				FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 				HttpHeaders.setContentLength(res, bytesData.readableBytes());
-				sendHttpResponse( ctx, req, res); 
-				return;
+				//sendHttpResponse( ctx, req, res); 
+				return res;
 			}else{
-				ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 				String errorMsg = "No configuration found for the id" + receiverId;
 				LoggingService.logInfo(MODULE_NAME,"Element not found");
-				errorMsgBytes.writeBytes(errorMsg.getBytes());
-				sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
-				return;
+				bytesData.writeBytes(errorMsg.getBytes());
+				//sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, errorMsgBytes));
+				return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 			}
 		}
-
+		return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 	}
 
 	private String getErrorMessageInReq(JsonObject jsonObject){
@@ -100,19 +104,8 @@ public class GetConfigurationHandler {
 		return error;
 	}
 
-	private static void sendHttpResponse(
-			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) throws Exception{
-		if (res.getStatus().code() != 200) {
-			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
-			res.content().writeBytes(buf);
-			buf.release();
-			HttpHeaders.setContentLength(res, res.content().readableBytes());
-		}
-
-		ChannelFuture f = ctx.channel().writeAndFlush(res);
-		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
-			f.addListener(ChannelFutureListener.CLOSE);
-		}
+	@Override
+	public Object call() throws Exception {
+		return handleGetConfigurationRequest();
 	}
-
 }

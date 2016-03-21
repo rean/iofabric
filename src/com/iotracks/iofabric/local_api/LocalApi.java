@@ -91,5 +91,4 @@ public class LocalApi {
 		LoggingService.logInfo(MODULE_NAME, "IP address of the system running iofabric is := "+IP.getHostAddress());
 		return IP;
 	}
-
 }
