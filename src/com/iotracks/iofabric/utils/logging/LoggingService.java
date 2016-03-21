@@ -10,6 +10,7 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.util.Date;
 import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -28,16 +29,16 @@ public final class LoggingService {
 
 	public static void logInfo(String moduleName, String msg) {
 		if (Configuration.debugging)
-			System.out.println(moduleName + " : " + msg);
+			System.out.println(String.format("%s : %s (%s)", moduleName, msg, new Date(System.currentTimeMillis())));
 		else
-			logger.log(Level.INFO, moduleName + " : " + msg);
+			logger.log(Level.INFO, String.format("[%s] [%s] : %s", new Date(System.currentTimeMillis()), moduleName, msg));
 	}
 
 	public static void logWarning(String moduleName, String msg) {
 		if (Configuration.debugging)
-			System.out.println(moduleName + " : " + msg);
+			System.out.println(String.format("%s : %s (%s)", moduleName, msg, new Date(System.currentTimeMillis())));
 		else
-			logger.log(Level.WARNING, moduleName + " : " + msg);
+			logger.log(Level.WARNING, String.format("[%s] [%s] : %s", new Date(System.currentTimeMillis()), moduleName, msg));
 	}
 
 	public static void setupLogger() throws IOException {

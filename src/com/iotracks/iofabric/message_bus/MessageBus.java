@@ -224,7 +224,7 @@ public class MessageBus implements Observer {
 		
 		messageBusServer = new MessageBusServer();
 		try {
-			LoggingService.logInfo(MODULE_NAME, "starting message bus server");
+			LoggingService.logInfo(MODULE_NAME, "STARTING MESSAGE BUS SERVER");
 			messageBusServer.startServer();
 			messageBusServer.initialize();
 		} catch (Exception e) {
@@ -235,7 +235,7 @@ public class MessageBus implements Observer {
 			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.MESSAGE_BUS, ModulesStatus.STOPPED);
 		}
 		
-		LoggingService.logInfo(MODULE_NAME, "starting message bus server");
+		LoggingService.logInfo(MODULE_NAME, "MESSAGE BUS SERVER STARTED");
 		init();
 
 		Supervisor.scheduler.scheduleAtFixedRate(calculateSpeed, 0, SPEED_CALCULATION_FREQ_MINUTES, TimeUnit.MINUTES);
@@ -243,11 +243,13 @@ public class MessageBus implements Observer {
 	}
 	
 	public void stop() {
+		for (MessageReceiver receiver : receivers.values()) 
+			receiver.close();
+		
 		for (MessagePublisher publisher : publishers.values())
 			publisher.close();
 		try {
 			messageBusServer.stopServer();
 		} catch (Exception e) {}
 	}
-	
 }

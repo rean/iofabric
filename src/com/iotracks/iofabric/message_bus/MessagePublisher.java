@@ -16,6 +16,7 @@ public class MessagePublisher {
 	private ClientProducer producer;
 	private ClientSession session;
 	private Route route;
+	private Object lock = new Object();
 	
 	public MessagePublisher(String name, Route route) {
 		this.archive = new MessageArchive(name);
@@ -25,19 +26,21 @@ public class MessagePublisher {
 		session = MessageBusServer.getSession();
 	}
 	
-	protected synchronized void publish(Message message) throws Exception {
-		byte[] bytes = message.getBytes();
+	protected void publish(Message message) throws Exception {
+		synchronized (lock) {
+			byte[] bytes = message.getBytes();
 
-		try {
-			archive.save(bytes, message.getTimestamp());
-		} catch (Exception e) {
-			LoggingService.logWarning("Message Publisher (" + this.name + ")", "unable to archive massage --> " + e.getMessage());
-		}
-		for (String receiver : route.getReceivers()) {
-			ClientMessage msg = session.createMessage(false);
-			msg.putObjectProperty("receiver", receiver);
-			msg.putBytesProperty("message", bytes);
-			producer.send(msg);
+			try {
+				archive.save(bytes, message.getTimestamp());
+			} catch (Exception e) {
+				LoggingService.logWarning("Message Publisher (" + this.name + ")", "unable to archive massage --> " + e.getMessage());
+			}
+			for (String receiver : route.getReceivers()) {
+				ClientMessage msg = session.createMessage(false);
+				msg.putObjectProperty("receiver", receiver);
+				msg.putBytesProperty("message", bytes);
+				producer.send(msg);
+			}
 		}
 	}
 	
@@ -51,9 +54,11 @@ public class MessagePublisher {
 	}
 
 	public void close() {
-		try {
-			archive.close();
-		} catch (Exception e) {}
+		synchronized (lock) {
+			try {
+				archive.close();
+			} catch (Exception e) {}
+		}
 	}
 
 	public List<Message> messageQuery(long from, long to) {

@@ -1,7 +1,8 @@
 package com.iotracks.iofabric.message_bus;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -36,15 +37,24 @@ public class MessageIdGenerator {
 	
 	// uuid
 	private final int PRE_GENERATED_IDS_COUNT = 100000;
-	ConcurrentLinkedQueue<String> generatedIds = new ConcurrentLinkedQueue<>();
+	private boolean isRefilling = false;
+	Queue<String> generatedIds = new LinkedList<>();
 	private final Runnable refill = () -> {
+		if (isRefilling)
+			return;
+		isRefilling = true;
 		while (generatedIds.size() < PRE_GENERATED_IDS_COUNT)
-			generatedIds.offer(UUID.randomUUID().toString().replaceAll("-", ""));
+			synchronized (generatedIds) {
+				generatedIds.offer(UUID.randomUUID().toString().replaceAll("-", ""));
+			}
+		isRefilling = false;
 	};
 	
 	public String getNextId() {
 		while (generatedIds.size() == 0);
-		return generatedIds.poll();
+		synchronized (generatedIds) {
+			return generatedIds.poll();
+		}
 	}
 	
 	public MessageIdGenerator() {

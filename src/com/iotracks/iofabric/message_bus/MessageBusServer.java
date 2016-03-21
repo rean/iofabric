@@ -15,6 +15,8 @@ import org.hornetq.api.core.client.ClientSessionFactory;
 import org.hornetq.api.core.client.HornetQClient;
 import org.hornetq.api.core.client.ServerLocator;
 import org.hornetq.core.config.impl.ConfigurationImpl;
+import org.hornetq.core.remoting.impl.invm.InVMAcceptorFactory;
+import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
 import org.hornetq.core.server.HornetQServer;
@@ -54,8 +56,10 @@ public class MessageBusServer {
 	protected void startServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
-		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
-		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
+//		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
+//		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
+		addressSettings.setMaxSizeBytes(256 * 1024 * 1024);
+		addressSettings.setPageSizeBytes(128 * 1024 * 1024);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.PAGE);
 		String workingDirectory = Configuration.getDiskDirectory();
 
@@ -65,7 +69,7 @@ public class MessageBusServer {
 		configuration.setJournalType(JournalType.NIO);
 		configuration.setBindingsDirectory(workingDirectory + "messages/binding");
 		configuration.setCreateBindingsDir(true);
-        configuration.setPersistenceEnabled(false);
+        configuration.setPersistenceEnabled(true);
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.getAddressesSettings().put(address, addressSettings);
@@ -80,33 +84,25 @@ public class MessageBusServer {
 
         HashSet<TransportConfiguration> transportConfig = new HashSet<>();
 		transportConfig.add(nettyConfig);
-//        transportConfig.add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
+        transportConfig.add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
         
 		configuration.setAcceptorConfigurations(transportConfig);
 		HornetQServer server = HornetQServers.newHornetQServer(configuration);
 		server.start();
 
-        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(
-        		new TransportConfiguration(NettyConnectorFactory.class.getName(), connectionParams));
-//        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
+//        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(
+//        		new TransportConfiguration(NettyConnectorFactory.class.getName(), connectionParams));
+        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
 
         sf = serverLocator.createSessionFactory();
-		LoggingService.logInfo(MODULE_NAME, "started");
-		
-		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook));
 	}
 	
-	private final Runnable shutdownHook = () -> {
-		try {
-			stopServer();
-		} catch (Exception e) {}
-	};
-	
 	protected void initialize() throws Exception {
-		messageBusSession = sf.createSession(false, true, true);
+		messageBusSession = sf.createSession(true, true, 0);
 		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address)); 
-		if (!queueQuery.isExists())
-			messageBusSession.createQueue(address, address, false);
+		if (queueQuery.isExists())
+			messageBusSession.deleteQueue(address);
+		messageBusSession.createQueue(address, address, false);
 		messageBusSession.close();
 		
 		messageBusSession = sf.createSession();
@@ -140,14 +136,14 @@ public class MessageBusServer {
 	
 	protected void stopServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "stopping...");
-		if (producer != null)
-			producer.close();
 		if (consumers != null)
 			consumers.entrySet().forEach(entry -> {
 				try {
 					entry.getValue().close();
 				} catch (Exception e) {	}
 			});
+		if (producer != null)
+			producer.close();
 		if (sf != null)
 			sf.close();
 		if (server != null)

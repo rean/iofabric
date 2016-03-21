@@ -1,9 +1,12 @@
 package com.iotracks.iofabric.supervisor;
 
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.iotracks.iofabric.field_agent.FieldAgent;
+import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
@@ -26,7 +29,7 @@ public class Supervisor {
 	}
 
 	public void start() {
-		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook));
+		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook, "shutdown hook"));
 		
 		LoggingService.logInfo(MODULE_NAME, "starting status reporter");
 		StatusReporter.start();
@@ -82,6 +85,8 @@ public class Supervisor {
 		StatusReporter.setSupervisorStatus()
 				.setDaemonStatus(ModulesStatus.RUNNING);
 		LoggingService.logInfo(MODULE_NAME, "started");
+		test();
+		
 		while (true) {
 			try {
 				Thread.sleep(Constants.STATUS_REPORT_FREQ_SECONDS * 1000);
@@ -94,8 +99,59 @@ public class Supervisor {
 		}
 	}
 
+	private Thread publisher;
+	private Thread receiver;
+	@SuppressWarnings("deprecation")
 	private final Runnable shutdownHook = () -> {
-		scheduler.shutdownNow();
+		try {
+			scheduler.shutdownNow();
+			publisher.stop();
+			receiver.stop();
+			messageBus.stop();
+		} catch (Exception e) {}
 	};
 
+	private void test() {
+		int max = Integer.MAX_VALUE;
+		Runnable sendMessage = new Runnable() {
+			@Override
+			public void run() {
+				String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
+				Random random = new Random();
+				for (int i = 0; i < max; i++) {
+					Message m = new Message(p);
+					messageBus.publishMessage(m);
+					int delay = random.nextInt(5);
+					try {
+						Thread.sleep(delay);
+					} catch (Exception e) {}
+				}
+				System.out.println("####################### " + max + " messages sent");
+			}
+		};
+		Runnable receiveMessage = new Runnable() {
+			@Override
+			public void run() {
+				int count = 0;
+				String r = "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh";
+				Random random = new Random();
+				while (count < max) {
+					List<Message> messages = messageBus.getMessages(r);
+					count += messages.size();
+//					if (messages != null)
+//						for (Message message : messages)
+//							Constants.systemOut.println(message.getTimestamp() + " : " + message.getId());
+					int delay = random.nextInt(100);
+					try {
+						Thread.sleep(delay);
+					} catch (Exception e) {}
+				}
+				System.out.println("$$$$$$$$$$$$$$$$$$$$$$$ " + count + " messages received");
+			}
+		};
+		publisher = new Thread(sendMessage, "message publisher");
+		receiver = new Thread(receiveMessage, "message receiver");
+		publisher.start();
+		receiver.start();
+	}
 }
