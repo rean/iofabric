@@ -74,17 +74,23 @@ public class Start {
 		try {
 			session = sf.createSession();
 			ClientConsumer consumer = session.createConsumer(MessageBusServer.address,
-					String.format("receiver = '%s'", "iofabric.commandline.response"));
+					"receiver = 'iofabric.commandline.response'");
 			ClientProducer producer = session.createProducer(MessageBusServer.address);
 			session.start();
 
+			ClientMessage received = consumer.receiveImmediate();
+			while (received != null) {
+				received.acknowledge();
+				received = consumer.receiveImmediate();
+			}
+			
 			ClientMessage message = session.createMessage(false);
 			message.putStringProperty("command", command);
 			message.putObjectProperty("receiver", "iofabric.commandline.command");
 			producer.send(message);
 			if (args[0].equals("stop"))
 				System.exit(0);
-			ClientMessage received = consumer.receive();
+			received = consumer.receive();
 			received.acknowledge();
 			String response = received.getStringProperty("response");
 			System.out.println(response);

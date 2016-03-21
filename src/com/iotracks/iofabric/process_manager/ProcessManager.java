@@ -102,7 +102,8 @@ public class ProcessManager implements Observer {
 			for (Element element : elementManager.getElements())
 				if (!docker.hasContainer(element.getElementId()) || element.isRebuild())
 					addTask(Tasks.ADD, element);
-			
+			StatusReporter.setProcessManagerStatus().setRunningElementsCount(elementManager.getElements().size());
+
 			List<Container> containers = docker.getContainers();
 			for (Container container : containers) {
 				Element element = elementManager.getElementById(container.getNames()[0].substring(1));

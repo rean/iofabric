@@ -57,13 +57,8 @@ public class ProcessManagerStatus {
 		return runningElementsCount;
 	}
 
-	public ProcessManagerStatus increaseRunningElementsCount() {
-		this.runningElementsCount++;
-		return this;
-	}
-
-	public ProcessManagerStatus decreaseRunningElementsCount() {
-		this.runningElementsCount--;
+	public ProcessManagerStatus setRunningElementsCount(int count) {
+		this.runningElementsCount = count;
 		return this;
 	}
 

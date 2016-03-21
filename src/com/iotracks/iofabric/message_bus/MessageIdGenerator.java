@@ -1,11 +1,10 @@
 package com.iotracks.iofabric.message_bus;
 
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import com.iotracks.iofabric.supervisor.Supervisor;
 
 public class MessageIdGenerator {
 	private final char[] ALPHABETS_ARRAY = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789".toCharArray();
@@ -37,19 +36,20 @@ public class MessageIdGenerator {
 	
 	// uuid
 	private final int PRE_GENERATED_IDS_COUNT = 100000;
-	Queue<String> generatedIds = new LinkedList<>();
+	ConcurrentLinkedQueue<String> generatedIds = new ConcurrentLinkedQueue<>();
 	private final Runnable refill = () -> {
 		while (generatedIds.size() < PRE_GENERATED_IDS_COUNT)
 			generatedIds.offer(UUID.randomUUID().toString().replaceAll("-", ""));
 	};
 	
-	public synchronized String getNextId() {
+	public String getNextId() {
 		while (generatedIds.size() == 0);
 		return generatedIds.poll();
 	}
 	
 	public MessageIdGenerator() {
-		Supervisor.scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
 	}
 	
 //			 			 1         2         3         4         5         6         7         8         9         0         1         2         3         4         5         6         7         

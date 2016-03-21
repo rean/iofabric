@@ -1,27 +1,20 @@
 package com.iotracks.iofabric.message_bus;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
-import com.iotracks.iofabric.field_agent.FieldAgent;
-import com.iotracks.iofabric.field_agent.FieldAgentStatus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.Observer;
-import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
-import com.sun.org.apache.bcel.internal.classfile.Field;
 
 public class MessageBus implements Observer {
 	
@@ -107,6 +100,7 @@ public class MessageBus implements Observer {
 
 		if (routes == null)
 			return;
+		
 		routes.entrySet().stream()
 			.filter(route -> route.getValue() != null)
 			.filter(route -> route.getValue().getReceivers() != null)

@@ -2,11 +2,13 @@ package com.iotracks.iofabric.field_agent;
 
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +45,11 @@ public class FieldAgent {
 	private ElementManager elementManager;
 	private static FieldAgent instance;
 	private List<Observer> observers;
-	private boolean firstTime = true;
+	private boolean firstTime;
 
 	private FieldAgent() {
 		lastGetChangesList = 0;
+		firstTime = true;
 	}
 	
 	public static FieldAgent getInstance() {
@@ -146,18 +149,18 @@ public class FieldAgent {
 				saveFile(registriesList, filesPath + filename);
 			}
 
-			List<Registry> registries = new ArrayList<>(); 
+			List<Registry> registries = new ArrayList<>();
 			for (int i = 0; i < registriesList.size(); i++) {
 				JsonObject registry = registriesList.getJsonObject(i);
-				Registry r = new Registry();
-				r.setUrl(registry.getString("url"));
-				r.setSecure(registry.getBoolean("secure"));
-				r.setCertificate(registry.getString("certificate"));
-				r.setRequiersCertificate(registry.getBoolean("requirescert"));
-				r.setUserName(registry.getString("username"));
-				r.setPassword(registry.getString("password"));
-				r.setUserEmail(registry.getString("useremail"));
-				registries.add(r);
+				Registry result = new Registry();
+				result.setUrl(registry.getString("url"));
+				result.setSecure(registry.getBoolean("secure"));
+				result.setCertificate(registry.getString("certificate"));
+				result.setRequiersCertificate(registry.getBoolean("requirescert"));
+				result.setUserName(registry.getString("username"));
+				result.setPassword(registry.getString("password"));
+				result.setUserEmail(registry.getString("useremail"));
+				registries.add(result);
 			}
 			elementManager.setRegistries(registries);
 		} catch (Exception e) {
@@ -372,8 +375,9 @@ public class FieldAgent {
 	
 	private String checksum(String data) {
 		try {
+			byte[] base64 = Base64.getEncoder().encode(data.getBytes(StandardCharsets.US_ASCII));
 			MessageDigest md = MessageDigest.getInstance("SHA1");
-			md.update(data.getBytes());
+			md.update(base64);
 			byte[] mdbytes = md.digest();
 			StringBuffer sb = new StringBuffer("");
 			for (int i = 0; i < mdbytes.length; i++) {
@@ -394,10 +398,10 @@ public class FieldAgent {
 			JsonObject object = reader.readObject();
 			reader.close();
 			String checksum = object.getString("checksum");
-			JsonArray result = object.getJsonArray("data");
-			if (!checksum(result.toString()).equals(checksum))
+			JsonArray data = object.getJsonArray("data");
+			if (!checksum(data.toString()).equals(checksum))
 				return null;
-			return result;
+			return data;
 		} catch (Exception e) {
 			return null;
 		}

@@ -40,7 +40,7 @@ public final class Configuration {
 	private static int logFileCount;
 	
 	public static boolean configChanged;
-	public static boolean debugging = true;
+	public static boolean debugging = false;
 
 	private static String getNode(String name) throws ConfigurationItemException {
 		NodeList nodes = configElement.getElementsByTagName(name);

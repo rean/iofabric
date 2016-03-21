@@ -38,8 +38,7 @@ public class ElementManager {
 	
 	public void loadFromApi() {
 		synchronized (ElementManager.class) {
-			while (!elements.isEmpty())
-				elements.remove(0);
+			clearData();
 			loadElementsList();
 			loadElementsConfig();
 			loadRoutes();
@@ -78,6 +77,10 @@ public class ElementManager {
 		return null;
 	}
 	
+	//*******************************************************
+	//***************TODO: TEMPORARY METHOD******************
+	//*******************************************************
+	
 	public void loadRegistries() {
 		try {
 			JsonObject registriesObjs =  
@@ -102,6 +105,10 @@ public class ElementManager {
 		}
 	}
 
+	//*******************************************************
+	//***************TODO: TEMPORARY METHOD******************
+	//*******************************************************
+	
 	public void loadElementsConfig() {
 		try {
 			JsonObject configObjs = JSON.getJSON(
@@ -124,6 +131,10 @@ public class ElementManager {
 		}
 	}
 
+	//*******************************************************
+	//***************TODO: TEMPORARY METHOD******************
+	//*******************************************************
+	
 	public void loadRoutes() {
 		try {
 			JsonObject routeObjs = JSON
@@ -150,6 +161,10 @@ public class ElementManager {
 
 	}
 
+	//*******************************************************
+	//***************TODO: TEMPORARY METHOD******************
+	//*******************************************************
+	
 	public void loadElementsList() {
 		try {
 			JsonObject containerObjects = JSON
