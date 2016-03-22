@@ -11,7 +11,6 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class MessagePublisher {
 	private final MessageArchive archive;
-	
 	private final String name;
 	private ClientProducer producer;
 	private ClientSession session;

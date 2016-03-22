@@ -104,9 +104,9 @@ public class MessageBusServer {
 			messageBusSession.deleteQueue(commandlineAddress);
 		messageBusSession.createQueue(address, address, false);
 		messageBusSession.createQueue(commandlineAddress, commandlineAddress, false);
-		messageBusSession.close();
-		
-		messageBusSession = sf.createSession();
+//		messageBusSession.close();
+//		
+//		messageBusSession = sf.createSession();
 		producer = messageBusSession.createProducer(address);
 
 		commandlineProducer = messageBusSession.createProducer(commandlineAddress);

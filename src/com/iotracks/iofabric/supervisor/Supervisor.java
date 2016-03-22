@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.iotracks.iofabric.field_agent.FieldAgent;
+import com.iotracks.iofabric.local_api.LocalApi;
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
@@ -78,6 +79,7 @@ public class Supervisor {
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.MESSAGE_BUS,	ModulesStatus.RUNNING);
 		
+		LocalApi localApi = LocalApi.getInstance();
 		
 		fieldAgent.addObserver(messageBus);
 		fieldAgent.addObserver(processManager);
