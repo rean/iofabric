@@ -649,30 +649,7 @@ public class Message {
 
 	@Override
 	public String toString() {
-		JsonObject result = Json.createObjectBuilder()
-				.add("id", id == null ? "" : id)
-				.add("tag", tag == null ? "" : tag)
-				.add("messageGroupId", messageGroupId == null ? "" : messageGroupId)
-				.add("sequenceNumber", sequenceNumber)
-				.add("sequenceTotal", sequenceTotal)
-				.add("priority", priority)
-				.add("timestamp", timestamp)
-				.add("publisher", publisher == null ? "" : publisher)
-				.add("authenticationIdentifier", authIdentifier == null ? "" : authIdentifier)
-				.add("authenticationGroup", authGroup == null ? "" : authGroup)
-				.add("version", version)
-				.add("chainPosition", chainPosition)
-				.add("hash", hash == null ? "" : hash)
-				.add("previousMessageHash", previousHash == null ? "" : previousHash)
-				.add("nonce", nonce == null ? "" : nonce)
-				.add("difficultyTarget", difficultyTarget)
-				.add("informationType", infoType == null ? "" : infoType)
-				.add("informationFormat", infoFormat == null ? "" : infoFormat)
-				.add("contextData", contextData == null ? "" : Base64.getEncoder().encodeToString(contextData))
-				.add("contentData", contentData == null ? "" : Base64.getEncoder().encodeToString(contentData))
-				.build();
-
-		return result.toString();
+		return toJson().toString();
 	}
 	
 	public void decodeBase64(byte[] bytes) {
@@ -700,6 +677,31 @@ public class Message {
 			contextData = result.contextData;
 			contentData = result.contentData;
 		} catch (Exception e) {	}
+	}
+	
+	public JsonObject toJson() {
+		return Json.createObjectBuilder()
+				.add("id", id == null ? "" : id)
+				.add("tag", tag == null ? "" : tag)
+				.add("messageGroupId", messageGroupId == null ? "" : messageGroupId)
+				.add("sequenceNumber", sequenceNumber)
+				.add("sequenceTotal", sequenceTotal)
+				.add("priority", priority)
+				.add("timestamp", timestamp)
+				.add("publisher", publisher == null ? "" : publisher)
+				.add("authenticationIdentifier", authIdentifier == null ? "" : authIdentifier)
+				.add("authenticationGroup", authGroup == null ? "" : authGroup)
+				.add("version", version)
+				.add("chainPosition", chainPosition)
+				.add("hash", hash == null ? "" : hash)
+				.add("previousMessageHash", previousHash == null ? "" : previousHash)
+				.add("nonce", nonce == null ? "" : nonce)
+				.add("difficultyTarget", difficultyTarget)
+				.add("informationType", infoType == null ? "" : infoType)
+				.add("informationFormat", infoFormat == null ? "" : infoFormat)
+				.add("contextData", contextData == null ? "" : Base64.getEncoder().encodeToString(contextData))
+				.add("contentData", contentData == null ? "" : Base64.getEncoder().encodeToString(contentData))
+				.build();
 	}
 	
 	public byte[] encodeBase64() {
