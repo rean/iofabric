@@ -21,7 +21,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 public class WebSocketClient {
 
-	static final String URL = System.getProperty("url", "ws://127.0.0.1:54322/v2/message/socket/id/viewer");
+	static final String URL = System.getProperty("url", "ws://127.0.0.1:54321/v2/message/socket/id/viewer");
 
 	public static void main(String[] args) throws Exception {
 		URI uri = new URI(URL);

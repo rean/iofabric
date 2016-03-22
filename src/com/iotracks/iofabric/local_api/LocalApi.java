@@ -15,34 +15,45 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 public class LocalApi {
 
 	private final String MODULE_NAME = "Local API";
+	private static LocalApi instance = null;
 
-	public LocalApi() {
+	private LocalApi() {
 
 	}
-	
+
+	public static LocalApi getInstance(){
+		if (instance == null) {
+			synchronized (LocalApi.class) {
+				if(instance == null){
+					instance = new LocalApi();
+					LoggingService.logInfo("LOCAL API ","Local Api Instantiated");
+				}
+			}
+		}
+		return instance;
+	}
+
 	public static void main(String[] args) throws Exception {
 		Configuration.loadConfig();
 		ElementManager.getInstance().loadFromApi();
-		
 		LoggingService.logInfo("Main", "configuration loaded.");
 		MessageBus messageBus = MessageBus.getInstance();
-		
-		LocalApi api = new LocalApi();
+		LocalApi api = LocalApi.getInstance();
 		api.start();
 	}
 
 	public void start() throws Exception {
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STARTING);
-
+		
 		WebSocketMap socketMap = WebSocketMap.getInstance();
 		ConfigurationMap configMap = ConfigurationMap.getInstance();
-		retrieveContainerConfig();
+		LoggingService.logInfo("Main", "Initialized configuration and websocket map");
 
 		StatusReporter.setLocalApiStatus().setCurrentIpAddress(getCurrentIp());
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 		StatusReporter.setLocalApiStatus().setOpenMessageSocketsCount(WebSocketMap.messageWebsocketMap.size());
 
-		LoggingService.logInfo(MODULE_NAME, "Local api up");
+		retrieveContainerConfig();
 
 		LocalApiServer server = new LocalApiServer();
 		try {
@@ -51,10 +62,12 @@ public class LocalApi {
 			try {
 				server.stop();
 			} catch (Exception e1) {
-				LoggingService.logWarning(MODULE_NAME, "unable to start local api server\n" + e1.getMessage());
+				LoggingService.logWarning(MODULE_NAME, "unable to start local api server: " + e1.getMessage());
+				StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STOPPED);
+				return;
 			}
 
-			LoggingService.logWarning(MODULE_NAME, "unable to start local api server\n" + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "unable to start local api server: " + e.getMessage());
 			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STOPPED);
 			return;
 		}
@@ -64,8 +77,9 @@ public class LocalApi {
 	public void retrieveContainerConfig() {
 		try {
 			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
+			LoggingService.logInfo(MODULE_NAME, "Container configuration retrieved");
 		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to retrieve containers configuration\n" + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "unable to retrieve containers configuration: " + e.getMessage());
 		}	  
 	}
 
@@ -77,7 +91,7 @@ public class LocalApi {
 				}
 			}
 		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to update containers configuration\n" + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "unable to update containers configuration: " + e.getMessage());
 		}
 	}
 
@@ -88,8 +102,7 @@ public class LocalApi {
 		} catch (UnknownHostException e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to find the current IP");
 		}
-		LoggingService.logInfo(MODULE_NAME, "IP address of the system running iofabric is := "+IP.getHostAddress());
+		LoggingService.logInfo(MODULE_NAME, "IP address of the system running iofabric is := " + IP.getHostAddress());
 		return IP;
 	}
-
 }

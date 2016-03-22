@@ -28,7 +28,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
-
 	private final String MODULE_NAME = "Local API";
 
 	private final EventExecutorGroup executor;
@@ -39,24 +38,27 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	}
 
 	@Override
-	public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-		LoggingService.logInfo(MODULE_NAME,
-				String.format("\"%s\": channel context", ctx));
+	public void channelRead0(ChannelHandlerContext ctx, Object msg){
 
-		LoggingService.logInfo(MODULE_NAME, "In LocalApiServerHandler: Channel read start");
-		if (msg instanceof FullHttpRequest) {
-			handleHttpRequest(ctx, (FullHttpRequest) msg);
-		} else if (msg instanceof WebSocketFrame) {
-			String mapName = findContextMapName(ctx);
-			if(mapName!=null && mapName.equals("control")){
-				ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
-				controlSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
-			}else if(mapName!=null && mapName.equals("message")){
-				MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
-				messageSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
+		try {
+			LoggingService.logInfo(MODULE_NAME, "In local api server handler: Channel read start");
+			if (msg instanceof FullHttpRequest) {
+				handleHttpRequest(ctx, (FullHttpRequest) msg);
+			} else if (msg instanceof WebSocketFrame) {
+				String mapName = findContextMapName(ctx);
+				if(mapName!=null && mapName.equals("control")){
+					ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
+					controlSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
+				}else if(mapName!=null && mapName.equals("message")){
+					MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
+					messageSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
+				}
+				
+				LoggingService.logWarning(MODULE_NAME, "Cannot initiate real-time service: Context not found");
 			}
-			
-			//TODO: Else
+			return;
+		} catch (Exception e) {
+			LoggingService.logWarning(MODULE_NAME, "Failed to initialize channel for the request: " + e.getMessage());
 		}
 	}
 
@@ -68,37 +70,41 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 	private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception {
 
-		LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: handshaking start");
+		LoggingService.logInfo(MODULE_NAME, "In local api handler: handle request");
 
 		if (req.getUri().equals("/v2/config/get")) {
-			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get configuration" );
+			LoggingService.logInfo(MODULE_NAME, "In local api handler: Get configuration" );
 			Callable<? extends Object> callable = new GetConfigurationHandler(req, ctx.alloc().buffer());
 			runTask(callable, ctx, req);
+			return;
 		}
 
 		if (req.getUri().equals("/v2/messages/next")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get next messages" );
 			Callable<? extends Object> callable = new MessageReceiverHandler(req, ctx.alloc().buffer());
 			runTask(callable, ctx, req);
+			return;
 		}
 
 		if (req.getUri().equals("/v2/messages/new")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Send new message" );
 			Callable<? extends Object> callable = new MessageSenderHandler(req, ctx.alloc().buffer());
 			runTask(callable, ctx, req);
+			return;
 		}
-		
+
 		if (req.getUri().equals("/v2/messages/query")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get queried messages" );
 			Callable<? extends Object> callable = new QueryMessageReceiverHandler(req, ctx.alloc().buffer());
 			runTask(callable, ctx, req);
+			return;
 		}
-		
+
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
 		String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
-		
+
 		if (url.equals("/v2/control/socket")) {
 			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Open control websocket" );
 			ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
@@ -112,7 +118,8 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			messageSocket.handle(ctx, req);
 			return;
 		}
-
+		
+		LoggingService.logWarning(MODULE_NAME, "Error: Request not found");
 		ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 		String errorMsg = " Request not found ";
 		errorMsgBytes.writeBytes(errorMsg.getBytes());
