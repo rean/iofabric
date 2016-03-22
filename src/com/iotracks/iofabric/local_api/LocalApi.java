@@ -2,6 +2,7 @@ package com.iotracks.iofabric.local_api;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.iotracks.iofabric.element.ElementManager;
@@ -9,10 +10,11 @@ import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
+import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class LocalApi {
+public class LocalApi implements Observer{
 
 	private final String MODULE_NAME = "Local API";
 	private static LocalApi instance = null;
@@ -83,13 +85,10 @@ public class LocalApi {
 		}	  
 	}
 
-	public void updateContainerConfig(String containerId, String config){
+	public void updateContainerConfig(){
 		try {
-			for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
-				if(entry.getKey().equals(containerId)){
-					entry.setValue(config);
-				}
-			}
+			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
+			LoggingService.logInfo(MODULE_NAME, "Container configuration updated");
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to update containers configuration: " + e.getMessage());
 		}
@@ -105,4 +104,33 @@ public class LocalApi {
 		LoggingService.logInfo(MODULE_NAME, "IP address of the system running iofabric is := " + IP.getHostAddress());
 		return IP;
 	}
+
+	@Override
+	public void update() {
+		Map<String, String> oldConfigMap = new HashMap<String, String>();
+		oldConfigMap.putAll(ConfigurationMap.containerConfigMap);
+		updateContainerConfig();
+		Map<String, String> newConfigMap = new HashMap<String, String>();
+		newConfigMap.putAll(ConfigurationMap.containerConfigMap);
+		ControlWebsocketHandler handler = new ControlWebsocketHandler();
+		handler.initiateControlSignal(oldConfigMap, newConfigMap);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

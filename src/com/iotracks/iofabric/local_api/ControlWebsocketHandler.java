@@ -2,8 +2,10 @@ package com.iotracks.iofabric.local_api;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.HOST;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -29,10 +31,10 @@ public class ControlWebsocketHandler {
 
 	private static final String WEBSOCKET_PATH = "/v2/control/socket";
 
-	private WebSocketServerHandshaker handshaker;
+	private WebSocketServerHandshaker handshaker;	
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req){
-		LoggingService.logInfo(MODULE_NAME,"In ControlWebsocketHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"In control websocket Handler : handle");
 		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
 
 		String uri = req.getUri();
@@ -40,7 +42,8 @@ public class ControlWebsocketHandler {
 		String[] tokens = uri.split("/");
 
 		if(tokens.length < 5){
-			LoggingService.logInfo(MODULE_NAME, " Id or Id value not found in the URL " );
+			LoggingService.logWarning(MODULE_NAME, " Missing ID or ID value in URL " );
+			return;
 		}else {
 			String id = tokens[4].trim();
 			LoggingService.logInfo(MODULE_NAME,"Receiver Id: "+ id);
@@ -62,9 +65,11 @@ public class ControlWebsocketHandler {
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 
 		//Code for testing - To be removed later - start
-		//LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
-		//initiateControlSignal();
+		LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
+		initiateControlSignal(ctx);
 		//Code for testing - end
+
+		return;
 	}
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
@@ -101,11 +106,11 @@ public class ControlWebsocketHandler {
 					return;
 				}
 			}
-			
+
 			int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
 			if(tryCount < 10){
 				LoggingService.logInfo(MODULE_NAME,"Acknowledgment not received : Initiating control signal");
-				initiateControlSignal();
+				initiateControlSignal(ctx);
 			}else{
 				LoggingService.logInfo(MODULE_NAME,"Acknowledgment not received :  Initiating control signal expires");
 				LoggingService.logInfo(MODULE_NAME,"Removed stored context for real time messaging");
@@ -140,36 +145,58 @@ public class ControlWebsocketHandler {
 		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = controlMap.entrySet().iterator(); it.hasNext();) {
 			Map.Entry<String,ChannelHandlerContext> e = it.next();
 			if (ctx.equals(e.getValue())) {
-				LoggingService.logInfo(MODULE_NAME,"Context found in map...");
+				LoggingService.logInfo(MODULE_NAME,"Context found as real-time control socket");
 				return true;
 			}
 		}
-		LoggingService.logInfo(MODULE_NAME,"Context not found in map...");
+		LoggingService.logInfo(MODULE_NAME,"Context found as real-time control socket");
 		return false;
 	}
 
-	public void initiateControlSignal(){
-		LoggingService.logInfo(MODULE_NAME,"In ControlWebsocketHandler : initiateControlSignal");
-		//Receive control signals from field agent module
+	public void initiateControlSignal(Map<String, String> oldConfigMap, Map<String, String> newConfigMap){
+		LoggingService.logInfo(MODULE_NAME,"In control websocket handler : initiating control signals");
 		ChannelHandlerContext ctx = null;
-		String containerChangedId = "viewer";
-		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
 
-		if(controlMap.containsKey(containerChangedId)){
-			LoggingService.logInfo(MODULE_NAME,"Found container id in map...");
-			if(WebSocketMap.controlSignalSendContextMap.contains(ctx)){
-				int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
-				tryCount = tryCount+1;
-				WebSocketMap.controlSignalSendContextMap.put(ctx, tryCount);
+		//Compare the old and new config map
+		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
+		ArrayList<String> changedConfigElmtsList = new ArrayList<String>();
+
+		for (Map.Entry<String, String> newEntry : newConfigMap.entrySet()) {
+			String newMapKey = newEntry.getKey();
+			if(!oldConfigMap.containsKey(newMapKey)){
+				changedConfigElmtsList.add(newMapKey);
 			}else{
-				WebSocketMap.controlSignalSendContextMap.put(ctx, 1);
+				String newConfigValue = newEntry.getValue();
+				String oldConfigValue = oldConfigMap.get(newMapKey);
+				if(!newConfigValue.equals(oldConfigValue)){
+					changedConfigElmtsList.add(newMapKey);
+				}
 			}
-			ctx = controlMap.get(containerChangedId);
-			ByteBuf buffer1 = ctx.alloc().buffer();
-			buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
-			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 		}
 
+		for(String changedConfigElmtId : changedConfigElmtsList){
+			if(controlMap.containsKey(changedConfigElmtId)){
+				LoggingService.logInfo(MODULE_NAME,"Found container id in map...");
+				ctx = controlMap.get(changedConfigElmtId);
+				WebSocketMap.controlSignalSendContextMap.put(ctx, 1);
+
+				ByteBuf buffer1 = ctx.alloc().buffer();
+				buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
+				ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+			}
+		}
+
+	}
+
+	private void initiateControlSignal(ChannelHandlerContext ctx){
+		
+		int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
+		tryCount = tryCount+1;
+		WebSocketMap.controlSignalSendContextMap.put(ctx, tryCount);
+
+		ByteBuf buffer1 = ctx.alloc().buffer();
+		buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
+		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 	}
 
 	private static String getWebSocketLocation(FullHttpRequest req) {

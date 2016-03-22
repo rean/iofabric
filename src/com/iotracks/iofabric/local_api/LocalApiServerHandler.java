@@ -44,6 +44,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			LoggingService.logInfo(MODULE_NAME, "In local api server handler: Channel read start");
 			if (msg instanceof FullHttpRequest) {
 				handleHttpRequest(ctx, (FullHttpRequest) msg);
+				return;
 			} else if (msg instanceof WebSocketFrame) {
 				String mapName = findContextMapName(ctx);
 				if(mapName!=null && mapName.equals("control")){
@@ -58,6 +59,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			}
 			return;
 		} catch (Exception e) {
+			e.printStackTrace();
 			LoggingService.logWarning(MODULE_NAME, "Failed to initialize channel for the request: " + e.getMessage());
 		}
 	}

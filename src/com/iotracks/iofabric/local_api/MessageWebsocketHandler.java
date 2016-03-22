@@ -40,7 +40,7 @@ public class MessageWebsocketHandler {
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
 
-		LoggingService.logInfo(MODULE_NAME,"In MessageWebsocketHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"In message websocket handler : handle");
 		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
 
 		String uri = req.getUri();
@@ -48,7 +48,8 @@ public class MessageWebsocketHandler {
 		String[] tokens = uri.split("/");
 
 		if(tokens.length < 5){
-			LoggingService.logInfo(MODULE_NAME, " Id or Id value not found in the URL " );
+			LoggingService.logWarning(MODULE_NAME, " Missing ID or ID value in URL " );
+			return;
 		}else {
 			String publisherId = tokens[4].trim();
 			LoggingService.logInfo(MODULE_NAME,"Publisher Id: "+ publisherId);
@@ -112,10 +113,10 @@ public class MessageWebsocketHandler {
 
 					if(hasContextInMap(ctx)){
 
-						int totalMsgLength = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5)); 
+						int totalMsgLength = BytesUtil.bytesToInteger(BytesUtil.copyOfRange(byteArray, 1, 5)); 
 						System.out.println("Total Length: " + totalMsgLength);
 						try {
-							message = new Message(Arrays.copyOfRange(byteArray, 5, totalMsgLength));
+							message = new Message(BytesUtil.copyOfRange(byteArray, 5, totalMsgLength));
 							LoggingService.logInfo(MODULE_NAME,message.toString());
 						} catch (Exception e) {
 							LoggingService.logInfo(MODULE_NAME,"wrong message format  " + e.getMessage());
