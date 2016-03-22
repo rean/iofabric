@@ -39,26 +39,28 @@ public class MessageReceiverHandler implements Callable<Object> {
 	}
 	
 	public Object handleMessageRecievedRequest() throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In MessageReceiverHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"In message receiver handler : handle");
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
+			LoggingService.logWarning(MODULE_NAME,"Request method not allowed");
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			String errorMsg = " Incorrect content/data format ";
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content type");
+			String errorMsg = " Incorrect content type ";
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
-		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
 		if(getErrorMessageInReq(jsonObject) != null){
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
 			String errorMsg = getErrorMessageInReq(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
@@ -78,9 +80,10 @@ public class MessageReceiverHandler implements Callable<Object> {
 		
 		System.out.println("Message Bus Retrival elapsed milliseconds: " + difference);
 		if(messageList == null){
+			LoggingService.logInfo(MODULE_NAME,"No messages found for the receiver id: " + receiverId);
 			String errorMsg = "No message found";
 			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, bytesData);
 		}
 		
 		int msgCount = 0;
@@ -99,6 +102,7 @@ public class MessageReceiverHandler implements Callable<Object> {
 		LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
 		bytesData.writeBytes(configData.getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
+		LoggingService.logInfo(MODULE_NAME,"Request completed successfully");
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
 		return res;
 	}
@@ -112,7 +116,6 @@ public class MessageReceiverHandler implements Callable<Object> {
 
 	@Override
 	public Object call() throws Exception {
-		// TODO Auto-generated method stub
 		return handleMessageRecievedRequest();
 	}
 }

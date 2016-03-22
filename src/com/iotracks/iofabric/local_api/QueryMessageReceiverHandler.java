@@ -46,28 +46,30 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
+			LoggingService.logWarning(MODULE_NAME,"Request method not allowed");
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			String errorMsg = " Incorrect content/data format ";
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content type");
+			String errorMsg = " Incorrect content type ";
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
-		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
 		if(validateMessageQueryInput(jsonObject) != null){
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
 			String errorMsg = validateMessageQueryInput(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
-		LoggingService.logInfo(MODULE_NAME,"Validation success... ");
+		LoggingService.logInfo(MODULE_NAME,"Validation successful");
 		String receiverId = jsonObject.getString("id");
 		long timeframeStart = Long.parseLong(jsonObject.get("timeframestart").toString());
 		long timeframeEnd = Long.parseLong(jsonObject.get("timeframeend").toString());
@@ -82,6 +84,7 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 
 		for(JsonValue jsonPubValue : publishersArray){
 			String publisherId = jsonPubValue.toString();
+			
 			List<Message> messageList = bus.messageQuery(publisherId, receiverId, timeframeStart, timeframeEnd);
 
 			if(messageList != null){
@@ -98,15 +101,15 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		builder.add("messages", messagesArray);
 
 		String configData = builder.build().toString();
-		LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
 		bytesData.writeBytes(configData.getBytes());
+		LoggingService.logInfo(MODULE_NAME,"Request completed successfully");
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
 		return res;
 	}
 
 	private String validateMessageQueryInput(JsonObject message){
-		LoggingService.logInfo(MODULE_NAME,"In validateMessageQuery...");
+		LoggingService.logInfo(MODULE_NAME,"In validateMessageQuery");
 		if(!message.containsKey("id")){
 			LoggingService.logInfo(MODULE_NAME,"id not found");
 			return "Error: Missing input field id";

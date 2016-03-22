@@ -40,31 +40,32 @@ public class GetConfigurationHandler implements Callable<Object> {
 		LoggingService.logInfo(MODULE_NAME,"In Get Configuration Handler: handle");
 
 		if (req.getMethod() != POST) {
+			LoggingService.logWarning(MODULE_NAME,"Request method not allowed");
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		HttpHeaders headers = req.headers();
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			String errorMsg = " Incorrect content/data ";
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content type");
+			String errorMsg = " Incorrect content type ";
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
 		ByteBuf msgBytes = req.content();
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
-		LoggingService.logInfo(MODULE_NAME,"body :"+ requestBody);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 		
 		if(getErrorMessageInReq(jsonObject) != null){
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
 			String errorMsg = getErrorMessageInReq(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
 		String receiverId = jsonObject.getString("id");
-		LoggingService.logInfo(MODULE_NAME,"In GetConfigurationHandler: handle - Publisher " + receiverId);
 
 		for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
 			if(entry.getKey().equals(receiverId)){
@@ -75,18 +76,19 @@ public class GetConfigurationHandler implements Callable<Object> {
 				builder.add("status", "okay");
 				builder.add("config", containerConfig);
 				String configData = builder.build().toString();
-				LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
+				LoggingService.logInfo(MODULE_NAME, "Configuration found for the receiver" + receiverId);
 				bytesData.writeBytes(configData.getBytes());
 				FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 				HttpHeaders.setContentLength(res, bytesData.readableBytes());
 				return res;
 			}else{
 				String errorMsg = "No configuration found for the id" + receiverId;
-				LoggingService.logInfo(MODULE_NAME,"Element not found");
+				LoggingService.logWarning(MODULE_NAME,"Element not found");
 				bytesData.writeBytes(errorMsg.getBytes());
 				return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 			}
 		}
+		bytesData.writeBytes("No configuration found".getBytes());
 		return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 	}
 

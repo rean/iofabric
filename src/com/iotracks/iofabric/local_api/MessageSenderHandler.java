@@ -37,15 +37,17 @@ public class MessageSenderHandler implements Callable<Object> {
 
 	public Object handleMessageSenderRequest() throws Exception{
 
-		LoggingService.logInfo(MODULE_NAME,"In MessageSenderHandler : handle");		
+		LoggingService.logInfo(MODULE_NAME,"In message sender handler : handle");		
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
+			LoggingService.logWarning(MODULE_NAME,"Request method not allowed");
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			String errorMsg = " Incorrect content/data format ";
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content type");
+			String errorMsg = " Incorrect content type ";
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
@@ -53,29 +55,24 @@ public class MessageSenderHandler implements Callable<Object> {
 		ByteBuf msgBytes = req.content();
 		String msgString = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
 
-		LoggingService.logInfo(MODULE_NAME,"body :"+ msgString);
 		JsonReader reader = Json.createReader(new StringReader(msgString));
 		JsonObject jsonObject = reader.readObject();
 
 		if(validateMessage(jsonObject) != null){
-			LoggingService.logInfo(MODULE_NAME,"Validation Error...");
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
+			LoggingService.logInfo(MODULE_NAME,"Validation Error");
 			String errorMsg = validateMessage(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
-		//Publish message on message bus
-		LoggingService.logInfo(MODULE_NAME,"Message validation successful.. ");
+		LoggingService.logInfo(MODULE_NAME,"Message validation successful");
 
-		long lStartTime = System.currentTimeMillis();
 		MessageBus bus = MessageBus.getInstance();
 		Message message = new Message(jsonObject);
 		Message messageWithId = bus.publishMessage(message);
-		long lEndTime = System.currentTimeMillis();
-		long difference = lEndTime - lStartTime;
-		System.out.println("Message Bus Retrival elapsed milliseconds: " + difference);
-		
-		LoggingService.logInfo(MODULE_NAME,"id " + messageWithId.getId() + "timestamp" + messageWithId.getTimestamp());
+
+		LoggingService.logInfo(MODULE_NAME,"Message id:  " + messageWithId.getId() + "  timestamp: " + messageWithId.getTimestamp());
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
@@ -86,12 +83,13 @@ public class MessageSenderHandler implements Callable<Object> {
 		String configData = builder.build().toString();
 		bytesData.writeBytes(configData.getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
+		LoggingService.logInfo(MODULE_NAME,"Messages published successfully");
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
 		return res;
 	}
 
 	private String validateMessage(JsonObject message) throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In validateMessage...");
+		LoggingService.logInfo(MODULE_NAME,"In validate Message");
 
 		if(!message.containsKey("publisher")) return "Error: Missing input field publisher ";
 		if(!message.containsKey("version")) return "Error: Missing input field version ";
