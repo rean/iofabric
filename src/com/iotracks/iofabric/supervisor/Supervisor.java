@@ -119,12 +119,14 @@ public class Supervisor {
 				String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
 				Random random = new Random();
 				for (int i = 0; i < max; i++) {
-					Message m = new Message(p);
-					messageBus.publishMessage(m);
-					int delay = random.nextInt(5);
 					try {
+						Message m = new Message(p);
+						messageBus.publishMessage(m);
+						int delay = random.nextInt(5);
 						Thread.sleep(delay);
-					} catch (Exception e) {}
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
 				}
 				System.out.println("####################### " + max + " messages sent");
 			}
@@ -137,11 +139,12 @@ public class Supervisor {
 				Random random = new Random();
 				while (count < max) {
 					List<Message> messages = messageBus.getMessages(r);
-					count += messages.size();
-//					if (messages != null)
-//						for (Message message : messages)
-//							Constants.systemOut.println(message.getTimestamp() + " : " + message.getId());
-					int delay = random.nextInt(100);
+					messageBus.getMessages("hgbgFd6DX3DxWfkNWtjPqPY7RgKqn2MF");
+					if (messages != null && messages.size() > 0) {
+						count += messages.size();
+						Constants.systemOut.println(count + " messages received");
+					}
+					int delay = random.nextInt(1000);
 					try {
 						Thread.sleep(delay);
 					} catch (Exception e) {}
@@ -150,8 +153,8 @@ public class Supervisor {
 			}
 		};
 		publisher = new Thread(sendMessage, "message publisher");
-		receiver = new Thread(receiveMessage, "message receiver");
 		publisher.start();
-		receiver.start();
+		receiver = new Thread(receiveMessage, "message receiver");
+//		receiver.start();
 	}
 }

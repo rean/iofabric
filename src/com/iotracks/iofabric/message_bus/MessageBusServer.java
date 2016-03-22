@@ -4,7 +4,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.SimpleString;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.core.client.ClientConsumer;
@@ -18,7 +22,6 @@ import org.hornetq.core.config.impl.ConfigurationImpl;
 import org.hornetq.core.remoting.impl.invm.InVMAcceptorFactory;
 import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
-import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
 import org.hornetq.core.server.HornetQServer;
 import org.hornetq.core.server.HornetQServers;
 import org.hornetq.core.server.JournalType;
@@ -33,10 +36,12 @@ public class MessageBusServer {
 	
 	private final String MODULE_NAME = "Message Bus Server";
 	public static final String address = "iofabric.message_bus";
+	public static final String commandlineAddress = "iofabric.commandline";
 	private ClientSessionFactory sf;
 	private HornetQServer server;
 	private static ClientSession messageBusSession;
 	private ClientConsumer commandlineConsumer;
+	private static ClientProducer commandlineProducer;
 	private static ClientProducer producer;
 	private static Map<String, ClientConsumer> consumers;
 	
@@ -56,30 +61,24 @@ public class MessageBusServer {
 	protected void startServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
-//		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
-//		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
-		addressSettings.setMaxSizeBytes(256 * 1024 * 1024);
-		addressSettings.setPageSizeBytes(128 * 1024 * 1024);
-		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.PAGE);
+		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
+		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 		String workingDirectory = Configuration.getDiskDirectory();
 
         org.hornetq.core.config.Configuration configuration = new ConfigurationImpl();
         configuration.setJournalDirectory(workingDirectory + "messages/journal");
         configuration.setCreateJournalDir(true);
 		configuration.setJournalType(JournalType.NIO);
-		configuration.setBindingsDirectory(workingDirectory + "messages/binding");
+        configuration.setBindingsDirectory(workingDirectory + "messages/binding");
 		configuration.setCreateBindingsDir(true);
-        configuration.setPersistenceEnabled(true);
+		configuration.setPersistenceEnabled(true);
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.getAddressesSettings().put(address, addressSettings);
-//        configuration.setThreadPoolMaxSize(1);
-//        configuration.setScheduledThreadPoolMaxSize(1);
 
 		Map<String, Object> connectionParams = new HashMap<>();
 		connectionParams.put("port", 55555);
 		connectionParams.put("host", "localhost");
-//		connectionParams.put("nio-remoting-threads", 3);
 		TransportConfiguration nettyConfig = new TransportConfiguration(NettyAcceptorFactory.class.getName(), connectionParams);
 
         HashSet<TransportConfiguration> transportConfig = new HashSet<>();
@@ -90,8 +89,6 @@ public class MessageBusServer {
 		HornetQServer server = HornetQServers.newHornetQServer(configuration);
 		server.start();
 
-//        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(
-//        		new TransportConfiguration(NettyConnectorFactory.class.getName(), connectionParams));
         ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
 
         sf = serverLocator.createSessionFactory();
@@ -99,17 +96,36 @@ public class MessageBusServer {
 	
 	protected void initialize() throws Exception {
 		messageBusSession = sf.createSession(true, true, 0);
-		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address)); 
+		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address));
 		if (queueQuery.isExists())
 			messageBusSession.deleteQueue(address);
+		queueQuery = messageBusSession.queueQuery(new SimpleString(commandlineAddress));
+		if (queueQuery.isExists())
+			messageBusSession.deleteQueue(commandlineAddress);
 		messageBusSession.createQueue(address, address, false);
+		messageBusSession.createQueue(commandlineAddress, commandlineAddress, false);
 		messageBusSession.close();
 		
 		messageBusSession = sf.createSession();
 		producer = messageBusSession.createProducer(address);
-		commandlineConsumer = messageBusSession.createConsumer(address, String.format("receiver = '%s'", "iofabric.commandline.command"));
+
+		commandlineProducer = messageBusSession.createProducer(commandlineAddress);
+		commandlineConsumer = messageBusSession.createConsumer(commandlineAddress, String.format("receiver = '%s'", "iofabric.commandline.command"));
 		commandlineConsumer.setMessageHandler(new CommandLineHandler());
 		messageBusSession.start();
+
+		Runnable countMessages = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address));
+					System.out.println(queueQuery.getMessageCount());
+				} catch (HornetQException e) {
+				}
+			}
+		};
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+		scheduler.scheduleAtFixedRate(countMessages, 10, 10, TimeUnit.SECONDS);
 	}
 	
 	protected void createCosumer(String name) throws Exception {
@@ -128,6 +144,10 @@ public class MessageBusServer {
 		return producer;
 	}
 	
+	public static ClientProducer getCommandlineProducer() {
+		return commandlineProducer;
+	}
+
 	protected static ClientConsumer getConsumer(String receiver) {
 		if (consumers == null)
 			return null;
@@ -142,13 +162,15 @@ public class MessageBusServer {
 					entry.getValue().close();
 				} catch (Exception e) {	}
 			});
+		if (commandlineConsumer != null)
+			commandlineConsumer.close();
 		if (producer != null)
 			producer.close();
 		if (sf != null)
 			sf.close();
 		if (server != null)
 			server.stop();
-		LoggingService.logInfo(MODULE_NAME, "starting...");
+		LoggingService.logInfo(MODULE_NAME, "stopped");
 	}
 
 	protected void openProducer() throws Exception {

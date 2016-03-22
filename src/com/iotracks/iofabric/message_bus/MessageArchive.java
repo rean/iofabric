@@ -14,6 +14,7 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 public class MessageArchive {
 	private final byte HEADER_SIZE = 33;
 	private final short MAXIMUM_MESSAGE_PER_FILE = 1000;
+	private final int MAXIMUM_ARCHIVE_SIZE_MB = 1;
 
 	private final String name;
 	private String diskDirectory;
@@ -72,7 +73,8 @@ public class MessageArchive {
 		if (indexFile == null)
 			openFiles(timestamp);
 		
-		if (indexFile.length() >= ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
+//		if (indexFile.length() >= ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
+		if ((message.length + dataFile.length()) >= (MAXIMUM_ARCHIVE_SIZE_MB * 1024 * 1024)) {
 			close();
 			openFiles(timestamp);
 		}
@@ -99,24 +101,24 @@ public class MessageArchive {
 	private int getDataSize(byte[] header) {
 		int size = 0;
 		size = header[2];
-		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 3, 5));
+		size += BytesUtil.bytesToShort(BytesUtil.copyOfRange(header, 3, 5));
 		size += header[5];
 		size += header[6];
 		size += header[7];
 		size += header[8];
 		size += header[9];
 		size += header[10];
-		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 11, 13));
-		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 13, 15));
+		size += BytesUtil.bytesToShort(BytesUtil.copyOfRange(header, 11, 13));
+		size += BytesUtil.bytesToShort(BytesUtil.copyOfRange(header, 13, 15));
 		size += header[15];
-		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 16, 18));
-		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 18, 20));
-		size += BytesUtil.bytesToShort(Arrays.copyOfRange(header, 20, 22));
+		size += BytesUtil.bytesToShort(BytesUtil.copyOfRange(header, 16, 18));
+		size += BytesUtil.bytesToShort(BytesUtil.copyOfRange(header, 18, 20));
+		size += BytesUtil.bytesToShort(BytesUtil.copyOfRange(header, 20, 22));
 		size += header[22];
 		size += header[23];
 		size += header[24];
-		size += BytesUtil.bytesToInteger(Arrays.copyOfRange(header, 25, 29));
-		size += BytesUtil.bytesToInteger(Arrays.copyOfRange(header, 29, 33));
+		size += BytesUtil.bytesToInteger(BytesUtil.copyOfRange(header, 25, 29));
+		size += BytesUtil.bytesToInteger(BytesUtil.copyOfRange(header, 29, 33));
 		return size;
 	}
 

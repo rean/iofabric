@@ -118,18 +118,6 @@ public class Message {
 			}
 	}
 	
-	public static void main(String[] args) throws Exception {
-		Message m = new Message();
-		m.setId("AAAAA");
-		m.setPublisher("BBBBB");
-		m.setContentData("CCCCC".getBytes());
-		long start = System.currentTimeMillis();
-		Message n = new Message(m.getBytes());
-		long end = System.currentTimeMillis();
-		System.out.println(end - start);
-		System.exit(0);
-	}
-
 	// from rawBytes
 	public Message(byte[] rawBytes) {
 		super();
@@ -507,7 +495,7 @@ public class Message {
 			return str.length();
 	}
 
-	public byte[] getBytes() throws Exception {
+	public byte[] getBytes() {
 		ByteArrayOutputStream headerBaos = new ByteArrayOutputStream(); 
 		ByteArrayOutputStream dataBaos = new ByteArrayOutputStream(); 
 		try {
@@ -650,11 +638,13 @@ public class Message {
 			dataBaos.writeTo(result);
 			return result.toByteArray();
 		} catch (Exception e) {
-			throw e;
 		} finally {
-			headerBaos.close();
-			dataBaos.close();
+			try {
+				headerBaos.close();
+				dataBaos.close();
+			} catch (Exception e) {}
 		}
+		return new byte[] {};
 	}
 
 	@Override

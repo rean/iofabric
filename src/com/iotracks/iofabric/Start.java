@@ -70,9 +70,9 @@ public class Start {
 		ClientSession session = null;
 		try {
 			session = sf.createSession();
-			ClientConsumer consumer = session.createConsumer(MessageBusServer.address,
+			ClientConsumer consumer = session.createConsumer(MessageBusServer.commandlineAddress,
 					"receiver = 'iofabric.commandline.response'");
-			ClientProducer producer = session.createProducer(MessageBusServer.address);
+			ClientProducer producer = session.createProducer(MessageBusServer.commandlineAddress);
 			session.start();
 
 			ClientMessage received = consumer.receiveImmediate();

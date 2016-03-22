@@ -21,7 +21,7 @@ public class CommandLineHandler implements MessageHandler {
 		response.putObjectProperty("receiver", "iofabric.commandline.response");
 		
 		try {
-			MessageBusServer.getProducer().send(response);
+			MessageBusServer.getCommandlineProducer().send(response);
 		} catch (Exception e) {
 		}
 	}
