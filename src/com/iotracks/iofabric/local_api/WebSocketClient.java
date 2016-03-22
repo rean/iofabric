@@ -20,10 +20,16 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 public class WebSocketClient {
-
-	static final String URL = System.getProperty("url", "ws://127.0.0.1:54322/v2/message/socket/id/viewer");
-
+	
 	public static void main(String[] args) throws Exception {
+		 String URL = System.getProperty("url", "ws://127.0.0.1:54321/v2/message/socket/id/");
+	//	for (int i = 0; i < 4; i++) {
+			run(URL + 0);
+	//	}
+	}
+
+	public static void run(String URL) throws Exception {
+		System.out.println(URL);
 		URI uri = new URI(URL);
 		String scheme = uri.getScheme() == null? "ws" : uri.getScheme();
 		final String host = uri.getHost() == null? "127.0.0.1" : uri.getHost();
