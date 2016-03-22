@@ -110,7 +110,6 @@ public class ControlWebsocketHandler {
 				LoggingService.logInfo(MODULE_NAME,"Acknowledgment not received :  Initiating control signal expires");
 				LoggingService.logInfo(MODULE_NAME,"Removed stored context for real time messaging");
 				removeContextFromMap(ctx);
-				return;
 			}
 			LoggingService.logInfo(MODULE_NAME,"Acknowledgement opcode not found" );		
 
@@ -159,8 +158,7 @@ public class ControlWebsocketHandler {
 			LoggingService.logInfo(MODULE_NAME,"Found container id in map...");
 			if(WebSocketMap.controlSignalSendContextMap.contains(ctx)){
 				int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
-				tryCount = tryCount+1;
-				WebSocketMap.controlSignalSendContextMap.put(ctx, tryCount);
+				WebSocketMap.controlSignalSendContextMap.put(ctx, tryCount++);
 			}else{
 				WebSocketMap.controlSignalSendContextMap.put(ctx, 1);
 			}

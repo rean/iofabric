@@ -2,6 +2,7 @@ package com.iotracks.iofabric.local_api;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.HOST;
 
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,7 +40,6 @@ public class MessageWebsocketHandler {
 	private WebSocketServerHandshaker handshaker;
 
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-
 		LoggingService.logInfo(MODULE_NAME,"In MessageWebsocketHandler : handle");
 		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
 
@@ -110,28 +110,23 @@ public class MessageWebsocketHandler {
 					LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode);
 					Message message = null;
 
+					try {
+						message = new Message(Arrays.copyOfRange(byteArray, 1, byteArray.length));
+						LoggingService.logInfo(MODULE_NAME,message.toString());
+					} catch (Exception e) {
+						LoggingService.logInfo(MODULE_NAME,"wrong message format  " + e.getMessage());
+					}
+
+					LoggingService.logInfo(MODULE_NAME,"Right message format");
+					
+					System.out.println("usercount" + userCount);
+					if(userCount >= 3){
+						System.out.println("Sending message back to the container viewer1 start.......");
+						sendRealTimeMessage( "viewer1",  message);
+					}
+					
+					userCount++;
 					if(hasContextInMap(ctx)){
-
-						int totalMsgLength = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5)); 
-						System.out.println("Total Length: " + totalMsgLength);
-						try {
-							message = new Message(Arrays.copyOfRange(byteArray, 5, totalMsgLength));
-							LoggingService.logInfo(MODULE_NAME,message.toString());
-						} catch (Exception e) {
-							LoggingService.logInfo(MODULE_NAME,"wrong message format  " + e.getMessage());
-						}
-
-						LoggingService.logInfo(MODULE_NAME,"Right message format");
-
-						System.out.println("usercount" + userCount);
-						if(userCount == 0){
-							System.out.println("Sending message back to the container viewer1 start.......");
-							sendRealTimeMessage( "0",  message);
-							userCount++;
-							return;
-						}
-
-						userCount++;
 						LoggingService.logInfo(MODULE_NAME, "In context true");
 
 						MessageBus messageBus = MessageBus.getInstance();
@@ -154,11 +149,13 @@ public class MessageWebsocketHandler {
 						buffer1.writeBytes(messageId.getBytes()); 
 						buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
 						LoggingService.logInfo(MODULE_NAME,"Message Sent complete... Sending Receipt....");
-
+						
 						ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 					}
 					return;
 				}
+			}else{
+				return;
 			}
 		}
 
@@ -170,7 +167,6 @@ public class MessageWebsocketHandler {
 				WebSocketMap.messageSendContextMap.remove(ctx);
 				LoggingService.logInfo(MODULE_NAME,"Received acknowledgment for message sent");
 			}else{
-
 				LoggingService.logInfo(MODULE_NAME,"Received no acknowledgment... send again");
 				int tryCount = WebSocketMap.messageSendContextMap.get(ctx).getSendTryCount();
 				if(tryCount < 10){
@@ -178,7 +174,6 @@ public class MessageWebsocketHandler {
 				}else{
 					WebSocketMap.messageSendContextMap.remove(ctx);
 					removeWebsocketContextFromMap(ctx);
-					return;
 				}
 			}
 		}
@@ -216,13 +211,28 @@ public class MessageWebsocketHandler {
 	}
 
 	private void sendRealTimeMessage(ChannelHandlerContext ctx){
-
+		
 		MessageSendContextCount messageContextAndCount = WebSocketMap.messageSendContextMap.get(ctx);
 		int tryCount = messageContextAndCount.getSendTryCount();
 		Message message = messageContextAndCount.getMessage();
-		tryCount = tryCount + 1;
-		WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, tryCount));
-		sendMessageHelper(ctx, message);
+		
+		WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, tryCount++));
+		
+		System.out.println("trycount:  "+ tryCount);
+		
+		ByteBuf buffer1 = ctx.alloc().buffer();
+		//Send Opcode
+		buffer1.writeByte(OPCODE_MSG);
+
+		//TODO: Send Total Length of IOMessage - 4 bytes ***** Do it for receiving too
+
+		//Version
+		buffer1.writeBytes(BytesUtil.shortToBytes(message.getVersion())); //version
+		//Send Length of Message
+		sendMessageFieldsLength(message, buffer1);
+		//Send Message
+		sendMessageFields(message, buffer1);
+		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 	}
 
 	public void sendRealTimeMessage(String receiverId, Message message){
@@ -234,33 +244,70 @@ public class MessageWebsocketHandler {
 			LoggingService.logInfo(MODULE_NAME,"Active real-time websocket found");
 			ctx = messageSocketMap.get(receiverId);
 			WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, 1));
-			sendMessageHelper(ctx, message);
+			ByteBuf buffer1 = ctx.alloc().buffer();
+
+			//Send Opcode
+			buffer1.writeByte(OPCODE_MSG);
+
+			//TODO: Send Total Length of IOMessage - 4 bytes *****Do it for receiving too
+
+			//Version
+			buffer1.writeBytes(BytesUtil.shortToBytes(message.getVersion())); //version
+			//Send Length of Message
+			sendMessageFieldsLength(message, buffer1);
+			//Send Message
+			sendMessageFields(message, buffer1);
+			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 		}else{
 			LoggingService.logInfo(MODULE_NAME, "No active real-time websocket found for "+ receiverId);
 		}
 
 	}
 
-	private void sendMessageHelper(ChannelHandlerContext ctx, Message message){
-		ByteBuf buffer1 = ctx.alloc().buffer();
+	private void sendMessageFieldsLength(Message message, ByteBuf buffer1){
+		//Length
+		buffer1.writeByte(message.getId().getBytes().length); //id
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)message.getTag().getBytes().length)); //tag
+		buffer1.writeByte(message.getMessageGroupId().getBytes().length); //messageGroupId
+		buffer1.writeByte(BytesUtil.integerToBytes(message.getSequenceNumber()).length); //sequence number
+		buffer1.writeByte(BytesUtil.integerToBytes(message.getSequenceTotal()).length); //sequence total
+		buffer1.writeByte(BytesUtil.integerToBytes(message.getPriority()).length); //priority
+		buffer1.writeByte(BytesUtil.longToBytes(message.getTimestamp()).length); //timestamp
+		buffer1.writeByte(message.getPublisher().getBytes().length); //publisher
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)message.getAuthIdentifier().getBytes().length)); //auth id
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)message.getAuthGroup().getBytes().length)); //auth group
+		buffer1.writeByte(BytesUtil.longToBytes(message.getChainPosition()).length); //chain position
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)message.getHash().getBytes().length)); //hash
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)message.getPreviousHash().getBytes().length)); //hash previous
+		buffer1.writeBytes(BytesUtil.shortToBytes((short)message.getNonce().getBytes().length)); //nounce
+		buffer1.writeByte(BytesUtil.integerToBytes(message.getDifficultyTarget()).length); //difficultytarget
+		buffer1.writeByte(message.getInfoType().getBytes().length); //infotype
+		buffer1.writeByte(message.getInfoFormat().getBytes().length); //infoformat
+		buffer1.writeBytes(BytesUtil.integerToBytes(message.getContextData().length)); //contextData
+		buffer1.writeBytes(BytesUtil.integerToBytes(message.getContentData().length)); //contentData
+	}
 
-		//Send Opcode
-		buffer1.writeByte(OPCODE_MSG);
-		int totalMsgLength = 0;
-
-		byte[] bytesMsg = null;
-		try {
-			bytesMsg = message.getBytes();
-		} catch (Exception e) {
-			LoggingService.logInfo(MODULE_NAME, "Problem in retrieving the message");
-		}
-		totalMsgLength = bytesMsg.length;
-		//Total Length
-		System.out.println("Total message length: "+ totalMsgLength);
-		buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
-		//Message
-		buffer1.writeBytes(bytesMsg);
-		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+	private void sendMessageFields(Message message, ByteBuf buffer1){
+		// Message to bytes conversion
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getId())); //id
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getTag())); //tag
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getMessageGroupId())); //messageGroupId
+		buffer1.writeBytes(BytesUtil.integerToBytes(message.getSequenceNumber())); //sequence number
+		buffer1.writeBytes(BytesUtil.integerToBytes(message.getSequenceTotal())); //sequence total
+		buffer1.writeByte((message.getPriority())); //priority
+		buffer1.writeBytes(BytesUtil.longToBytes(message.getTimestamp())); //timestamp
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getPublisher())); //publisher
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getAuthIdentifier())); //authid
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getAuthGroup())); //auth group
+		buffer1.writeBytes(BytesUtil.longToBytes(message.getChainPosition())); //chain position
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getHash())); //hash
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getPreviousHash())); //previous hash
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getNonce())); //nounce
+		buffer1.writeBytes(BytesUtil.integerToBytes(message.getDifficultyTarget())); //difficultytarget
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getInfoType())); //infotype
+		buffer1.writeBytes(BytesUtil.stringToBytes(message.getInfoFormat())); //infoformat
+		buffer1.writeBytes((message.getContextData())); //contextdata
+		buffer1.writeBytes((message.getContentData())); //contentdata
 	}
 
 	private static String getWebSocketLocation(FullHttpRequest req) {
