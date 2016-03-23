@@ -26,15 +26,15 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 public class GetConfigurationHandler implements Callable<Object> {
 
 	private final String MODULE_NAME = "Local API";
-	
+
 	private final FullHttpRequest req;
 	private ByteBuf bytesData;
-	
+
 	public GetConfigurationHandler(FullHttpRequest req, ByteBuf	bytesData) {
 		this.req = req;
 		this.bytesData = bytesData;
 	}
-	
+
 
 	public Object handleGetConfigurationRequest() {
 		LoggingService.logInfo(MODULE_NAME,"In Get Configuration Handler: handle");
@@ -57,7 +57,7 @@ public class GetConfigurationHandler implements Callable<Object> {
 		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
-		
+
 		if(getErrorMessageInReq(jsonObject) != null){
 			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
 			String errorMsg = getErrorMessageInReq(jsonObject);
@@ -67,29 +67,26 @@ public class GetConfigurationHandler implements Callable<Object> {
 
 		String receiverId = jsonObject.getString("id");
 
-		for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
-			if(entry.getKey().equals(receiverId)){
-				LoggingService.logInfo(MODULE_NAME,"Element found: status ok");
-				String containerConfig = entry.getValue();
-				JsonBuilderFactory factory = Json.createBuilderFactory(null);
-				JsonObjectBuilder builder = factory.createObjectBuilder();
-				builder.add("status", "okay");
-				builder.add("config", containerConfig);
-				String configData = builder.build().toString();
-				LoggingService.logInfo(MODULE_NAME, "Configuration found for the receiver" + receiverId);
-				bytesData.writeBytes(configData.getBytes());
-				FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
-				HttpHeaders.setContentLength(res, bytesData.readableBytes());
-				return res;
-			}else{
-				String errorMsg = "No configuration found for the id" + receiverId;
-				LoggingService.logWarning(MODULE_NAME,"Element not found");
-				bytesData.writeBytes(errorMsg.getBytes());
-				return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
-			}
+		if(ConfigurationMap.containerConfigMap.containsKey(receiverId)){
+			LoggingService.logInfo(MODULE_NAME,"Element found: status ok");
+			String containerConfig = ConfigurationMap.containerConfigMap.get(receiverId);
+			JsonBuilderFactory factory = Json.createBuilderFactory(null);
+			JsonObjectBuilder builder = factory.createObjectBuilder();
+			builder.add("status", "okay");
+			builder.add("config", containerConfig);
+			String configData = builder.build().toString();
+			LoggingService.logInfo(MODULE_NAME, "Configuration found for the receiver" + receiverId);
+			bytesData.writeBytes(configData.getBytes());
+			FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
+			HttpHeaders.setContentLength(res, bytesData.readableBytes());
+			return res;
+		}else{
+			String errorMsg = "No configuration found for the id" + receiverId;
+			LoggingService.logWarning(MODULE_NAME,"No configuration found for the id" + receiverId);
+			bytesData.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
-		bytesData.writeBytes("No configuration found".getBytes());
-		return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+		
 	}
 
 	private String getErrorMessageInReq(JsonObject jsonObject){

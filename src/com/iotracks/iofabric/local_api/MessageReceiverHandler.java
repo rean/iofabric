@@ -88,7 +88,7 @@ public class MessageReceiverHandler implements Callable<Object> {
 		
 		int msgCount = 0;
 		for(Message msg : messageList){
-			System.out.println("Message: " + msg);
+			LoggingService.logInfo(MODULE_NAME,"Message: " + msg);
 			String msgJson = msg.toString();
 			messagesArray.add(msgJson);
 			msgCount++;

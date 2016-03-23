@@ -4,21 +4,29 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class LocalApi implements Observer{
+public class LocalApi implements Observer, Runnable{
 
 	private final String MODULE_NAME = "Local API";
 	private static LocalApi instance = null;
-
+	public boolean isSeverStarted = false; 
+	private LocalApiServer server;
+	
+	private final Runnable sendConfigSignal = () -> {
+		// TODO: check server status and set the flag
+	};
+	
 	private LocalApi() {
 
 	}
@@ -39,16 +47,21 @@ public class LocalApi implements Observer{
 		Configuration.loadConfig();
 		ElementManager.getInstance().loadFromApi();
 		LoggingService.logInfo("Main", "configuration loaded.");
-		MessageBus messageBus = MessageBus.getInstance();
+		MessageBus.getInstance();
 		LocalApi api = LocalApi.getInstance();
-		api.start();
+		new Thread(api).start();
+	}
+	
+	public void stopServer() throws Exception {
+		server.stop();
 	}
 
-	public void start() throws Exception {
+	@Override
+	public void run() {
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STARTING);
 		
-		WebSocketMap socketMap = WebSocketMap.getInstance();
-		ConfigurationMap configMap = ConfigurationMap.getInstance();
+		WebSocketMap.getInstance();
+		ConfigurationMap.getInstance();
 		LoggingService.logInfo("Main", "Initialized configuration and websocket map");
 
 		StatusReporter.setLocalApiStatus().setCurrentIpAddress(getCurrentIp());
@@ -57,12 +70,16 @@ public class LocalApi implements Observer{
 
 		retrieveContainerConfig();
 
-		LocalApiServer server = new LocalApiServer();
+		Supervisor.scheduler.scheduleAtFixedRate(sendConfigSignal, 5, 5, TimeUnit.SECONDS);
+		
+		server = new LocalApiServer();
 		try {
 			server.start();
+			isSeverStarted = true;
 		} catch (Exception e) {
 			try {
-				server.stop();
+				stopServer();
+				isSeverStarted = false;
 			} catch (Exception e1) {
 				LoggingService.logWarning(MODULE_NAME, "unable to start local api server: " + e1.getMessage());
 				StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STOPPED);
@@ -107,30 +124,18 @@ public class LocalApi implements Observer{
 
 	@Override
 	public void update() {
+		LoggingService.logInfo(MODULE_NAME, "Received update configuration signals");
 		Map<String, String> oldConfigMap = new HashMap<String, String>();
 		oldConfigMap.putAll(ConfigurationMap.containerConfigMap);
 		updateContainerConfig();
 		Map<String, String> newConfigMap = new HashMap<String, String>();
 		newConfigMap.putAll(ConfigurationMap.containerConfigMap);
 		ControlWebsocketHandler handler = new ControlWebsocketHandler();
-		handler.initiateControlSignal(oldConfigMap, newConfigMap);
+		try {
+			handler.initiateControlSignal(oldConfigMap, newConfigMap);
+		} catch (Exception e) {
+			LoggingService.logWarning(MODULE_NAME, "unable to start the control signal sending " + e.getMessage());
+		}
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 }

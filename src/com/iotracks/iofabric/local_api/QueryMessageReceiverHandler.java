@@ -82,8 +82,8 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		MessageBus bus = MessageBus.getInstance();
 		int msgCount = 0;
 
-		for(JsonValue jsonPubValue : publishersArray){
-			String publisherId = jsonPubValue.toString();
+		for(int i=0; i<publishersArray.size(); i++){
+			String publisherId = publishersArray.getString(i);
 			
 			List<Message> messageList = bus.messageQuery(publisherId, receiverId, timeframeStart, timeframeEnd);
 
