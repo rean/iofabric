@@ -8,7 +8,7 @@ import java.util.Map;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
-import com.iotracks.iofabric.utils.JSON;
+import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class ElementManager {
@@ -18,12 +18,14 @@ public class ElementManager {
 	private Map<String, String> configs;
 	private List<Registry> registries;
 	private static ElementManager instance = null;
+	private Orchestrator orchestrator;
 	
 	private ElementManager() {
 		elements = new ArrayList<>();
 		routes = new HashMap<>();
 		configs = new HashMap<>();
 		registries = new ArrayList<>();
+		orchestrator = new Orchestrator();
 	}
 	
 	public static ElementManager getInstance() {
@@ -84,7 +86,7 @@ public class ElementManager {
 	public void loadRegistries() {
 		try {
 			JsonObject registriesObjs =  
-					JSON.getJSON(
+					orchestrator.getJSON(
 					"https://iotracks.com/api/v1/instance/registries/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
 			JsonArray registriesList = registriesObjs.getJsonArray("registries"); 
 
@@ -111,7 +113,7 @@ public class ElementManager {
 	
 	public void loadElementsConfig() {
 		try {
-			JsonObject configObjs = JSON.getJSON(
+			JsonObject configObjs = orchestrator.getJSON(
 					"https://iotracks.com/api/v1/instance/containerconfig/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
 			JsonArray configs = configObjs.getJsonArray("containerconfig");
 			for (int i = 0; i < configs.size(); i++) {
@@ -137,7 +139,7 @@ public class ElementManager {
 	
 	public void loadRoutes() {
 		try {
-			JsonObject routeObjs = JSON
+			JsonObject routeObjs = orchestrator
 					.getJSON("https://iotracks.com/api/v1/instance/routing/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
 			JsonArray routes = routeObjs.getJsonArray("routing");
 			for (int i = 0; i < routes.size(); i++) {
@@ -167,7 +169,7 @@ public class ElementManager {
 	
 	public void loadElementsList() {
 		try {
-			JsonObject containerObjects = JSON
+			JsonObject containerObjects = orchestrator
 					.getJSON("https://iotracks.com/api/v1/instance/containerlist/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
 			JsonArray containers = containerObjects.getJsonArray("containerlist");
 			if (containers.size() > 0)

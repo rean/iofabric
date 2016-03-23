@@ -9,9 +9,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.compress.utils.ArchiveUtils;
-
-import com.iotracks.iofabric.Start;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -21,13 +18,23 @@ public class ResourceConsumptionManager {
 	private final long GET_USAGE_DATA_FREQ_SECONDS = 5;
 	private String MODULE_NAME = "Resource Consumption Manager";
 	private float diskLimit, cpuLimit, memoryLimit;
+	private static ResourceConsumptionManager instance;
+	
+	private ResourceConsumptionManager() {}
+	
+	public static ResourceConsumptionManager getInstance() {
+		if (instance == null) {
+			synchronized (ResourceConsumptionManager.class) {
+				if (instance == null)
+					instance = new ResourceConsumptionManager();
+			}
+		}
+		return instance;
+	}
 
 	private Runnable getUsageData = () -> {
 		LoggingService.logInfo(MODULE_NAME, "get usage data");
 
-		updateConfig();
-
-		
 		float memoryUsage = getMemoryUsage();
 		float cpuUsage = getCpuUsage();
 		float logUsage = directorySize(Configuration.getLogDiskDirectory());
@@ -51,12 +58,6 @@ public class ResourceConsumptionManager {
 		}
 
 	};
-
-	public void updateConfig() {
-		diskLimit = Configuration.getDiskLimit() * 1024 * 1024 * 1024;
-		cpuLimit = Configuration.getCpuLimit();
-		memoryLimit = Configuration.getMemoryLimit() * 1024 * 1024;
-	}
 
 	private void removeArchives(float archiveViolation) {
 		String archivesDirectory = Configuration.getDiskDirectory() + "messages/archive/";
@@ -189,11 +190,18 @@ public class ResourceConsumptionManager {
 		return length;
 	}
 
+	public void instanceConfigUpdated() {
+		diskLimit = Configuration.getDiskLimit() * 1024 * 1024 * 1024;
+		cpuLimit = Configuration.getCpuLimit();
+		memoryLimit = Configuration.getMemoryLimit() * 1024 * 1024;
+	}
+	
 	public void start() {
+		instanceConfigUpdated();
 		Supervisor.scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 
 		LoggingService.logInfo(MODULE_NAME, "started");
 	}
-	
+
 }

@@ -72,7 +72,7 @@ public class CommandLineParser {
 			if (args.length < 3)
 				return showHelp();
 
-			Map<String, String> config = new HashMap<>();
+			Map<String, Object> config = new HashMap<>();
 			int i = 1;
 			while (i < args.length) {
 				if (args.length - i < 2)
@@ -91,8 +91,8 @@ public class CommandLineParser {
 			try {
 				Configuration.setConfig(config);
 				result.append("\nNew configuration");
-				for (Entry<String, String> e : config.entrySet())
-					result.append("\n\tOption : -" + e.getKey() + "\tValue : " + e.getValue());
+				for (Entry<String, Object> e : config.entrySet())
+					result.append("\n\tOption : -").append(e.getKey()).append("\tValue : ").append(e.getValue().toString());
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config : " + e.getMessage());

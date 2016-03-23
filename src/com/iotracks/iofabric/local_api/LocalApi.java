@@ -12,11 +12,10 @@ import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
-import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class LocalApi implements Observer, Runnable{
+public class LocalApi implements Runnable {
 
 	private final String MODULE_NAME = "Local API";
 	private static LocalApi instance = null;
@@ -122,7 +121,6 @@ public class LocalApi implements Observer, Runnable{
 		return IP;
 	}
 
-	@Override
 	public void update() {
 		LoggingService.logInfo(MODULE_NAME, "Received update configuration signals");
 		Map<String, String> oldConfigMap = new HashMap<String, String>();

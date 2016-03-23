@@ -10,6 +10,7 @@ import java.util.Stack;
 
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.configuration.Configuration;
+import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class MessageArchive {
 	private final byte HEADER_SIZE = 33;
@@ -150,19 +151,22 @@ public class MessageArchive {
 		if (i >= 0)
 			resultSet.push(listOfFiles[i]);
 		
-		byte[] header = new byte[HEADER_SIZE + Long.BYTES];
+		byte[] header = new byte[HEADER_SIZE];
 		while (!resultSet.isEmpty()) {
 			File file = resultSet.pop();
 			String fileName = file.getName();
 			try {
 				RandomAccessFile indexFile = new RandomAccessFile(new File(diskDirectory + fileName), "r");
 				RandomAccessFile dataFile = new RandomAccessFile(new File(diskDirectory + fileName.substring(0, fileName.indexOf(".")) + ".iomsg"), "r");
+				long dataFileLength = dataFile.length();
 				while (indexFile.getFilePointer() < indexFile.length()) {
-//					byte[] dataPosBytes = new byte[Long.BYTES];
-					
-					indexFile.read(header, 0, HEADER_SIZE + Long.BYTES);
-//					long dataPos = indexFile.readLong();
+					indexFile.read(header, 0, HEADER_SIZE);
+					if (((header[0] * 256) + header[1]) != 4)
+						throw new Exception("invalid index file format");
+					long dataPos = indexFile.readLong();
 					int dataSize = getDataSize(header);
+					if (dataPos + dataSize > dataFileLength || dataSize > dataFileLength)
+						throw new Exception("invalid data file format");
 					byte[] data = new byte[dataSize];
 					dataFile.read(data, 0, dataSize);
 					Message message = new Message(header, data);
@@ -173,7 +177,7 @@ public class MessageArchive {
 				indexFile.close();
 				dataFile.close();
 			} catch (Exception e) {
-				e.printStackTrace(System.out);
+				LoggingService.logWarning("Message Archive", e.getMessage());
 			}
 		}
 		

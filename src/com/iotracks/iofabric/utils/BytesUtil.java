@@ -6,6 +6,8 @@ import java.io.IOException;
 public class BytesUtil {
 	
 	public static byte[] copyOfRange(byte[] src, int from, int to) {
+		if (from < 0 || from >= src.length || to < from || to > src.length)
+			return new byte[] {};
 		byte[] tmp = new byte[from];
 		byte[] result = new byte[to - from];
 		ByteArrayInputStream input = new ByteArrayInputStream(src);

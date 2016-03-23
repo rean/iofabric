@@ -1,16 +1,12 @@
 package com.iotracks.iofabric.supervisor;
 
 import java.lang.Thread.State;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.field_agent.FieldAgent;
 import com.iotracks.iofabric.local_api.LocalApi;
-import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
@@ -29,10 +25,11 @@ public class Supervisor {
 	private FieldAgent fieldAgent;
 	private MessageBus messageBus;
 	private Thread localApiThread;
+	private LocalApi localApi;
 	
 	private Runnable checkLocalApiStatus = () -> {
 		if (localApiThread != null && localApiThread.getState() == State.TERMINATED) {
-			localApiThread = new Thread(LocalApi.getInstance(), "Local Api");
+			localApiThread = new Thread(localApi, "Local Api");
 			localApiThread.start();
 		}
 	};
@@ -59,7 +56,7 @@ public class Supervisor {
 		LoggingService.logInfo(MODULE_NAME, "starting resource consumption manager");
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.STARTING);
-		resourceConsumptionManager = new ResourceConsumptionManager();
+		resourceConsumptionManager = ResourceConsumptionManager.getInstance();
 		resourceConsumptionManager.start();
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.RESOURCE_CONSUMPTION_MANAGER, ModulesStatus.RUNNING);
@@ -77,7 +74,7 @@ public class Supervisor {
 		LoggingService.logInfo(MODULE_NAME, "starting process manager");
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.STARTING);
-		processManager = new ProcessManager();
+		processManager = ProcessManager.getInstance();
 		processManager.start();
 		StatusReporter.setSupervisorStatus()
 				.setModuleStatus(Constants.PROCESS_MANAGER,	ModulesStatus.RUNNING);
@@ -94,10 +91,6 @@ public class Supervisor {
 		localApiThread = new Thread(localApi, "Local Api");
 		localApiThread.start();
 		scheduler.scheduleAtFixedRate(checkLocalApiStatus, 0, 10, TimeUnit.SECONDS);
-
-		fieldAgent.addObserver(messageBus);
-		fieldAgent.addObserver(processManager);
-		fieldAgent.addObserver(localApi);
 
 		StatusReporter.setSupervisorStatus()
 				.setDaemonStatus(ModulesStatus.RUNNING);
@@ -118,6 +111,7 @@ public class Supervisor {
 	private final Runnable shutdownHook = () -> {
 		try {
 			scheduler.shutdownNow();
+			localApi.stopServer();
 			messageBus.stop();
 		} catch (Exception e) {}
 	};

@@ -20,6 +20,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.iotracks.iofabric.field_agent.FieldAgent;
+import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.process_manager.ProcessManager;
+import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
+import com.iotracks.iofabric.utils.logging.LoggingService;
+
 public final class Configuration {
 
 	private static Element configElement;
@@ -61,7 +67,13 @@ public final class Configuration {
 
 	}
 	
-	private static void saveConfigUpdates() throws Exception {
+	public static void saveConfigUpdates() throws Exception {
+		FieldAgent.getInstance().instanceConfigUpdated();
+		ProcessManager.getInstance().instanceConfigUpdated();
+		ResourceConsumptionManager.getInstance().instanceConfigUpdated();
+		LoggingService.instanceConfigUpdated();
+		MessageBus.getInstance().instanceConfigUpdated();
+		
 		Transformer transformer = TransformerFactory.newInstance().newTransformer();
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		StreamResult result = new StreamResult(new File("/etc/iofabric/config.xml"));
@@ -69,12 +81,10 @@ public final class Configuration {
 		transformer.transform(source, result);
 	}
 
-	public static void setConfig(Map<String, String> commandLineMap) throws Exception {
-		String option = null, value = null;
-
-		for (Map.Entry<String, String> command : commandLineMap.entrySet()) {
-			option = command.getKey();
-			value = command.getValue();
+	public static void setConfig(Map<String, Object> commandLineMap) throws Exception {
+		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
+			String option = command.getKey();
+			String value = command.getValue().toString();
 			
 			if(option == null || value == null || value.trim() == "" || option.trim() == ""){
 				throw new ConfigurationItemException("Command or value is invalid");

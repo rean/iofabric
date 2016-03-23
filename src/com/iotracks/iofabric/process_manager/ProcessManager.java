@@ -19,10 +19,9 @@ import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
-import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class ProcessManager implements Observer {
+public class ProcessManager {
 	
 	private final String MODULE_NAME = "Process Manager";
 	private final int MONITOR_CONTAINERS_STATUS_FREQ_SECONDS = 10;
@@ -33,7 +32,20 @@ public class ProcessManager implements Observer {
 	private Object checkTasksLock = new Object();
 	private DockerUtil docker;
 	private ContainerManager containerManager;
+	private static ProcessManager instance;
 
+	private ProcessManager() {}
+	
+	public static ProcessManager getInstance() {
+		if (instance == null) {
+			synchronized (ProcessManager.class) {
+				if (instance == null)
+					instance = new ProcessManager();
+			}
+		}
+		return instance;
+	}
+	
 	public void update() {
 		if (!docker.isConnected()) { 
 			try {
@@ -167,6 +179,10 @@ public class ProcessManager implements Observer {
 		}
 	};
 	
+	public void instanceConfigUpdated() {
+		if (docker.isConnected())
+			docker.close();
+	}
 	
 	public void start() {
 		docker = DockerUtil.getInstance();

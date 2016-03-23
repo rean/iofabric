@@ -2,53 +2,38 @@ package com.iotracks.iofabric.utils;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Enumeration;
 import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.net.ssl.HttpsURLConnection;
 
+import org.apache.http.client.config.RequestConfig;
+
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 public class Orchestrator {
-	public String controllerUrl; // = "http://127.0.0.1:12345/api/v2/";
-	public String instanceId;
-	public String accessToken;
+	private String controllerUrl; // = "http://127.0.0.1:12345/api/v2/";
+	private String instanceId;
+	private String accessToken;
+	private String cert;
+	private String eth;
 	
 	public Orchestrator() {
 		this.update();
 	}
 
-	public String getControllerUrl() {
-		return controllerUrl;
-	}
-
-	public void setControllerUrl(String controllerUrl) {
-		this.controllerUrl = controllerUrl;
-	}
-
-	public String getInstanceId() {
-		return instanceId;
-	}
-
-	public void setInstanceId(String instanceId) {
-		this.instanceId = instanceId;
-	}
-
-	public String getAccessToken() {
-		return accessToken;
-	}
-
-	public void setAccessToken(String accessToken) {
-		this.accessToken = accessToken;
-	}
-
 	public boolean ping() {
 		try {
-			JsonObject result = JSON.getJSON(controllerUrl + "status");
+			JsonObject result = getJSON(controllerUrl + "status");
 			return result.getString("status").equals("ok");
 		} catch (Exception e) {
 			return false;
@@ -58,15 +43,41 @@ public class Orchestrator {
 	public JsonObject provision(String key) throws Exception {
 		JsonObject result = null;
 		try {
-			result = JSON.getJSON(controllerUrl + "instance/provision/key/" + key);
+			result = getJSON(controllerUrl + "instance/provision/key/" + key);
 		} catch (Exception e) {
 			throw e;
 		} 
 		return result;
 	}
 	
-	private HttpURLConnection getConnection(String url, boolean secure) {
+	public HttpURLConnection getConnection(String url, boolean secure) throws Exception {
+		InetAddress address = null;
+		boolean found = false;
 		try {
+			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+		    while (networkInterfaces.hasMoreElements()) {
+		        NetworkInterface networkInterface = networkInterfaces.nextElement();
+		        if (networkInterface.getName().equals(eth)) {
+		        	Enumeration<InetAddress> ipAddresses = networkInterface.getInetAddresses();
+		        	while (ipAddresses.hasMoreElements()) {
+		        		address = ipAddresses.nextElement();
+		        		if (address instanceof Inet4Address) {
+		        			found = true;
+		        			break;
+		        		}
+		        	}
+		        	if (found)
+		        		break;
+		        }
+		    }
+		} catch (Exception e) {}
+		
+		if (!found)
+			throw new Exception(String.format("unable to bind network interface \"%s\"", eth));
+		
+		try {
+			RequestConfig config = RequestConfig.custom().setLocalAddress(address).build();
+
 			HttpURLConnection httpRequest;
 			if (secure) 
 				httpRequest = (HttpsURLConnection) new URL(url).openConnection();
@@ -78,6 +89,19 @@ public class Orchestrator {
 		}
 	}
 	
+	public JsonObject getJSON(String surl) throws Exception {
+		HttpURLConnection conn = getConnection(surl, false);
+		conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+
+        JsonObject result = Json.createReader(in).readObject();
+        
+		conn.disconnect();
+		
+		return result;
+	}
+
 	public JsonObject doCommand(String command, Map<String, Object> queryParams, Map<String, Object> postParams) throws Exception {
 		JsonObject result = null;
 		
@@ -128,6 +152,8 @@ public class Orchestrator {
 		instanceId = Configuration.getInstanceId();
 		accessToken = Configuration.getAccessToken();
 		controllerUrl = Configuration.getControllerUrl();
+		cert = Configuration.getControllerCert();
+		eth = Configuration.getNetworkInterface();
 	}
 
 }

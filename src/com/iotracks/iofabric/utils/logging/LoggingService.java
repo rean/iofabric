@@ -74,5 +74,17 @@ public final class LoggingService {
 
 		logger.info("logger started.");
 	}
-
+	
+	public static void instanceConfigUpdated() {
+		Handler[] handlers = logger.getHandlers();
+		try {
+			for (Handler handler : handlers)
+				logger.removeHandler(handler);
+			setupLogger();
+		} catch (Exception e) {
+			for (Handler handler : handlers)
+				logger.addHandler(handler);
+		}
+	}
+	
 }

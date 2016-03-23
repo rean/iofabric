@@ -13,10 +13,9 @@ import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
-import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class MessageBus implements Observer {
+public class MessageBus {
 	
 	private final String MODULE_NAME = "Message Bus";
 	private final int SPEED_CALCULATION_FREQ_MINUTES = 1;
@@ -217,6 +216,10 @@ public class MessageBus implements Observer {
 
 			routes = newRoutes;
 		}
+	}
+	
+	public void instanceConfigUpdated() {
+		messageBusServer.setMemoryLimit();
 	}
 	
 	public void start() {

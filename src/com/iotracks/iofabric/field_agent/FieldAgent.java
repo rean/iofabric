@@ -1,5 +1,6 @@
 package com.iotracks.iofabric.field_agent;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
@@ -26,10 +27,12 @@ import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.field_agent.controller.APIServer;
+import com.iotracks.iofabric.local_api.LocalApi;
+import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
-import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -38,13 +41,13 @@ public class FieldAgent {
 	private final String MODULE_NAME = "Field Agent";
 	private final int GET_CHANGES_LIST_FREQ_SECONDS = 30;
 	private final int CHECK_CONTROLLER_FREQ_SECONDS = 60;
+	private final int POST_STATUS_FREQ_SECONDS = 30;
 	private final String filesPath = "/etc/iofabric/";
 
 	private Orchestrator orchestrator;
 	private long lastGetChangesList;
 	private ElementManager elementManager;
 	private static FieldAgent instance;
-	private List<Observer> observers;
 	private boolean firstTime;
 
 	private FieldAgent() {
@@ -61,6 +64,49 @@ public class FieldAgent {
 		}
 		return instance;
 	}
+	
+	private final Runnable postStatus = () -> {
+		LoggingService.logInfo(MODULE_NAME, "post status");
+		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+			LoggingService.logWarning(MODULE_NAME, "not provisioned");
+			return;
+		}
+		
+		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
+			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			return;
+		}
+		
+		Map<String, Object> postParams = new HashMap<>();
+
+		postParams.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
+		postParams.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
+		postParams.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
+		postParams.put("memoryusage", StatusReporter.getResourceConsumptionManagerStatus().getMemoryUsage());
+		postParams.put("diskusage", StatusReporter.getResourceConsumptionManagerStatus().getDiskUsage());
+		postParams.put("cpuusage", StatusReporter.getResourceConsumptionManagerStatus().getCpuUsage());
+		postParams.put("memoryviolation", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation() ? "yes" : "no");
+		postParams.put("diskviolation", StatusReporter.getResourceConsumptionManagerStatus().isDiskViolation() ? "yes" : "no");
+		postParams.put("cpuviolation", StatusReporter.getResourceConsumptionManagerStatus().isCpuViolation() ? "yes" : "no");
+		postParams.put("elementstatus", StatusReporter.getProcessManagerStatus().getJsonElementsStatus());
+		postParams.put("repositorycount", StatusReporter.getProcessManagerStatus().getRegistriesCount());
+		postParams.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
+		postParams.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
+		postParams.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
+		postParams.put("ipaddress", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation());
+		postParams.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
+		postParams.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
+		postParams.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
+		postParams.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
+
+		try {
+			JsonObject result = orchestrator.doCommand("status", null, postParams);
+			if (!result.getString("status").equals("ok"))
+				throw new Exception("error from fabric controller");
+		} catch (Exception e) {
+			LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
+		}
+	};
 	
 	private final Runnable getChangesList = () -> {
 		LoggingService.logInfo(MODULE_NAME, "get changes list");
@@ -91,7 +137,7 @@ public class FieldAgent {
 
 		JsonObject changes = result.getJsonObject("changes");
 		boolean changed = false;
-		if (changes.getBoolean("config") || firstTime)
+		if (changes.getBoolean("config") && !firstTime)
 			getFabricConfig();
 		
 		if (changes.getBoolean("containerlist") || firstTime) {
@@ -111,15 +157,10 @@ public class FieldAgent {
 			changed = true;
 		}
 		if (changed)
-			notifyObservers();
+			notifyModules();
 		
 		firstTime = false;
 	};
-	
-	public void notifyObservers() {
-		for (Observer observer : observers)
-			observer.update();
-	}
 	
 	public void loadRegistries(boolean fromFile) {
 		LoggingService.logInfo(MODULE_NAME, "get registries");
@@ -168,6 +209,13 @@ public class FieldAgent {
 		}
 	}
 
+	private void notifyModules() {
+		MessageBus.getInstance().update();
+		ProcessManager.getInstance().update();
+		LocalApi.getInstance().update();
+		
+	}
+
 	private void loadElementsConfig(boolean fromFile) {
 		LoggingService.logInfo(MODULE_NAME, "get elemets config");
 		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
@@ -200,7 +248,7 @@ public class FieldAgent {
 				JsonObject config = configs.getJsonObject(i);
 				String id = config.getString("id");
 				String configString = config.getString("config");
-				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
+//				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
 				cfg.put(id, configString);
 			}
 			elementManager.setConfigs(cfg);
@@ -330,49 +378,6 @@ public class FieldAgent {
 		StatusReporter.setFieldAgentStatus().setLastCommandTime(lastGetChangesList);
 	};
 
-	private void postStatus() {
-		LoggingService.logInfo(MODULE_NAME, "post status");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
-			LoggingService.logWarning(MODULE_NAME, "not provisioned");
-			return;
-		}
-		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
-			return;
-		}
-		
-		Map<String, Object> postParams = new HashMap<>();
-
-		postParams.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
-		postParams.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
-		postParams.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
-		postParams.put("memoryusage", StatusReporter.getResourceConsumptionManagerStatus().getMemoryUsage());
-		postParams.put("diskusage", StatusReporter.getResourceConsumptionManagerStatus().getDiskUsage());
-		postParams.put("cpuusage", StatusReporter.getResourceConsumptionManagerStatus().getCpuUsage());
-		postParams.put("memoryviolation", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation() ? "yes" : "no");
-		postParams.put("diskviolation", StatusReporter.getResourceConsumptionManagerStatus().isDiskViolation() ? "yes" : "no");
-		postParams.put("cpuviolation", StatusReporter.getResourceConsumptionManagerStatus().isCpuViolation() ? "yes" : "no");
-		postParams.put("elementstatus", StatusReporter.getProcessManagerStatus().getJsonElementsStatus());
-		postParams.put("repositorycount", StatusReporter.getProcessManagerStatus().getRegistriesCount());
-		postParams.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
-		postParams.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
-		postParams.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
-		postParams.put("ipaddress", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation());
-		postParams.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
-		postParams.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
-		postParams.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
-		postParams.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
-
-		try {
-			JsonObject result = orchestrator.doCommand("status", null, postParams);
-			if (!result.getString("status").equals("ok"))
-				throw new Exception("error from fabric controller");
-		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
-		}
-	}
-	
 	private String checksum(String data) {
 		try {
 			byte[] base64 = Base64.getEncoder().encode(data.getBytes(StandardCharsets.US_ASCII));
@@ -394,7 +399,7 @@ public class FieldAgent {
 			if (!Files.exists(Paths.get(filename), LinkOption.NOFOLLOW_LINKS))
 				return null;
 			
-			JsonReader reader = Json.createReader(new FileReader(Paths.get(filename).toFile()));
+			JsonReader reader = Json.createReader(new FileReader(new File(filename)));
 			JsonObject object = reader.readObject();
 			reader.close();
 			String checksum = object.getString("checksum");
@@ -414,7 +419,7 @@ public class FieldAgent {
 					.add("checksum", checksum)
 					.add("data", data)
 					.build();
-			JsonWriter writer = Json.createWriter(new FileWriter(Paths.get(filename).toFile()));
+			JsonWriter writer = Json.createWriter(new FileWriter(new File(filename)));
 			writer.writeObject(object);
 			writer.close();
 		} catch (Exception e) {}
@@ -432,7 +437,10 @@ public class FieldAgent {
 			return;
 		}
 		
-		boolean changed = false;
+		if (firstTime) {
+			postFabricConfig();
+			return;
+		}
 		try {
 			JsonObject result = orchestrator.doCommand("config", null, null);
 			if (!result.getString("status").equals("ok"))
@@ -449,60 +457,44 @@ public class FieldAgent {
 			String logDirectory = configs.getString("logdirectory");
 			int logFileCount = configs.getInt("logfilecount");
 			
-			if (!Configuration.getNetworkInterface().equals(networkInterface)) {
-				Configuration.setNetworkInterface(networkInterface);
-				changed = true;
-			}
-			if (!Configuration.getDockerUrl().equals(dockerUrl)) {
-				Configuration.setDockerUrl(dockerUrl);
-				changed = true;
-			}
-			if (Configuration.getDiskLimit() != diskLimit) {
-				Configuration.setDiskLimit(diskLimit);
-				changed = true;
-			}
+			Map<String, Object> instanceConfig = new HashMap<>();
 			
-			if (!Configuration.getDiskDirectory().equals(diskDirectory)) {
-				Configuration.setDiskDirectory(diskDirectory);
-				changed = true;
-			}
-			;
-			if (Configuration.getMemoryLimit() != memoryLimit) {
-				Configuration.setMemoryLimit(memoryLimit);
-				changed = true;
-			}
+			if (!Configuration.getNetworkInterface().equals(networkInterface))
+				instanceConfig.put("n", networkInterface);
 			
-			if (Configuration.getCpuLimit() != cpuLimit) {
-				Configuration.setCpuLimit(cpuLimit);
-				changed = true;
-			}
+			if (!Configuration.getDockerUrl().equals(dockerUrl))
+				instanceConfig.put("c", dockerUrl);
+
+			if (Configuration.getDiskLimit() != diskLimit)
+				instanceConfig.put("d", diskLimit);
 			
-			if (Configuration.getLogDiskLimit() != logLimit) {
-				Configuration.setLogDiskLimit(logLimit);
-				changed = true;
-			}
+			if (!Configuration.getDiskDirectory().equals(diskDirectory))
+				instanceConfig.put("dl", diskDirectory);
+
+			if (Configuration.getMemoryLimit() != memoryLimit)
+				instanceConfig.put("m", memoryLimit);
 			
-			if (!Configuration.getLogDiskDirectory().equals(logDirectory)) {
-				Configuration.setLogDiskDirectory(logDirectory);
-				changed = true;
-			}
+			if (Configuration.getCpuLimit() != cpuLimit)
+				instanceConfig.put("p", cpuLimit);
 			
-			if (Configuration.getLogFileCount() != logFileCount) {
-				Configuration.setLogFileCount(logFileCount);
-				changed = true;
-			}
+			if (Configuration.getLogDiskLimit() != logLimit)
+				instanceConfig.put("l", logLimit);
 			
-			if (changed) {
-				// TODO: update config file 
-				// TODO: call other modules to update their configuration
-			}
+			if (!Configuration.getLogDiskDirectory().equals(logDirectory))
+				instanceConfig.put("ld", logDirectory);
+			
+			if (Configuration.getLogFileCount() != logFileCount)
+				instanceConfig.put("lc", logFileCount);
+			
+			if (!instanceConfig.isEmpty())
+				Configuration.setConfig(instanceConfig);
 			
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get fabric config : " + e.getMessage());
 		}
 	}
 	
-	private void postFabricConfig() {
+	public void postFabricConfig() {
 		LoggingService.logInfo(MODULE_NAME, "post fabric config");
 		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
@@ -544,13 +536,15 @@ public class FieldAgent {
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
 			Configuration.setInstanceId(result.getString("id"));
 			Configuration.setAccessToken(result.getString("token"));
-			orchestrator.update();
+			try {
+				Configuration.saveConfigUpdates();
+			} catch (Exception e) {}
 
 			loadElementsList(false);
 			loadElementsConfig(false);
 			loadRoutes(false);
 			loadRegistries(false);
-			notifyObservers();
+			notifyModules();
 			
 			return String.format("\nSuccess - instance ID is %s", result.getString("id"));
 		} catch (Exception e) {
@@ -574,14 +568,16 @@ public class FieldAgent {
 		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 		Configuration.setInstanceId("");
 		Configuration.setAccessToken("");
-		orchestrator.update();
+		try {
+			Configuration.saveConfigUpdates();
+		} catch (Exception e) {}
 		elementManager.clearData();
-		notifyObservers();
+		notifyModules();
 		return "\nSuccess - tokens and identifiers and keys removed";
 	}
 	
-	public void addObserver(Observer observer) {
-		observers.add(observer);
+	public void instanceConfigUpdated() {
+		orchestrator.update();
 	}
 	
 	public void start() {
@@ -589,7 +585,6 @@ public class FieldAgent {
 		APIServer server = new APIServer();
 		server.start();
 		// *******************************************
-		observers = new ArrayList<>();
 		
 		if (Configuration.getInstanceId() == null || Configuration.getInstanceId().equals("")
 				|| Configuration.getAccessToken() == null || Configuration.getAccessToken().equals(""))
@@ -610,5 +605,6 @@ public class FieldAgent {
 			loadRegistries(true);
 		}
 		Supervisor.scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
+		Supervisor.scheduler.scheduleAtFixedRate(postStatus, POST_STATUS_FREQ_SECONDS, POST_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
 	}
 }

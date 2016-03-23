@@ -104,12 +104,10 @@ public class MessageBusServer {
 			messageBusSession.deleteQueue(commandlineAddress);
 		messageBusSession.createQueue(address, address, false);
 		messageBusSession.createQueue(commandlineAddress, commandlineAddress, false);
-//		messageBusSession.close();
-//		
-//		messageBusSession = sf.createSession();
-		producer = messageBusSession.createProducer(address);
 
+		producer = messageBusSession.createProducer(address);
 		commandlineProducer = messageBusSession.createProducer(commandlineAddress);
+		
 		commandlineConsumer = messageBusSession.createConsumer(commandlineAddress, String.format("receiver = '%s'", "iofabric.commandline.command"));
 		commandlineConsumer.setMessageHandler(new CommandLineHandler());
 		messageBusSession.start();
@@ -175,5 +173,13 @@ public class MessageBusServer {
 
 	protected void openProducer() throws Exception {
 		producer = messageBusSession.createProducer(address);
+	}
+
+	public void setMemoryLimit() {
+		AddressSettings addressSettings = new AddressSettings();
+		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
+		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
+		server.getAddressSettingsRepository().removeMatch(address);
+		server.getAddressSettingsRepository().addMatch(address, addressSettings);
 	}
 }
