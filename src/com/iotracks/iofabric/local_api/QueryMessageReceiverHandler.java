@@ -89,7 +89,7 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 
 			if(messageList != null){
 				for(Message msg : messageList){
-					String msgJson = msg.toString();
+					JsonObject msgJson = msg.toJson();
 					messagesArray.add(msgJson);
 					msgCount++;
 				}
