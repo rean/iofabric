@@ -1,9 +1,12 @@
 package com.iotracks.iofabric.supervisor;
 
+import java.lang.Thread.State;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.field_agent.FieldAgent;
 import com.iotracks.iofabric.local_api.LocalApi;
@@ -25,10 +28,18 @@ public class Supervisor {
 	private ResourceConsumptionManager resourceConsumptionManager;
 	private FieldAgent fieldAgent;
 	private MessageBus messageBus;
+	private Thread localApiThread;
+	
+	private Runnable checkLocalApiStatus = () -> {
+		if (localApiThread != null && localApiThread.getState() == State.TERMINATED) {
+			localApiThread = new Thread(LocalApi.getInstance(), "Local Api");
+			localApiThread.start();
+		}
+	};
 
 	public Supervisor() {
 	}
-
+	
 	public void start() {
 		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook, "shutdown hook"));
 		
@@ -80,14 +91,17 @@ public class Supervisor {
 				.setModuleStatus(Constants.MESSAGE_BUS,	ModulesStatus.RUNNING);
 		
 		LocalApi localApi = LocalApi.getInstance();
-		
+		localApiThread = new Thread(localApi, "Local Api");
+		localApiThread.start();
+		scheduler.scheduleAtFixedRate(checkLocalApiStatus, 0, 10, TimeUnit.SECONDS);
+
 		fieldAgent.addObserver(messageBus);
 		fieldAgent.addObserver(processManager);
+		fieldAgent.addObserver(localApi);
 
 		StatusReporter.setSupervisorStatus()
 				.setDaemonStatus(ModulesStatus.RUNNING);
 		LoggingService.logInfo(MODULE_NAME, "started");
-		test();
 		
 		while (true) {
 			try {
@@ -101,62 +115,11 @@ public class Supervisor {
 		}
 	}
 
-	private Thread publisher;
-	private Thread receiver;
-	@SuppressWarnings("deprecation")
 	private final Runnable shutdownHook = () -> {
 		try {
 			scheduler.shutdownNow();
-			publisher.stop();
-			receiver.stop();
 			messageBus.stop();
 		} catch (Exception e) {}
 	};
 
-	private void test() {
-		int max = Integer.MAX_VALUE;
-		Runnable sendMessage = new Runnable() {
-			@Override
-			public void run() {
-				String p = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V";
-				Random random = new Random();
-				for (int i = 0; i < max; i++) {
-					try {
-						Message m = new Message(p);
-						messageBus.publishMessage(m);
-						int delay = random.nextInt(5);
-						Thread.sleep(delay);
-					} catch (Exception e) {
-						System.out.println(e.getMessage());
-					}
-				}
-				System.out.println("####################### " + max + " messages sent");
-			}
-		};
-		Runnable receiveMessage = new Runnable() {
-			@Override
-			public void run() {
-				int count = 0;
-				String r = "wF8VmXTQcyBRPhb27XKgm4gpq97NN2bh";
-				Random random = new Random();
-				while (count < max) {
-					List<Message> messages = messageBus.getMessages(r);
-					messageBus.getMessages("hgbgFd6DX3DxWfkNWtjPqPY7RgKqn2MF");
-					if (messages != null && messages.size() > 0) {
-						count += messages.size();
-						Constants.systemOut.println(count + " messages received");
-					}
-					int delay = random.nextInt(1000);
-					try {
-						Thread.sleep(delay);
-					} catch (Exception e) {}
-				}
-				System.out.println("$$$$$$$$$$$$$$$$$$$$$$$ " + count + " messages received");
-			}
-		};
-		publisher = new Thread(sendMessage, "message publisher");
-		publisher.start();
-		receiver = new Thread(receiveMessage, "message receiver");
-//		receiver.start();
-	}
 }

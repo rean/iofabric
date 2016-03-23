@@ -150,6 +150,7 @@ public class MessageArchive {
 		if (i >= 0)
 			resultSet.push(listOfFiles[i]);
 		
+		byte[] header = new byte[HEADER_SIZE + Long.BYTES];
 		while (!resultSet.isEmpty()) {
 			File file = resultSet.pop();
 			String fileName = file.getName();
@@ -157,16 +158,15 @@ public class MessageArchive {
 				RandomAccessFile indexFile = new RandomAccessFile(new File(diskDirectory + fileName), "r");
 				RandomAccessFile dataFile = new RandomAccessFile(new File(diskDirectory + fileName.substring(0, fileName.indexOf(".")) + ".iomsg"), "r");
 				while (indexFile.getFilePointer() < indexFile.length()) {
-					byte[] header = new byte[HEADER_SIZE];
 //					byte[] dataPosBytes = new byte[Long.BYTES];
 					
-					indexFile.read(header, 0, HEADER_SIZE);
+					indexFile.read(header, 0, HEADER_SIZE + Long.BYTES);
 //					long dataPos = indexFile.readLong();
 					int dataSize = getDataSize(header);
 					byte[] data = new byte[dataSize];
 					dataFile.read(data, 0, dataSize);
 					Message message = new Message(header, data);
-					if (message.getTimestamp() < from)
+					if (message.getTimestamp() < from || message.getTimestamp() > to)
 						continue;
 					result.add(message);
 				}
