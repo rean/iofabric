@@ -21,11 +21,7 @@ public class LocalApi implements Runnable {
 	private static LocalApi instance = null;
 	public boolean isSeverStarted = false; 
 	private LocalApiServer server;
-	
-	private final Runnable sendConfigSignal = () -> {
-		// TODO: check server status and set the flag
-	};
-	
+
 	private LocalApi() {
 
 	}
@@ -50,7 +46,7 @@ public class LocalApi implements Runnable {
 		LocalApi api = LocalApi.getInstance();
 		new Thread(api).start();
 	}
-	
+
 	public void stopServer() throws Exception {
 		server.stop();
 	}
@@ -58,7 +54,7 @@ public class LocalApi implements Runnable {
 	@Override
 	public void run() {
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STARTING);
-		
+
 		WebSocketMap.getInstance();
 		ConfigurationMap.getInstance();
 		LoggingService.logInfo("Main", "Initialized configuration and websocket map");
@@ -69,8 +65,9 @@ public class LocalApi implements Runnable {
 
 		retrieveContainerConfig();
 
-		Supervisor.scheduler.scheduleAtFixedRate(sendConfigSignal, 5, 5, TimeUnit.SECONDS);
-		
+	    Supervisor.scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+		Supervisor.scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+
 		server = new LocalApiServer();
 		try {
 			server.start();
@@ -128,6 +125,7 @@ public class LocalApi implements Runnable {
 		updateContainerConfig();
 		Map<String, String> newConfigMap = new HashMap<String, String>();
 		newConfigMap.putAll(ConfigurationMap.containerConfigMap);
+		newConfigMap.put("viewer", "newconfiguration");
 		ControlWebsocketHandler handler = new ControlWebsocketHandler();
 		try {
 			handler.initiateControlSignal(oldConfigMap, newConfigMap);
@@ -135,5 +133,4 @@ public class LocalApi implements Runnable {
 			LoggingService.logWarning(MODULE_NAME, "unable to start the control signal sending " + e.getMessage());
 		}
 	}
-	
 }

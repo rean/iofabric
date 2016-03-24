@@ -2,16 +2,14 @@ package com.iotracks.iofabric.local_api;
 
 import java.util.Hashtable;
 
-import com.iotracks.iofabric.message_bus.Message;
-
 import io.netty.channel.ChannelHandlerContext;
 
 public class WebSocketMap {
 	static Hashtable<String, ChannelHandlerContext> controlWebsocketMap;
 	static Hashtable<String, ChannelHandlerContext> messageWebsocketMap;
 	
-	static Hashtable<ChannelHandlerContext, MessageSendContextCount> messageSendContextMap;
-	static Hashtable<ChannelHandlerContext, Integer> controlSignalSendContextMap;
+	static Hashtable<ChannelHandlerContext, MessageSendContextCount> unackMessageSendingMap;
+	static Hashtable<ChannelHandlerContext, Integer> unackControlSignalsMap;
 
 	private static WebSocketMap instance = null;
 
@@ -26,8 +24,8 @@ public class WebSocketMap {
 					instance = new WebSocketMap();
 					controlWebsocketMap = new Hashtable<String, ChannelHandlerContext>();
 					messageWebsocketMap = new Hashtable<String, ChannelHandlerContext>();
-					messageSendContextMap = new Hashtable<ChannelHandlerContext, MessageSendContextCount>();
-					controlSignalSendContextMap = new Hashtable<ChannelHandlerContext, Integer>();
+					unackMessageSendingMap = new Hashtable<ChannelHandlerContext, MessageSendContextCount>();
+					unackControlSignalsMap = new Hashtable<ChannelHandlerContext, Integer>();
 				}
 			}
 		}

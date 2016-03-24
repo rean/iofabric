@@ -4,8 +4,6 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.HOST;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -64,10 +62,10 @@ public class ControlWebsocketHandler {
 
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 
-		//Code for testing - To be removed later - start
+//		//Code for testing - To be removed later - start
 		LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
-		initiateControlSignal(ctx);
-		//Code for testing - end
+		LocalApi.getInstance().update();
+//		//Code for testing - end
 
 		return;
 	}
@@ -80,7 +78,7 @@ public class ControlWebsocketHandler {
 			if (buffer.readableBytes() == 1) {
 				Byte opcode = buffer.readByte(); 
 				if(opcode == OPCODE_PING.intValue()){
-					if(hasContextInMap(ctx)){
+					if(WebsocketUtil.hasContextInMap(ctx, WebSocketMap.controlWebsocketMap)){
 						ByteBuf buffer1 = ctx.alloc().buffer();
 						buffer1.writeByte(OPCODE_PONG.intValue());
 						LoggingService.logInfo(MODULE_NAME,"Pong frame send to the container" );
@@ -101,7 +99,7 @@ public class ControlWebsocketHandler {
 				Byte opcode = buffer2.readByte(); 
 				LoggingService.logInfo(MODULE_NAME,"OPCODE Acknowledgment: " + opcode);
 				if(opcode == OPCODE_ACK.intValue()){
-					WebSocketMap.controlSignalSendContextMap.remove(ctx);
+					WebSocketMap.unackControlSignalsMap.remove(ctx);
 					LoggingService.logInfo(MODULE_NAME,"Acknowledgement received");
 					LoggingService.logInfo(MODULE_NAME,"Control signals send successfully");
 					return;
@@ -112,53 +110,9 @@ public class ControlWebsocketHandler {
 		if (frame instanceof CloseWebSocketFrame) {
 			LoggingService.logInfo(MODULE_NAME,"In websocket handle websocket frame : Close websocket frame ");
 			ctx.channel().close();
-			removeContextFromMap(ctx);
+			WebsocketUtil.removeWebsocketContextFromMap(ctx,  WebSocketMap.controlWebsocketMap);
 			return;
 		}
-	}
-
-	private void initiateUnacknowledgedSignals() throws Exception{
-		//TODO: do it on timely basis
-		
-		for(Map.Entry<ChannelHandlerContext, Integer> contextEntry : WebSocketMap.controlSignalSendContextMap.entrySet()){
-			LoggingService.logInfo(MODULE_NAME,"Initiating control signal for unacknowledged signals");
-			ChannelHandlerContext ctx = contextEntry.getKey();
-			int tryCount = contextEntry.getValue();
-			if(tryCount < 10){
-				initiateControlSignal(ctx);
-			}else{
-				LoggingService.logInfo(MODULE_NAME," Initiating control signal expires");
-				removeContextFromMap(ctx);
-				return;
-			}
-			LoggingService.logInfo(MODULE_NAME,"Acknowledgement opcode not found" );		
-
-			return;
-		}
-	}
-
-	private void removeContextFromMap(ChannelHandlerContext ctx) throws Exception{
-		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = controlMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				LoggingService.logInfo(MODULE_NAME,"Removing real-time control context for the id: " + e.getKey());
-				it.remove();
-			}
-		}
-	}
-
-	private boolean hasContextInMap(ChannelHandlerContext ctx) throws Exception{
-		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = controlMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				LoggingService.logInfo(MODULE_NAME,"Context found as real-time control socket");
-				return true;
-			}
-		}
-		LoggingService.logInfo(MODULE_NAME,"Context found as real-time control socket");
-		return false;
 	}
 
 	public void initiateControlSignal(Map<String, String> oldConfigMap, Map<String, String> newConfigMap) throws Exception{
@@ -187,7 +141,7 @@ public class ControlWebsocketHandler {
 			if(controlMap.containsKey(changedConfigElmtId)){
 				LoggingService.logInfo(MODULE_NAME,"Found container id in map ");
 				ctx = controlMap.get(changedConfigElmtId);
-				WebSocketMap.controlSignalSendContextMap.put(ctx, 1);
+				WebSocketMap.unackControlSignalsMap.put(ctx, 1);
 
 				ByteBuf buffer1 = ctx.alloc().buffer();
 				buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
@@ -195,17 +149,6 @@ public class ControlWebsocketHandler {
 			}
 		}
 
-	}
-
-	private void initiateControlSignal(ChannelHandlerContext ctx) throws Exception{
-
-		int tryCount = WebSocketMap.controlSignalSendContextMap.get(ctx);
-		tryCount = tryCount+1;
-		WebSocketMap.controlSignalSendContextMap.put(ctx, tryCount);
-
-		ByteBuf buffer1 = ctx.alloc().buffer();
-		buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
-		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 	}
 
 	private static String getWebSocketLocation(FullHttpRequest req) throws Exception{

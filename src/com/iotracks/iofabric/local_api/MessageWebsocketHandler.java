@@ -3,10 +3,6 @@ package com.iotracks.iofabric.local_api;
 import static io.netty.handler.codec.http.HttpHeaders.Names.HOST;
 
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-
-import org.bouncycastle.util.Arrays;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
@@ -80,7 +76,7 @@ public class MessageWebsocketHandler {
 			if (buffer.readableBytes() == 1) {
 				Byte opcode = buffer.readByte();  
 				if(opcode == OPCODE_PING.intValue()){
-					if(hasContextInMap(ctx)){
+					if(WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap)){
 						ByteBuf buffer1 = ctx.alloc().buffer();
 						buffer1.writeByte(OPCODE_PONG.intValue());
 						LoggingService.logInfo(MODULE_NAME,"Pong frame send in response to ping" );
@@ -108,13 +104,11 @@ public class MessageWebsocketHandler {
 			if(byteArray.length >= 2){
 				Byte opcode = byteArray[0];
 				if(opcode == OPCODE_MSG.intValue()){
-					LoggingService.logInfo(MODULE_NAME,"Opcode: " + opcode);
 					Message message = null;
 
-					if(hasContextInMap(ctx)){
+					if(WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap)){
 
 						int totalMsgLength = BytesUtil.bytesToInteger(BytesUtil.copyOfRange(byteArray, 1, 5)); 
-						System.out.println("Total Length: " + totalMsgLength);
 						try {
 							message = new Message(BytesUtil.copyOfRange(byteArray, 5, totalMsgLength));
 							LoggingService.logInfo(MODULE_NAME,message.toString());
@@ -127,15 +121,15 @@ public class MessageWebsocketHandler {
 						LoggingService.logInfo(MODULE_NAME,"Validation successful");
 
 						//To be removed - For testing
-						System.out.println("usercount" + userCount);
+//						System.out.println("usercount" + userCount);
 						if(userCount == 0){
-							System.out.println("Sending message back to the container viewer1 start.......");
-							sendRealTimeMessage( "0",  message);
-							userCount++;
+//							System.out.println("Sending message back to the container viewer1 start.......");
+							sendRealTimeMessage( "viewer",  message);
+//							userCount++;
 							return;
-						}
+					}
 
-						userCount++;
+//						userCount++;
 						//To be removed - For testing
 
 						MessageBus messageBus = MessageBus.getInstance();
@@ -171,7 +165,7 @@ public class MessageWebsocketHandler {
 			Byte opcode = input.readByte(); 
 			if(opcode == OPCODE_ACK.intValue()){
 				LoggingService.logInfo(MODULE_NAME,"Received acknowledgment for the message sent successfully");
-				WebSocketMap.messageSendContextMap.remove(ctx);
+				WebSocketMap.unackMessageSendingMap.remove(ctx);
 			}
 
 			return;
@@ -181,60 +175,9 @@ public class MessageWebsocketHandler {
 		if (frame instanceof CloseWebSocketFrame) {
 			LoggingService.logInfo(MODULE_NAME,"In websocket handle websocket frame : Close websocket frame ");
 			ctx.channel().close();
-			removeWebsocketContextFromMap(ctx);
+			WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);
 			return;
 		}
-	}
-
-	private void initiateUnacknowledgedMessageSending() throws Exception{
-		//TODO: do it on timely basis
-		for(Map.Entry<ChannelHandlerContext, MessageSendContextCount> contextEntry : WebSocketMap.messageSendContextMap.entrySet()){
-
-			LoggingService.logInfo(MODULE_NAME,"Sending messages - unacknowledged messages");
-			ChannelHandlerContext ctx = contextEntry.getKey();
-			int tryCount = WebSocketMap.messageSendContextMap.get(ctx).getSendTryCount();
-			if(tryCount < 10){
-				sendRealTimeMessage(ctx);
-			}else{
-				WebSocketMap.messageSendContextMap.remove(ctx);
-				removeWebsocketContextFromMap(ctx);
-				return;
-			}
-		}
-	}
-
-
-	private void removeWebsocketContextFromMap(ChannelHandlerContext ctx){
-		Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = messageMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				LoggingService.logInfo(MODULE_NAME,"Removing real-time messaging context for the id: " + e.getKey());
-				it.remove();
-			}
-		}
-	}
-
-	private boolean hasContextInMap(ChannelHandlerContext ctx){
-		Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = messageMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				LoggingService.logInfo(MODULE_NAME,"Context found as real-time message websocket");
-				return true;
-			}
-		}
-		LoggingService.logInfo(MODULE_NAME,"Context not found as real-time message websocket");
-		return false;
-	}
-
-	private void sendRealTimeMessage(ChannelHandlerContext ctx){
-		MessageSendContextCount messageContextAndCount = WebSocketMap.messageSendContextMap.get(ctx);
-		int tryCount = messageContextAndCount.getSendTryCount();
-		Message message = messageContextAndCount.getMessage();
-		tryCount = tryCount + 1;
-		WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, tryCount));
-		sendMessageHelper(ctx, message);
 	}
 
 	public void sendRealTimeMessage(String receiverId, Message message){
@@ -245,34 +188,31 @@ public class MessageWebsocketHandler {
 		if(messageSocketMap!=null && messageSocketMap.containsKey(receiverId)){
 			LoggingService.logInfo(MODULE_NAME,"Active real-time websocket found");
 			ctx = messageSocketMap.get(receiverId);
-			WebSocketMap.messageSendContextMap.put(ctx, new MessageSendContextCount(message, 1));
-			sendMessageHelper(ctx, message);
+			WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSendContextCount(message, 1));
+			ByteBuf buffer1 = ctx.alloc().buffer();
+
+			//Send Opcode
+			buffer1.writeByte(OPCODE_MSG);
+			int totalMsgLength = 0;
+
+			byte[] bytesMsg = null;
+			try {
+				bytesMsg = message.getBytes();
+			} catch (Exception e) {
+				LoggingService.logInfo(MODULE_NAME, "Problem in retrieving the message");
+			}
+			
+			totalMsgLength = bytesMsg.length;
+			//Total Length
+			System.out.println("Total message length: "+ totalMsgLength);
+			buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
+			//Message
+			buffer1.writeBytes(bytesMsg);
+			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 		}else{
 			LoggingService.logInfo(MODULE_NAME, "No active real-time websocket found for "+ receiverId);
 		}
 
-	}
-
-	private void sendMessageHelper(ChannelHandlerContext ctx, Message message){
-		ByteBuf buffer1 = ctx.alloc().buffer();
-
-		//Send Opcode
-		buffer1.writeByte(OPCODE_MSG);
-		int totalMsgLength = 0;
-
-		byte[] bytesMsg = null;
-		try {
-			bytesMsg = message.getBytes();
-		} catch (Exception e) {
-			LoggingService.logInfo(MODULE_NAME, "Problem in retrieving the message");
-		}
-		totalMsgLength = bytesMsg.length;
-		//Total Length
-		System.out.println("Total message length: "+ totalMsgLength);
-		buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
-		//Message
-		buffer1.writeBytes(bytesMsg);
-		ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 	}
 
 	private static String getWebSocketLocation(FullHttpRequest req) {

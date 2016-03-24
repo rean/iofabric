@@ -53,9 +53,9 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 				}else if(mapName!=null && mapName.equals("message")){
 					MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
 					messageSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
+				}else{
+					LoggingService.logWarning(MODULE_NAME, "Cannot initiate real-time service: Context not found");
 				}
-				
-				LoggingService.logWarning(MODULE_NAME, "Cannot initiate real-time service: Context not found");
 			}
 			return;
 		} catch (Exception e) {

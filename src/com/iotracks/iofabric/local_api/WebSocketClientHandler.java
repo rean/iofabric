@@ -93,7 +93,6 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 			if(opcode.intValue() == OPCODE_MSG){
 
 				int totalMsgLength = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5)); 
-				System.out.println("Total Length: " + totalMsgLength);
 				Message message = null;
 				try { 
 					message = new Message(Arrays.copyOfRange(byteArray, 5, totalMsgLength));

@@ -15,7 +15,6 @@ import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
-import javax.json.JsonValue;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
@@ -41,7 +40,7 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 
 	public Object handleQueryMessageRequest() throws Exception{
 		
-		LoggingService.logInfo(MODULE_NAME,"In QueryMessageReceiverHandler : handle");
+		LoggingService.logInfo(MODULE_NAME,"In Query message receiver handler : handle");
 
 		HttpHeaders headers = req.headers();
 
@@ -63,7 +62,7 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		JsonObject jsonObject = reader.readObject();
 
 		if(validateMessageQueryInput(jsonObject) != null){
-			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
+			LoggingService.logWarning(MODULE_NAME,"Incorrect input content/data");
 			String errorMsg = validateMessageQueryInput(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
