@@ -12,6 +12,7 @@ import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
+import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -24,7 +25,7 @@ public class LocalApi implements Runnable {
 
 	private LocalApi() {
 
-	}
+	} 
 
 	public static LocalApi getInstance(){
 		if (instance == null) {
@@ -59,7 +60,12 @@ public class LocalApi implements Runnable {
 		ConfigurationMap.getInstance();
 		LoggingService.logInfo("Main", "Initialized configuration and websocket map");
 
-		StatusReporter.setLocalApiStatus().setCurrentIpAddress(getCurrentIp());
+		try {
+			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
+		} catch (Exception e2) {
+			LoggingService.logWarning(MODULE_NAME, "Unable to find the IP address of the machine running ioFabric: " + e2.getMessage());
+		}
+		
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 		StatusReporter.setLocalApiStatus().setOpenMessageSocketsCount(WebSocketMap.messageWebsocketMap.size());
 
@@ -105,17 +111,6 @@ public class LocalApi implements Runnable {
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to update containers configuration: " + e.getMessage());
 		}
-	}
-
-	private InetAddress getCurrentIp(){
-		InetAddress IP = null;
-		try {
-			IP = InetAddress.getLocalHost();
-		} catch (UnknownHostException e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to find the current IP");
-		}
-		LoggingService.logInfo(MODULE_NAME, "IP address of the system running iofabric is := " + IP.getHostAddress());
-		return IP;
 	}
 
 	public void update() {
