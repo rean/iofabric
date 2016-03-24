@@ -64,9 +64,9 @@ public class Orchestrator {
 		return result;
 	}
 	
-	private RequestConfig getRequestConfig() throws Exception {
+	public static InetAddress getInetAddress() throws Exception {
+		String eth = Configuration.getNetworkInterface();
 		InetAddress address = null;
-		boolean found = false;
 		try {
 			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
 		    while (networkInterfaces.hasMoreElements()) {
@@ -76,19 +76,18 @@ public class Orchestrator {
 		        	while (ipAddresses.hasMoreElements()) {
 		        		address = ipAddresses.nextElement();
 		        		if (address instanceof Inet4Address) {
-		        			found = true;
-		        			break;
+		        			return address;
 		        		}
 		        	}
-		        	if (found)
-		        		break;
 		        }
 		    }
-		} catch (Exception e) {}
-		
-		if (!found)
-			throw new Exception(String.format("unable to bind network interface \"%s\"", eth));
-		return RequestConfig.copy(RequestConfig.DEFAULT).setLocalAddress(address).build();
+		} catch (Exception e) {
+		}
+		throw new Exception(String.format("unable to bind network interface \"%s\"", eth));
+	}
+	
+	private RequestConfig getRequestConfig() throws Exception {
+		return RequestConfig.copy(RequestConfig.DEFAULT).setLocalAddress(getInetAddress()).build();
 	}
 	
 	private void initialize() throws Exception {

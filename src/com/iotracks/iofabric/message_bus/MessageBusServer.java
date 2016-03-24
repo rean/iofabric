@@ -179,7 +179,6 @@ public class MessageBusServer {
 		AddressSettings addressSettings = new AddressSettings();
 		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
-//		server.getAddressSettingsRepository().removeMatch(address);
-//		server.getAddressSettingsRepository().addMatch(address, addressSettings);
+		server.getConfiguration().getAddressesSettings().put(address, addressSettings);
 	}
 }
