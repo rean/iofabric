@@ -29,15 +29,15 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 public class MessageReceiverHandler implements Callable<Object> {
 
 	private final String MODULE_NAME = "Local API";
-	
+
 	private final FullHttpRequest req;
 	private ByteBuf bytesData;
-	
+
 	public MessageReceiverHandler(FullHttpRequest req, ByteBuf	bytesData) {
 		this.req = req;
 		this.bytesData = bytesData;
 	}
-	
+
 	public Object handleMessageRecievedRequest() throws Exception{
 		LoggingService.logInfo(MODULE_NAME,"In message receiver handler : handle");
 		HttpHeaders headers = req.headers();
@@ -65,41 +65,36 @@ public class MessageReceiverHandler implements Callable<Object> {
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
-		
+
 		String receiverId = jsonObject.getString("id");
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
-		
+
 		MessageBus bus = MessageBus.getInstance();
-		long lStartTime = System.currentTimeMillis();
 		List<Message> messageList = bus.getMessages(receiverId);
-		long lEndTime = System.currentTimeMillis();
-		long difference = lEndTime - lStartTime;
-		
-		System.out.println("Message Bus Retrival elapsed milliseconds: " + difference);
+
 		if(messageList == null){
 			LoggingService.logInfo(MODULE_NAME,"No messages found for the receiver id: " + receiverId);
-			String errorMsg = "No message found";
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.OK, bytesData);
+			builder.add("status", "Failed");
+			builder.add("error", "id not found");
+		}else{
+
+			int msgCount = 0;
+			for(Message msg : messageList){
+				LoggingService.logInfo(MODULE_NAME,"Message: " + msg);
+				JsonObject msgJson = msg.toJson();
+				messagesArray.add(msgJson);
+				msgCount++;
+			}
+
+			builder.add("status", "okay");
+			builder.add("count", msgCount);
+			builder.add("messages", messagesArray);
 		}
 		
-		int msgCount = 0;
-		for(Message msg : messageList){
-			LoggingService.logInfo(MODULE_NAME,"Message: " + msg);
-			JsonObject msgJson = msg.toJson();
-			messagesArray.add(msgJson);
-			msgCount++;
-		}
-
-		builder.add("status", "okay");
-		builder.add("count", msgCount);
-		builder.add("messages", messagesArray);
-
 		String configData = builder.build().toString();
-		LoggingService.logInfo(MODULE_NAME,"Config: "+ configData);
 		bytesData.writeBytes(configData.getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 		LoggingService.logInfo(MODULE_NAME,"Request completed successfully");
