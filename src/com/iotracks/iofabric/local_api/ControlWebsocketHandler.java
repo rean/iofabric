@@ -63,8 +63,8 @@ public class ControlWebsocketHandler {
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 
 //		//Code for testing - To be removed later - start
-		LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
-		LocalApi.getInstance().update();
+//		LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
+//		LocalApi.getInstance().update();
 //		//Code for testing - end
 
 		return;

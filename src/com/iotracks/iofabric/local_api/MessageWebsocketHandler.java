@@ -29,7 +29,7 @@ public class MessageWebsocketHandler {
 	private static final Byte OPCODE_RECEIPT = 0xE;
 
 	private final String MODULE_NAME = "Local API";
-	private static int userCount = 0;
+	//private static int userCount = 0;
 	private static final String WEBSOCKET_PATH = "/v2/message/socket";
 
 	private WebSocketServerHandshaker handshaker;
@@ -122,13 +122,13 @@ public class MessageWebsocketHandler {
 
 						//To be removed - For testing
 //						System.out.println("usercount" + userCount);
-						if(userCount == 0){
+//						if(userCount == 0){
 //							System.out.println("Sending message back to the container viewer1 start.......");
-							sendRealTimeMessage( "viewer",  message);
+//							sendRealTimeMessage( "viewer",  message);
 //							userCount++;
-							return;
-					}
-
+//							return;
+//					}
+//
 //						userCount++;
 						//To be removed - For testing
 
