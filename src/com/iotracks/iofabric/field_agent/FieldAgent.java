@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -368,10 +369,19 @@ public class FieldAgent {
 			return;
 		}
 		
-		if (orchestrator.ping()) {
-			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
-			StatusReporter.setFieldAgentStatus().setControllerVerified(true);
-		} else {
+		try {
+			if (orchestrator.ping()) {
+				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
+				StatusReporter.setFieldAgentStatus().setControllerVerified(true);
+			} else {
+				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
+				StatusReporter.setFieldAgentStatus().setControllerVerified(false);
+			}
+		} catch (Exception e) {
+			if (e instanceof CertificateException)
+				LoggingService.logWarning(MODULE_NAME, "certificate verification failed");
+			else
+				LoggingService.logWarning(MODULE_NAME, e.getMessage());
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
 			StatusReporter.setFieldAgentStatus().setControllerVerified(false);
 		}
