@@ -4,7 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -52,6 +54,56 @@ public class DockerUtil {
 			}
 		}
 		return instance;
+	}
+	
+	public float getMemoryUsage(String containerId) {
+		if (!hasContainer(containerId)) 
+			return 0;
+		
+		StatsCallback statsCallback = new StatsCallback(); 
+		dockerClient.statsCmd().withContainerId(containerId).exec(statsCallback);
+		while (!statsCallback.gotStats()) {
+			try {
+				Thread.sleep(2);
+			} catch (InterruptedException e) {}
+		}
+		Map<String, Object> memoryUsage = statsCallback.getStats().getMemoryStats();
+		return Float.parseFloat(memoryUsage.get("usage").toString());
+	}
+	
+	@SuppressWarnings("unchecked")
+	public float getCpuUsage(String containerId) {
+		if (!hasContainer(containerId)) 
+			return 0;
+		
+		StatsCallback statsCallback = new StatsCallback(); 
+		dockerClient.statsCmd().withContainerId(containerId).exec(statsCallback);
+		while (!statsCallback.gotStats()) {
+			try {
+				Thread.sleep(2);
+			} catch (InterruptedException e) {}
+		}
+		Map<String, Object> usageBefore = statsCallback.getStats().getCpuStats();
+		float totalBefore = Long.parseLong(((Map<String, Object>) usageBefore.get("cpu_usage")).get("total_usage").toString());;
+		float systemBefore = Long.parseLong((usageBefore.get("system_cpu_usage")).toString());
+		
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {}
+
+		statsCallback.reset();
+		dockerClient.statsCmd().withContainerId(containerId).exec(statsCallback);
+		while (!statsCallback.gotStats()) {
+			try {
+				Thread.sleep(2);
+			} catch (InterruptedException e) {}
+		}
+		Map<String, Object> usageAfter = statsCallback.getStats().getCpuStats();
+		float totalAfter = Long.parseLong(((Map<String, Object>) usageAfter.get("cpu_usage")).get("total_usage").toString());
+		float systemAfter = Long.parseLong((usageAfter.get("system_cpu_usage")).toString());
+		
+		
+		return Math.abs(1000f * ((totalAfter - totalBefore) / (systemAfter - systemBefore)));
 	}
 	
 	public Image getImage(String imageName) {
