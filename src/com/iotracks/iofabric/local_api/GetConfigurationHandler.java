@@ -5,7 +5,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.StringReader;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import javax.json.Json;

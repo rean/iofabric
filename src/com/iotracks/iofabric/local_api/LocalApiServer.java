@@ -29,16 +29,21 @@ public final class LocalApiServer {
 		} else {
 			sslCtx = null;
 		}
+		try{
+			ServerBootstrap b = new ServerBootstrap();
+			b.group(bossGroup, workerGroup)
+			.channel(NioServerSocketChannel.class)
+			.childHandler(new LocalApiServerPipelineFactory(sslCtx));
 
-		ServerBootstrap b = new ServerBootstrap();
-		b.group(bossGroup, workerGroup)
-		.channel(NioServerSocketChannel.class)
-		.childHandler(new LocalApiServerPipelineFactory(sslCtx));
+			Channel ch = b.bind(PORT).sync().channel();	
+			LoggingService.logInfo(MODULE_NAME, "Local api server started at port: " + PORT + "\n");
 
-		Channel ch = b.bind(PORT).sync().channel();	
-		LoggingService.logInfo(MODULE_NAME, "Local api server started at port: " + PORT + "\n");
-
-		ch.closeFuture().sync();
+			ch.closeFuture().sync();
+		}finally{
+			bossGroup.shutdownGracefully();
+			workerGroup.shutdownGracefully();
+			
+		}
 	}
 
 	protected void stop() throws Exception {

@@ -163,6 +163,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 					sendHttpResponse(ctx, req, (FullHttpResponse)future.get());
 				} else {
 					ctx.fireExceptionCaught(future.cause());
+					ctx.close();
 				}
 			}
 		});

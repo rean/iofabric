@@ -15,7 +15,7 @@ public class LocalApiServerPipelineFactory extends ChannelInitializer<SocketChan
 	
 	public LocalApiServerPipelineFactory(SslContext sslCtx) {
 		this.sslCtx = sslCtx;
-		this.executor = new DefaultEventExecutorGroup(100);
+		this.executor = new DefaultEventExecutorGroup(10);
 	}
 
 	public void initChannel(SocketChannel ch) throws Exception {
