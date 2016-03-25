@@ -5,6 +5,7 @@ import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -16,7 +17,6 @@ public class ContainerManager {
 	private ElementManager elementManager;
 
 	private final String MODULE_NAME = "Container Manager";
-	private final String IOFABRIC_HOST = "iofabric:127.0.0.1";
 
 	public ContainerManager() {
 		elementManager = ElementManager.getInstance();
@@ -63,7 +63,8 @@ public class ContainerManager {
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" pulled", element.getImageName()));
 
 			LoggingService.logInfo(MODULE_NAME, "creating container");
-			String id = docker.createContainer(element, IOFABRIC_HOST);
+			String hostName = "iofabric:" + Orchestrator.getInetAddress().getHostAddress().substring(1);
+			String id = docker.createContainer(element, hostName);
 			element.setContainerId(id);
 			element.setContainerIpAddress(docker.getContainerIpAddress(id));
 			element.setRebuild(false);

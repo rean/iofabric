@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.TimeZone;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
@@ -15,7 +17,6 @@ import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.process_manager.ContainerTask.Tasks;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementStatus;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
@@ -196,8 +197,9 @@ public class ProcessManager {
 		elementManager = ElementManager.getInstance();
 		containerManager = new ContainerManager();
 		
-		Supervisor.scheduler.scheduleAtFixedRate(containersMonitor, 0, MONITOR_CONTAINERS_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
-		Supervisor.scheduler.scheduleAtFixedRate(checkTasks, 1, 1, TimeUnit.SECONDS);
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+		scheduler.scheduleAtFixedRate(containersMonitor, 0, MONITOR_CONTAINERS_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(checkTasks, 1, 1, TimeUnit.SECONDS);
 		
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.PROCESS_MANAGER, ModulesStatus.RUNNING);
 	}

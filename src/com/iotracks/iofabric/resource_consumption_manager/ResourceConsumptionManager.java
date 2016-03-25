@@ -7,10 +7,11 @@ import java.io.FilenameFilter;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -42,9 +43,9 @@ public class ResourceConsumptionManager {
 		float diskUsage = logUsage + archiveUsage;
 		
 		StatusReporter.setResourceConsumptionManagerStatus()
-				.setMemoryUsage(memoryUsage / 1024 / 1024)
+				.setMemoryUsage(memoryUsage / 1_000_000)
 				.setCpuUsage(cpuUsage)
-				.setDiskUsage(diskUsage / 1024 / 1024 / 1024)
+				.setDiskUsage(diskUsage / 1_000_000_000)
 				.setMemoryViolation(memoryUsage > memoryLimit)
 				.setDiskViolation(diskUsage > diskLimit)
 				.setCpuViolation(cpuUsage > cpuLimit);
@@ -191,14 +192,15 @@ public class ResourceConsumptionManager {
 	}
 
 	public void instanceConfigUpdated() {
-		diskLimit = Configuration.getDiskLimit() * 1024 * 1024 * 1024;
+		diskLimit = Configuration.getDiskLimit() * 1_000_000_000;
 		cpuLimit = Configuration.getCpuLimit();
-		memoryLimit = Configuration.getMemoryLimit() * 1024 * 1024;
+		memoryLimit = Configuration.getMemoryLimit() * 1_000_000;
 	}
 	
 	public void start() {
 		instanceConfigUpdated();
-		Supervisor.scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 
 		LoggingService.logInfo(MODULE_NAME, "started");

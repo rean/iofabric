@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -241,8 +242,9 @@ public class MessageBus {
 		LoggingService.logInfo(MODULE_NAME, "MESSAGE BUS SERVER STARTED");
 		init();
 
-		Supervisor.scheduler.scheduleAtFixedRate(calculateSpeed, 0, SPEED_CALCULATION_FREQ_MINUTES, TimeUnit.MINUTES);
-		Supervisor.scheduler.scheduleAtFixedRate(checkMessageServerStatus, 5, 5, TimeUnit.SECONDS);
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(calculateSpeed, 0, SPEED_CALCULATION_FREQ_MINUTES, TimeUnit.MINUTES);
+		scheduler.scheduleAtFixedRate(checkMessageServerStatus, 5, 5, TimeUnit.SECONDS);
 	}
 	
 	public void stop() {

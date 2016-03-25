@@ -18,7 +18,7 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 public class Supervisor {
 
 	private final String MODULE_NAME = "Supervisor";
-	public static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+	private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 	
 	private ProcessManager processManager;
 	private ResourceConsumptionManager resourceConsumptionManager;

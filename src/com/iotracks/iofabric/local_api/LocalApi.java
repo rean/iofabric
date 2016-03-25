@@ -4,12 +4,13 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.Orchestrator;
@@ -71,8 +72,9 @@ public class LocalApi implements Runnable {
 
 		retrieveContainerConfig();
 
-	    Supervisor.scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
-		Supervisor.scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	    scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
 
 		server = new LocalApiServer();
 		try {

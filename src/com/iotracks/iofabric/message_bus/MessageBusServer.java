@@ -61,7 +61,11 @@ public class MessageBusServer {
 	protected void startServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
-		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
+		long totalMemory = Runtime.getRuntime().totalMemory();
+		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
+		if (totalMemory - memoryLimit < 128_000_000)
+			memoryLimit = totalMemory - 128_000_000;
+		addressSettings.setMaxSizeBytes(memoryLimit);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 		String workingDirectory = Configuration.getDiskDirectory();
 
@@ -117,7 +121,7 @@ public class MessageBusServer {
 			public void run() {
 				try {
 					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address));
-					System.out.println(queueQuery.getMessageCount());
+					LoggingService.logInfo(MODULE_NAME, String.valueOf(queueQuery.getMessageCount()));
 				} catch (HornetQException e) {
 				}
 			}
@@ -177,7 +181,11 @@ public class MessageBusServer {
 
 	public void setMemoryLimit() {
 		AddressSettings addressSettings = new AddressSettings();
-		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
+		long totalMemory = Runtime.getRuntime().totalMemory();
+		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
+		if (totalMemory - memoryLimit < 128_000_000)
+			memoryLimit = totalMemory - 128_000_000;
+		addressSettings.setMaxSizeBytes(memoryLimit);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 		server.getConfiguration().getAddressesSettings().put(address, addressSettings);
 	}

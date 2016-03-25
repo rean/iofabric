@@ -14,6 +14,8 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.json.Json;
@@ -32,7 +34,6 @@ import com.iotracks.iofabric.local_api.LocalApi;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -42,7 +43,7 @@ public class FieldAgent {
 	private final String MODULE_NAME = "Field Agent";
 	private final int GET_CHANGES_LIST_FREQ_SECONDS = 30;
 	private final int CHECK_CONTROLLER_FREQ_SECONDS = 60;
-	private final int POST_STATUS_FREQ_SECONDS = 30;
+	private final int POST_STATUS_FREQ_SECONDS = 5;
 	private final String filesPath = "/etc/iofabric/";
 
 	private Orchestrator orchestrator;
@@ -94,7 +95,7 @@ public class FieldAgent {
 		postParams.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
 		postParams.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
 		postParams.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
-		postParams.put("ipaddress", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation());
+		postParams.put("ipaddress", StatusReporter.getLocalApiStatus().getCurrentIpAddress());
 		postParams.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
 		postParams.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
 		postParams.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
@@ -603,7 +604,8 @@ public class FieldAgent {
 		elementManager = ElementManager.getInstance();
 		orchestrator = new Orchestrator();
 		
-		Supervisor.scheduler.scheduleAtFixedRate(pingController, 0, CHECK_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+		scheduler.scheduleAtFixedRate(pingController, 0, CHECK_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
 		try {
 			Thread.sleep(200);
 		} catch (Exception e) {}
@@ -614,7 +616,7 @@ public class FieldAgent {
 			loadRoutes(true);
 			loadRegistries(true);
 		}
-		Supervisor.scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
-		Supervisor.scheduler.scheduleAtFixedRate(postStatus, POST_STATUS_FREQ_SECONDS, POST_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(postStatus, POST_STATUS_FREQ_SECONDS, POST_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
 	}
 }

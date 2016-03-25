@@ -1,11 +1,6 @@
 package com.iotracks.iofabric.utils.configuration;
 
 import java.io.File;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -24,6 +19,7 @@ import com.iotracks.iofabric.field_agent.FieldAgent;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
+import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public final class Configuration {
@@ -301,29 +297,13 @@ public final class Configuration {
 	}
 
 	public static String getConfigReport() {
-		String ipAddress = "";
+		String ipAddress;
 		try {
-			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-		    while (networkInterfaces.hasMoreElements()) {
-		        NetworkInterface networkInterface = networkInterfaces.nextElement();
-		        if (networkInterface.getName().equals(Configuration.networkInterface)) {
-		        	Enumeration<InetAddress> ipAddresses = networkInterface.getInetAddresses();
-		        	while (ipAddresses.hasMoreElements()) {
-		        		InetAddress address = ipAddresses.nextElement();
-		        		if (address instanceof Inet4Address) {
-		        			ipAddress = address.toString().substring(1);
-		        			break;
-		        		}	
-		        	}
-		        	if (!ipAddress.equals(""))
-		        		break;
-		        }
-		    }
-		} catch (SocketException e) {}
-		
-		if (ipAddress.equals(""))
+			ipAddress = Orchestrator.getInetAddress().getHostAddress().substring(1);
+		} catch (Exception e) {
 			ipAddress = "unable to retrieve ip address";
-
+		}
+		
 	    StringBuilder result = new StringBuilder();
 		result.append(
 				"Instance ID               : " + ((instanceId != null && !instanceId.equals("")) ? instanceId : "not provisioned") + "\n" + 
