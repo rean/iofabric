@@ -40,7 +40,7 @@ public class LocalApi implements Runnable {
 
 	public static void main(String[] args) throws Exception {
 		Configuration.loadConfig();
-		ElementManager.getInstance().loadFromApi();
+//		ElementManager.getInstance().loadFromApi();
 		LoggingService.logInfo("Main", "configuration loaded.");
 		MessageBus.getInstance();
 		LocalApi api = LocalApi.getInstance();

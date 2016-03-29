@@ -31,14 +31,14 @@ public final class LoggingService {
 		if (Configuration.debugging)
 			System.out.println(String.format("%s : %s (%s)", moduleName, msg, new Date(System.currentTimeMillis())));
 		else
-			logger.log(Level.INFO, String.format("[%s] [%s] : %s", new Date(System.currentTimeMillis()), moduleName, msg));
+			logger.log(Level.INFO, String.format("[%s] : %s", moduleName, msg));
 	}
 
 	public static void logWarning(String moduleName, String msg) {
 		if (Configuration.debugging)
 			System.out.println(String.format("%s : %s (%s)", moduleName, msg, new Date(System.currentTimeMillis())));
 		else
-			logger.log(Level.WARNING, String.format("[%s] [%s] : %s", new Date(System.currentTimeMillis()), moduleName, msg));
+			logger.log(Level.WARNING, String.format("[%s] : %s", moduleName, msg));
 	}
 
 	public static void setupLogger() throws IOException {
@@ -76,15 +76,15 @@ public final class LoggingService {
 	}
 	
 	public static void instanceConfigUpdated() {
-		Handler[] handlers = logger.getHandlers();
-		try {
-			for (Handler handler : handlers)
-				logger.removeHandler(handler);
-			setupLogger();
-		} catch (Exception e) {
-			for (Handler handler : handlers)
-				logger.addHandler(handler);
-		}
+//		Handler[] handlers = logger.getHandlers();
+//		try {
+//			for (Handler handler : handlers)
+//				logger.removeHandler(handler);
+//			setupLogger();
+//		} catch (Exception e) {
+//			for (Handler handler : handlers)
+//				logger.addHandler(handler);
+//		}
 	}
 	
 }

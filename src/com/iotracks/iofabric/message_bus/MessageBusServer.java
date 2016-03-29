@@ -187,6 +187,7 @@ public class MessageBusServer {
 			memoryLimit = totalMemory - 128_000_000;
 		addressSettings.setMaxSizeBytes(memoryLimit);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
-		server.getConfiguration().getAddressesSettings().put(address, addressSettings);
+
+		AddressSettings a = server.getAddressSettingsRepository().getMatch(address);
 	}
 }

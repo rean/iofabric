@@ -6,7 +6,6 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 import com.iotracks.iofabric.utils.BytesUtil;
-import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class Message {
 	private final short VERSION = 4; 
@@ -99,23 +98,9 @@ public class Message {
 		if (json.containsKey("infoformat"))
 			setInfoFormat(json.getString("infoformat"));
 		if (json.containsKey("contextdata"))
-			if (getInfoFormat().equalsIgnoreCase("base64")) {
-				try {
-					byte[] decoded = Base64.getDecoder().decode(json.getString("contextdata"));
-					setContextData(decoded);
-				} catch (Exception e) {
-					LoggingService.logWarning("Message Constructor", "context data is not base 64!");
-				}
-			}
+			setContextData(json.getString("contextdata").getBytes());
 		if (json.containsKey("contentdata"))
-			if (getInfoFormat().equalsIgnoreCase("base64")) {
-				try {
-					byte[] decoded = Base64.getDecoder().decode(json.getString("contentdata"));
-					setContentData(decoded);
-				} catch (Exception e) {
-					LoggingService.logWarning("Message Constructor", "content data is not base 64!");
-				}
-			}
+			setContentData(json.getString("contentdata").getBytes());
 	}
 	
 	// from rawBytes
@@ -699,8 +684,10 @@ public class Message {
 				.add("difficultytarget", difficultyTarget)
 				.add("infotype", infoType == null ? "" : infoType)
 				.add("infoformat", infoFormat == null ? "" : infoFormat)
-				.add("contextdata", contextData == null ? "" : Base64.getEncoder().encodeToString(contextData))
-				.add("contentdata", contentData == null ? "" : Base64.getEncoder().encodeToString(contentData))
+//				.add("contextdata", contextData == null ? "" : Base64.getEncoder().encodeToString(contextData))
+//				.add("contentdata", contentData == null ? "" : Base64.getEncoder().encodeToString(contentData))
+				.add("contextdata", contextData == null ? "" : new String(contextData))
+				.add("contentdata", contentData == null ? "" : new String(contentData))
 				.build();
 	}
 	

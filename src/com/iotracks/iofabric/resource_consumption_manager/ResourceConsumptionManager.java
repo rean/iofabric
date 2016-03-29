@@ -34,30 +34,31 @@ public class ResourceConsumptionManager {
 	}
 
 	private Runnable getUsageData = () -> {
-		LoggingService.logInfo(MODULE_NAME, "get usage data");
-
-		float memoryUsage = getMemoryUsage();
-		float cpuUsage = getCpuUsage();
-		float logUsage = directorySize(Configuration.getLogDiskDirectory());
-		float archiveUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
-		float diskUsage = logUsage + archiveUsage;
-		
-		StatusReporter.setResourceConsumptionManagerStatus()
-				.setMemoryUsage(memoryUsage / 1_000_000)
-				.setCpuUsage(cpuUsage)
-				.setDiskUsage(diskUsage / 1_000_000_000)
-				.setMemoryViolation(memoryUsage > memoryLimit)
-				.setDiskViolation(diskUsage > diskLimit)
-				.setCpuViolation(cpuUsage > cpuLimit);
-		
-		if (diskUsage > diskLimit) {
-			float amount = diskUsage - diskLimit;
-			float logViolation = (amount / diskUsage) * logUsage;
-			float archiveViolation = (amount / diskUsage) * archiveUsage;
-			removeLogFiles(logViolation);
-			removeArchives(archiveViolation);
-		}
-
+		try {
+			LoggingService.logInfo(MODULE_NAME, "get usage data");
+	
+			float memoryUsage = getMemoryUsage();
+			float cpuUsage = getCpuUsage();
+			float logUsage = directorySize(Configuration.getLogDiskDirectory());
+			float archiveUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
+			float diskUsage = logUsage + archiveUsage;
+			
+			StatusReporter.setResourceConsumptionManagerStatus()
+					.setMemoryUsage(memoryUsage / 1_000_000)
+					.setCpuUsage(cpuUsage)
+					.setDiskUsage(diskUsage / 1_000_000_000)
+					.setMemoryViolation(memoryUsage > memoryLimit)
+					.setDiskViolation(diskUsage > diskLimit)
+					.setCpuViolation(cpuUsage > cpuLimit);
+			
+			if (diskUsage > diskLimit) {
+				float amount = diskUsage - diskLimit;
+				float logViolation = (amount / diskUsage) * logUsage;
+				float archiveViolation = (amount / diskUsage) * archiveUsage;
+				removeLogFiles(logViolation);
+				removeArchives(archiveViolation);
+			}
+		} catch (Exception e) {}
 	};
 
 	private void removeArchives(float archiveViolation) {

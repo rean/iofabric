@@ -41,7 +41,6 @@ public final class Configuration {
 	private static String logDiskDirectory;
 	private static int logFileCount;
 	
-	public static boolean configChanged;
 	public static boolean debugging = true;
 
 	private static String getNode(String name) throws ConfigurationItemException {
@@ -75,6 +74,19 @@ public final class Configuration {
 		StreamResult result = new StreamResult(new File("/etc/iofabric/config.xml"));
 		DOMSource source = new DOMSource(configFile);
 		transformer.transform(source, result);
+//		Document dom;
+//		Element element = null;
+//		
+//	    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+//		try {
+//	        DocumentBuilder db = dbf.newDocumentBuilder();
+//	        dom = db.newDocument();
+//	        Element root = dom.createElement("config");
+//	        element = dom.createElement("access_token");
+//	        element.setNodeValue(accessToken);
+//	        root.appendChild(element);
+//	        
+//		} catch (Exception e) {}
 	}
 
 	public static void setConfig(Map<String, Object> commandLineMap) throws Exception {
@@ -93,6 +105,7 @@ public final class Configuration {
 				setDiskLimit(Float.parseFloat(value));
 				break;
 			case "dl":
+				value = addSeperator(value);
 				setNode("disk_directory", value);
 				setDiskDirectory(value);
 				break;
@@ -128,6 +141,7 @@ public final class Configuration {
 				setLogDiskLimit(Float.parseFloat(value));
 				break;
 			case "ld":
+				value = addSeperator(value);
 				setNode("log_disk_directory", value);
 				setLogDiskDirectory(value);
 				break;
@@ -143,7 +157,13 @@ public final class Configuration {
 		}
 		
 		saveConfigUpdates();
-		configChanged = true;
+	}
+
+	private static String addSeperator(String value) {
+		if (value.charAt(value.length() - 1) == File.separatorChar)
+			return value;
+		else
+			return value + File.separatorChar;
 	}
 
 	private static void validateValue(String option, String value, String typeOfValidation) throws ConfigurationItemException {
@@ -158,7 +178,6 @@ public final class Configuration {
 	
 	public static void loadConfig() throws Exception {
 		// TODO: load configuration XML file here
-		configChanged = false;
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
 
@@ -247,10 +266,16 @@ public final class Configuration {
 	}
 
 	public static void setAccessToken(String accessToken) {
+		try {
+			setNode("access_token", accessToken);
+		} catch (Exception e){}
 		Configuration.accessToken = accessToken;
 	}
 
 	public static void setInstanceId(String instanceId) {
+		try {
+			setNode("instance_id", instanceId);
+		} catch (Exception e){}
 		Configuration.instanceId = instanceId;
 	}
 
@@ -299,7 +324,7 @@ public final class Configuration {
 	public static String getConfigReport() {
 		String ipAddress;
 		try {
-			ipAddress = Orchestrator.getInetAddress().getHostAddress().substring(1);
+			ipAddress = Orchestrator.getInetAddress().getHostAddress();
 		} catch (Exception e) {
 			ipAddress = "unable to retrieve ip address";
 		}

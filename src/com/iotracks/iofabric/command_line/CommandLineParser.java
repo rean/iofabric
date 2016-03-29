@@ -46,7 +46,9 @@ public class CommandLineParser {
 
 		if (args[0].equals("deprovision")) {
 			result.append("Deprovisioning from controller...");
-			result.append(FieldAgent.getInstance().deProvision());
+			try {
+				result.append(FieldAgent.getInstance().deProvision());
+			} catch (Exception e) {}
 
 			return result.toString();
 		}

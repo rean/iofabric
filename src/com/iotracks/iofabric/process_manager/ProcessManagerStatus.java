@@ -7,6 +7,7 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
+import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.utils.Constants.DockerStatus;
@@ -16,7 +17,6 @@ public class ProcessManagerStatus {
 	private int runningElementsCount;
 	private DockerStatus dockerStatus;
 	private Map<String, ElementStatus> elementsStatus;
-	private int registriesCount;
 	private Map<Registry, LinkStatus> registriesStatus;
 
 	public ProcessManagerStatus() {
@@ -24,7 +24,6 @@ public class ProcessManagerStatus {
 		registriesStatus = new HashMap<>();
 		runningElementsCount = 0;
 		dockerStatus = DockerStatus.RUNNING;
-		registriesCount = 0;
 	}
 	
 	public String getJsonElementsStatus() {
@@ -38,7 +37,7 @@ public class ProcessManagerStatus {
 					.add("operatingduration", status.getOperatingDuration());
 			arrayBuilder.add(objectBuilder);
 		});
-		return arrayBuilder.toString();
+		return arrayBuilder.build().toString();
 	}
 
 	public String getJsonRegistriesStatus() {
@@ -50,7 +49,7 @@ public class ProcessManagerStatus {
 			arrayBuilder.add(objectBuilder);
 					
 		});
-		return arrayBuilder.toString();
+		return arrayBuilder.build().toString();
 	}
 
 	public int getRunningElementsCount() {
@@ -96,21 +95,15 @@ public class ProcessManagerStatus {
 	}
 
 	public int getRegistriesCount() {
-		return registriesCount;
-	}
-
-	public ProcessManagerStatus increaseRegistriesCount() {
-		this.registriesCount++;
-		return this;
-	}
-
-	public ProcessManagerStatus decreaseRegistriesCount() {
-		this.registriesCount--;
-		return this;
+		return ElementManager.getInstance().getRegistries().size();
 	}
 
 	public LinkStatus getRegistriesStatus(Registry registry) {
 		return registriesStatus.get(registry);
+	}
+
+	public Map<Registry, LinkStatus> getRegistriesStatus() {
+		return registriesStatus;
 	}
 
 	public ProcessManagerStatus setRegistriesStatus(Registry registry, LinkStatus status) {

@@ -180,7 +180,9 @@ public class Start {
 		
 		LoggingService.logInfo("Main", "starting supervisor");
 		Supervisor supervisor = new Supervisor();
-		supervisor.start();
+		try {
+			supervisor.start();
+		} catch (Exception e) {}
 
 		// port System.out to standard
 		System.setOut(Constants.systemOut);

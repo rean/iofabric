@@ -63,7 +63,7 @@ public class ContainerManager {
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" pulled", element.getImageName()));
 
 			LoggingService.logInfo(MODULE_NAME, "creating container");
-			String hostName = "iofabric:" + Orchestrator.getInetAddress().getHostAddress().substring(1);
+			String hostName = "iofabric:" + Orchestrator.getInetAddress().getHostAddress();
 			String id = docker.createContainer(element, hostName);
 			element.setContainerId(id);
 			element.setContainerIpAddress(docker.getContainerIpAddress(id));

@@ -26,6 +26,10 @@ public class MessageBusStatus {
 		return publishedMessagesPerElement.get(element);
 	}
 
+	public Map<String, Long> getPublishedMessagesPerElement() {
+		return publishedMessagesPerElement;
+	}
+
 	public MessageBusStatus increasePublishedMessagesPerElement(String element) {
 		this.processedMessages++;
 
@@ -45,6 +49,11 @@ public class MessageBusStatus {
 		return this;
 	}
 	
+	public void removePublishedMessagesPerElement(String element) {
+		if (publishedMessagesPerElement.containsKey(element))
+			publishedMessagesPerElement.remove(element);
+	}
+	
 	public String getJsonPublishedMessagesPerElement() {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		publishedMessagesPerElement.entrySet().forEach(entry -> {
@@ -54,7 +63,7 @@ public class MessageBusStatus {
 			arrayBuilder.add(objectBuilder);
 					
 		});
-		return arrayBuilder.toString();
+		return arrayBuilder.build().toString();
 	}
 
 }

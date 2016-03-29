@@ -28,16 +28,18 @@ public class Supervisor {
 	private LocalApi localApi;
 	
 	private Runnable checkLocalApiStatus = () -> {
-		if (localApiThread != null && localApiThread.getState() == State.TERMINATED) {
-			localApiThread = new Thread(localApi, "Local Api");
-			localApiThread.start();
-		}
+		try {
+			if (localApiThread != null && localApiThread.getState() == State.TERMINATED) {
+				localApiThread = new Thread(localApi, "Local Api");
+				localApiThread.start();
+			}
+		} catch (Exception e) {}
 	};
 
 	public Supervisor() {
 	}
 	
-	public void start() {
+	public void start() throws Exception {
 		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook, "shutdown hook"));
 		
 		LoggingService.logInfo(MODULE_NAME, "starting status reporter");

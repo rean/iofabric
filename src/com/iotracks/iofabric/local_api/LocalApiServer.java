@@ -15,7 +15,7 @@ public final class LocalApiServer {
 	private final String MODULE_NAME = "Local API";
 
 	EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-	EventLoopGroup workerGroup = new NioEventLoopGroup();
+	EventLoopGroup workerGroup = new NioEventLoopGroup(10);
 
 	static final boolean SSL = System.getProperty("ssl") != null;
 	static final int PORT = 54321;

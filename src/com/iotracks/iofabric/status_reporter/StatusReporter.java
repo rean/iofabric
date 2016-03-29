@@ -30,7 +30,9 @@ public final class StatusReporter {
 	
 	// set status reporter's system time every 1 minute
 	private static Runnable setStatusReporterSystemTime = () -> {
-		setStatusReporterStatus().setSystemTime(System.currentTimeMillis());
+		try {
+			setStatusReporterStatus().setSystemTime(System.currentTimeMillis());
+		} catch (Exception e) {}
 	};
 	
 	private StatusReporter() {

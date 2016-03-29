@@ -30,6 +30,8 @@ public class MessageBus {
 	private ElementManager elementManager;
 	private Object updateLock = new Object();
 	
+	private long lastSpeedTime, lastSpeedMessageCount;
+	
 	private MessageBus() {
 	}
 	
@@ -93,6 +95,9 @@ public class MessageBus {
 	}
 
 	private void init() {
+		lastSpeedMessageCount = 0;
+		lastSpeedTime = System.currentTimeMillis();
+		
 		routes = elementManager.getRoutes();
 		idGenerator = new MessageIdGenerator();
 		publishers = new ConcurrentHashMap<>();
@@ -132,54 +137,58 @@ public class MessageBus {
 	}
 	
 	private final Runnable calculateSpeed = () -> {
-		LoggingService.logInfo(MODULE_NAME, "calculating message processing speed");
-		System.gc();
-		
-		long now = System.currentTimeMillis();
-		long msgs = StatusReporter.getMessageBusStatus().getProcessedMessages();
-		
-		float speed = ((msgs * 1.0f) / now) * 1000;
-		speed = (speed + StatusReporter.getMessageBusStatus().getAverageSpeed()) / 2.0f;
-		StatusReporter.setMessageBusStatus().setAverageSpeed(speed);
+		try {
+			LoggingService.logInfo(MODULE_NAME, "calculating message processing speed");
+
+			long now = System.currentTimeMillis();
+			long msgs = StatusReporter.getMessageBusStatus().getProcessedMessages();
+
+			float speed = ((float)(msgs - lastSpeedMessageCount)) / (now - lastSpeedTime);
+			StatusReporter.setMessageBusStatus().setAverageSpeed(speed);
+			lastSpeedMessageCount = msgs;
+			lastSpeedTime = now;
+		} catch (Exception e) {}
 	};
 	
 	private final Runnable checkMessageServerStatus = () -> {
-		LoggingService.logInfo(MODULE_NAME, "check message bus server status");
-		if (!messageBusServer.isServerActive()) {
-			LoggingService.logWarning(MODULE_NAME, "server is not active. restarting...");
-			stop();
-			try {
-				messageBusServer.startServer();
-				LoggingService.logInfo(MODULE_NAME, "server restarted");
-				init();
-			} catch (Exception e) {
-				LoggingService.logWarning(MODULE_NAME, "server restart failed --> " + e.getMessage());
-			}
-		}
-		
-		if (messageBusServer.isProducerClosed()) {
-			LoggingService.logWarning(MODULE_NAME, "producer module stopped. restarting...");
-			try {
-				messageBusServer.openProducer();
-				LoggingService.logInfo(MODULE_NAME, "producer module restarted");
-			} catch (Exception e) {
-				LoggingService.logWarning(MODULE_NAME, "unable to start producer module --> " + e.getMessage());
-			}
-		}
-		
-		receivers.entrySet().forEach(entry -> {
-			if (messageBusServer.isConsumerClosed(entry.getKey())) {
-				LoggingService.logWarning(MODULE_NAME, "consumer module for " + entry.getKey() + " stopped. restarting...");
-				entry.getValue().close();
+		try {
+			LoggingService.logInfo(MODULE_NAME, "check message bus server status");
+			if (!messageBusServer.isServerActive()) {
+				LoggingService.logWarning(MODULE_NAME, "server is not active. restarting...");
+				stop();
 				try {
-					messageBusServer.createCosumer(entry.getKey());
-					receivers.put(entry.getKey(), new MessageReceiver(entry.getKey()));
-					LoggingService.logInfo(MODULE_NAME, "consumer module restarted");
+					messageBusServer.startServer();
+					LoggingService.logInfo(MODULE_NAME, "server restarted");
+					init();
 				} catch (Exception e) {
-					LoggingService.logWarning(MODULE_NAME, "unable to restart consumer module for " + entry.getKey() + " --> " + e.getMessage());
+					LoggingService.logWarning(MODULE_NAME, "server restart failed --> " + e.getMessage());
 				}
 			}
-		});
+			
+			if (messageBusServer.isProducerClosed()) {
+				LoggingService.logWarning(MODULE_NAME, "producer module stopped. restarting...");
+				try {
+					messageBusServer.openProducer();
+					LoggingService.logInfo(MODULE_NAME, "producer module restarted");
+				} catch (Exception e) {
+					LoggingService.logWarning(MODULE_NAME, "unable to start producer module --> " + e.getMessage());
+				}
+			}
+			
+			receivers.entrySet().forEach(entry -> {
+				if (messageBusServer.isConsumerClosed(entry.getKey())) {
+					LoggingService.logWarning(MODULE_NAME, "consumer module for " + entry.getKey() + " stopped. restarting...");
+					entry.getValue().close();
+					try {
+						messageBusServer.createCosumer(entry.getKey());
+						receivers.put(entry.getKey(), new MessageReceiver(entry.getKey()));
+						LoggingService.logInfo(MODULE_NAME, "consumer module restarted");
+					} catch (Exception e) {
+						LoggingService.logWarning(MODULE_NAME, "unable to restart consumer module for " + entry.getKey() + " --> " + e.getMessage());
+					}
+				}
+			});
+		} catch (Exception e) {}
 	};
 	
 	public void update() {
@@ -216,6 +225,15 @@ public class MessageBus {
 							receiver -> new MessageReceiver(receiver))));
 
 			routes = newRoutes;
+
+			StatusReporter.getMessageBusStatus()
+				.getPublishedMessagesPerElement().entrySet().removeIf(entry -> {
+					return !elementManager.elementExists(entry.getKey());
+				});
+			elementManager.getElements().forEach(e -> {
+				if (!StatusReporter.getMessageBusStatus().getPublishedMessagesPerElement().entrySet().contains(e.getElementId()))
+						StatusReporter.getMessageBusStatus().getPublishedMessagesPerElement().put(e.getElementId(), 0l);
+			});
 		}
 	}
 	
