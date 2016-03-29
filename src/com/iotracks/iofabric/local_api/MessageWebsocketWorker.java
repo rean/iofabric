@@ -3,6 +3,7 @@ package com.iotracks.iofabric.local_api;
 import java.util.Map;
 
 import com.iotracks.iofabric.message_bus.Message;
+import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -28,7 +29,8 @@ public class MessageWebsocketWorker implements Runnable{
 				sendRealTimeMessage(ctx);
 			}else{
 				WebSocketMap.unackMessageSendingMap.remove(ctx);
-				WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);
+				MessageBus.getInstance().disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
+				WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);	
 				return;
 			}
 		}

@@ -42,15 +42,13 @@ public class MessageWebsocketHandler {
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
-
+		String publisherId;
+		
 		if(tokens.length < 5){
 			LoggingService.logWarning(MODULE_NAME, " Missing ID or ID value in URL " );
 			return;
 		}else {
-			String publisherId = tokens[4].trim();
-			LoggingService.logInfo(MODULE_NAME,"Publisher Id: "+ publisherId);
-			Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
-			messageMap.put(publisherId, ctx);
+			 publisherId = tokens[4].trim();
 		}
 
 		// Handshake
@@ -63,6 +61,10 @@ public class MessageWebsocketHandler {
 			LoggingService.logInfo(MODULE_NAME,"In handshake retrieval");
 			handshaker.handshake(ctx.channel(), req);
 		}
+		
+		Hashtable<String, ChannelHandlerContext> messageSocketMap = WebSocketMap.messageWebsocketMap;
+		messageSocketMap.put(publisherId, ctx);
+		MessageBus.getInstance().enableRealTimeReceiving(publisherId);
 
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 		return;
@@ -175,6 +177,7 @@ public class MessageWebsocketHandler {
 		if (frame instanceof CloseWebSocketFrame) {
 			LoggingService.logInfo(MODULE_NAME,"In websocket handle websocket frame : Close websocket frame ");
 			ctx.channel().close();
+			MessageBus.getInstance().disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
 			WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);
 			return;
 		}

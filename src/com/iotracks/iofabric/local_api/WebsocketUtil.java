@@ -32,4 +32,12 @@ public class WebsocketUtil {
 		LoggingService.logInfo(MODULE_NAME,"Context found as real-time websocket");
 		return false;
 	}
+	
+	public static String getIdForWebsocket(ChannelHandlerContext ctx, Hashtable<String, ChannelHandlerContext> socketMap){
+		String id = null;
+		if(socketMap.containsKey(ctx)){
+			socketMap.get(ctx);
+		}
+		return id;
+	}
 }
