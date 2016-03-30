@@ -11,7 +11,7 @@ public class Constants {
 		NOT_PRESENT, RUNNING, STOPPED
 	}
 
-	public enum ElementStatus {
+	public enum ElementState {
 		BUILDING, FAILED_VERIFICATION, STARTING, RUNNING, STOPPED 
 	}
 	

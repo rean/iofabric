@@ -34,7 +34,9 @@ public class ProcessManagerStatus {
 					.add("id", entry.getKey())
 					.add("status", status.getStatus().toString())
 					.add("starttime", status.getStartTime())
-					.add("operatingduration", status.getOperatingDuration());
+					.add("operatingduration", status.getOperatingDuration())
+					.add("cpuusage", String.format("%.2f", status.getCpuUsage()))
+					.add("memoryusage", String.format("%d", status.getMemoryUsage()));
 			arrayBuilder.add(objectBuilder);
 		});
 		return arrayBuilder.build().toString();
@@ -84,7 +86,7 @@ public class ProcessManagerStatus {
 		}
 		return elementsStatus.get(elementId);
 	}
-
+	
 	public void removeElementStatus(String elementId) {
 		synchronized (elementsStatus) {
 			elementsStatus.keySet().forEach(element -> {

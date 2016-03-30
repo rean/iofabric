@@ -61,10 +61,7 @@ public class MessageBusServer {
 	protected void startServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
-		long totalMemory = Runtime.getRuntime().totalMemory();
 		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
-		if (totalMemory - memoryLimit < 128_000_000)
-			memoryLimit = totalMemory - 128_000_000;
 		addressSettings.setMaxSizeBytes(memoryLimit);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 		String workingDirectory = Configuration.getDiskDirectory();
@@ -79,7 +76,7 @@ public class MessageBusServer {
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.getAddressesSettings().put(address, addressSettings);
-
+        
 		Map<String, Object> connectionParams = new HashMap<>();
 		connectionParams.put("port", 55555);
 		connectionParams.put("host", "localhost");
@@ -90,11 +87,14 @@ public class MessageBusServer {
         transportConfig.add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
         
 		configuration.setAcceptorConfigurations(transportConfig);
-		HornetQServer server = HornetQServers.newHornetQServer(configuration);
+		server = HornetQServers.newHornetQServer(configuration);
 		server.start();
 
         ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
 
+        serverLocator.setUseGlobalPools(false);
+        serverLocator.setScheduledThreadPoolMaxSize(10);
+        serverLocator.setThreadPoolMaxSize(10);
         sf = serverLocator.createSessionFactory();
 	}
 	
@@ -181,13 +181,10 @@ public class MessageBusServer {
 
 	public void setMemoryLimit() {
 		AddressSettings addressSettings = new AddressSettings();
-		long totalMemory = Runtime.getRuntime().totalMemory();
 		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
-		if (totalMemory - memoryLimit < 128_000_000)
-			memoryLimit = totalMemory - 128_000_000;
 		addressSettings.setMaxSizeBytes(memoryLimit);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 
-		AddressSettings a = server.getAddressSettingsRepository().getMatch(address);
+		server.getAddressSettingsRepository().addMatch(address, addressSettings);
 	}
 }

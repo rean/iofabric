@@ -1,11 +1,15 @@
 package com.iotracks.iofabric.process_manager;
 
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -26,11 +30,14 @@ import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
+import com.iotracks.iofabric.utils.Constants;
 
 public class DockerUtil {
 	private final String MODULE_NAME = "Docker Util";
@@ -55,7 +62,7 @@ public class DockerUtil {
 		return instance;
 	}
 	
-	public float getMemoryUsage(String containerId) {
+	public long getMemoryUsage(String containerId) {
 		if (!hasContainer(containerId)) 
 			return 0;
 		
@@ -67,10 +74,9 @@ public class DockerUtil {
 			} catch (InterruptedException e) {}
 		}
 		Map<String, Object> memoryUsage = statsCallback.getStats().getMemoryStats();
-		return Float.parseFloat(memoryUsage.get("usage").toString());
+		return Long.parseLong(memoryUsage.get("usage").toString());
 	}
 	
-	@SuppressWarnings("unchecked")
 	public float getCpuUsage(String containerId) {
 		if (!hasContainer(containerId)) 
 			return 0;
@@ -87,7 +93,7 @@ public class DockerUtil {
 		float systemBefore = Long.parseLong((usageBefore.get("system_cpu_usage")).toString());
 		
 		try {
-			Thread.sleep(500);
+			Thread.sleep(200);
 		} catch (InterruptedException e) {}
 
 		statsCallback.reset();
@@ -220,10 +226,32 @@ public class DockerUtil {
 			return null;
 	}
 	
-	public ContainerState getContainerStatus(String id) throws Exception {
+	private long getStartedTime(String date) {
+		int milli = Integer.parseInt(date.substring(20, 23));
+		date = date.substring(0, 10) + " " + date.substring(11, 19);
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 		try {
-			InspectContainerResponse inspect =  dockerClient.inspectContainerCmd(id).exec();
-			return inspect.getState();
+			Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
+			return local.getTime() + milli;
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+	
+	public ElementStatus getContainerStatus(String id) throws Exception {
+		try {
+			ContainerState status = dockerClient.inspectContainerCmd(id).exec().getState();
+			ElementStatus result = new ElementStatus();
+			if (status.isRunning()) {
+				result.setStartTime(getStartedTime(status.getStartedAt()));
+				result.setCpuUsage(0);
+				result.setMemoryUsage(0);
+				result.setStatus(ElementState.RUNNING);
+			} else {
+				result.setStatus(ElementState.STOPPED);
+			}
+			return result;
 		} catch (Exception e) {
 			throw e;
 		}

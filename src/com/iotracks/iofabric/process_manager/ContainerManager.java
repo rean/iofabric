@@ -6,7 +6,7 @@ import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Orchestrator;
-import com.iotracks.iofabric.utils.Constants.ElementStatus;
+import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class ContainerManager {
@@ -37,7 +37,7 @@ public class ContainerManager {
 			throw e;
 		}
 
-		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.BUILDING);
+		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.BUILDING);
 		LoggingService.logInfo(MODULE_NAME, "building \"" + element.getImageName() + "\"");
 		
 		
@@ -71,23 +71,23 @@ public class ContainerManager {
 			LoggingService.logInfo(MODULE_NAME, "created");
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME, ex.getMessage());
-			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.FAILED_VERIFICATION);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.FAILED_VERIFICATION);
 			throw ex;
 		}
 	}
 
 	private void startElement() {
 		Element element = (Element) task.data;
-		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STARTING);
+		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.STARTING);
 		LoggingService.logInfo(MODULE_NAME, String.format("starting container \"%s\"", element.getImageName()));
 		try {
 			docker.startContainer(element.getContainerId());
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" started", element.getImageName()));
-			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.RUNNING);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.RUNNING);
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME,
 					String.format("container \"%s\" not found - %s", element.getImageName(), ex.getMessage()));
-			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STOPPED);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.STOPPED);
 		}
 	}
 	

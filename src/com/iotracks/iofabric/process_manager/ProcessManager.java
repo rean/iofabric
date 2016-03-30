@@ -1,24 +1,20 @@
 package com.iotracks.iofabric.process_manager;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.model.Container;
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
+import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.process_manager.ContainerTask.Tasks;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
-import com.iotracks.iofabric.utils.Constants.ElementStatus;
+import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -94,19 +90,6 @@ public class ProcessManager {
 //		return true;
 //	}
 //
-	private long getStartedTime(String date) {
-		int milli = Integer.parseInt(date.substring(20, 23));
-		date = date.substring(0, 10) + " " + date.substring(11, 19);
-		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		try {
-			Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
-			return local.getTime() + milli;
-		} catch (Exception e) {
-			return 0;
-		}
-	}
-	
 	private final Runnable containersMonitor = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "monitoring containers");
@@ -138,30 +121,49 @@ public class ProcessManager {
 	
 					element.setContainerId(container.getId());
 					try {
-						ContainerState status = docker.getContainerStatus(container.getId());
 						String containerName = container.getNames()[0].substring(1);
-						if (status.isRunning()) {
-							StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStartTime(getStartedTime(status.getStartedAt()));
-							
-							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
-							LoggingService.logInfo(MODULE_NAME,
-									String.format("\"%s\": container is running", containerName));
-						} else {
-							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.STOPPED);
+						ElementStatus status = docker.getContainerStatus(container.getId());
+						StatusReporter.setProcessManagerStatus().setElementsStatus(containerName, status);
+						if (!status.getStatus().equals(ElementState.RUNNING)) {
 							LoggingService.logInfo(MODULE_NAME,
 									String.format("\"%s\": container stopped", containerName));
 							try {
-								LoggingService.logInfo(MODULE_NAME,
-										String.format("\"%s\": starting", containerName));
+								LoggingService.logInfo(MODULE_NAME, String.format("\"%s\": starting", containerName));
 								docker.startContainer(container.getId());
-								StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementStatus.RUNNING);
-								LoggingService.logInfo(MODULE_NAME,
-										String.format("\"%s\": started", containerName));
+								StatusReporter.setProcessManagerStatus()
+									.setElementsStatus(containerName, docker.getContainerStatus(container.getId()));
+								LoggingService.logInfo(MODULE_NAME, String.format("\"%s\": started", containerName));
 							} catch (Exception startException) {
 								// unable to start the container, update it!
 								addTask(Tasks.UPDATE, container.getId());
 							}
 						}
+//						if (status.isRunning()) {
+//							float cpuUsage = 0;
+//							long memoryUsage = 0;
+//							StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId())
+//								.setStartTime(getStartedTime(status.getStartedAt()));
+//							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setCpuUsage(cpuUsage);
+//							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setMemoryUsage(memoryUsage);
+//							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementState.RUNNING);
+//							LoggingService.logInfo(MODULE_NAME,
+//									String.format("\"%s\": container is running", containerName));
+//						} else {
+//							StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementState.STOPPED);
+//							LoggingService.logInfo(MODULE_NAME,
+//									String.format("\"%s\": container stopped", containerName));
+//							try {
+//								LoggingService.logInfo(MODULE_NAME,
+//										String.format("\"%s\": starting", containerName));
+//								docker.startContainer(container.getId());
+//								StatusReporter.setProcessManagerStatus().getElementStatus(containerName).setStatus(ElementState.RUNNING);
+//								LoggingService.logInfo(MODULE_NAME,
+//										String.format("\"%s\": started", containerName));
+//							} catch (Exception startException) {
+//								// unable to start the container, update it!
+//								addTask(Tasks.UPDATE, container.getId());
+//							}
+//						}
 					} catch (Exception e) {}
 				}
 			}

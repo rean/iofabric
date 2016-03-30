@@ -42,7 +42,7 @@ public final class LoggingService {
 	}
 
 	public static void setupLogger() throws IOException {
-		int maxFileSize = (int) (Configuration.getLogDiskLimit() * 1024 * 1024); 
+		int maxFileSize = (int) (Configuration.getLogDiskLimit() * 1_000_000); 
 		int logFileCount = Configuration.getLogFileCount();
 		final File logDirectory = new File(Configuration.getLogDiskDirectory());
 
@@ -63,7 +63,7 @@ public final class LoggingService {
 		}
 		
 		Handler logFileHandler = null;
-		logFileHandler = new FileHandler(logFilePattern, maxFileSize / logFileCount, logFileCount);
+		logFileHandler = new FileHandler(logFilePattern, (maxFileSize / logFileCount) * 1_000, logFileCount);
 	
 		logFileHandler.setFormatter(new LogFormatter());
 	
@@ -76,15 +76,9 @@ public final class LoggingService {
 	}
 	
 	public static void instanceConfigUpdated() {
-//		Handler[] handlers = logger.getHandlers();
-//		try {
-//			for (Handler handler : handlers)
-//				logger.removeHandler(handler);
-//			setupLogger();
-//		} catch (Exception e) {
-//			for (Handler handler : handlers)
-//				logger.addHandler(handler);
-//		}
+		try {
+			setupLogger();
+		} catch (Exception e) {}
 	}
 	
 }

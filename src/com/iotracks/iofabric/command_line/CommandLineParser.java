@@ -92,9 +92,9 @@ public class CommandLineParser {
 			
 			try {
 				Configuration.setConfig(config);
-				result.append("\nNew configuration");
+				result.append("Change(s) accepted");
 				for (Entry<String, Object> e : config.entrySet())
-					result.append("\n\tOption : -").append(e.getKey()).append("\tValue : ").append(e.getValue().toString());
+					result.append("\n\tParameter : -").append(e.getKey()).append("\tValue : ").append(e.getValue().toString());
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config : " + e.getMessage());
