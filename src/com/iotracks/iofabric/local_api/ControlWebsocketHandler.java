@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Map;
 
+import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -38,15 +39,15 @@ public class ControlWebsocketHandler {
 		String uri = req.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
-
+		
+		String id;
+		
 		if(tokens.length < 5){
 			LoggingService.logWarning(MODULE_NAME, " Missing ID or ID value in URL " );
 			return;
 		}else {
-			String id = tokens[4].trim();
+			 id = tokens[4].trim();
 			LoggingService.logInfo(MODULE_NAME,"Receiver Id: "+ id);
-			Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
-			controlMap.put(id, ctx);
 		}
 
 		// Handshake
@@ -59,7 +60,10 @@ public class ControlWebsocketHandler {
 			LoggingService.logInfo(MODULE_NAME,"In handshake retrieval");
 			handshaker.handshake(ctx.channel(), req);
 		}
-
+		
+		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
+		controlMap.put(id, ctx);
+		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 
 //		//Code for testing - To be removed later - start
@@ -111,6 +115,7 @@ public class ControlWebsocketHandler {
 			LoggingService.logInfo(MODULE_NAME,"In websocket handle websocket frame : Close websocket frame ");
 			ctx.channel().close();
 			WebsocketUtil.removeWebsocketContextFromMap(ctx,  WebSocketMap.controlWebsocketMap);
+			StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 			return;
 		}
 	}
