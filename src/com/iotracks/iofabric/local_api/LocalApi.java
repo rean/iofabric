@@ -112,13 +112,13 @@ public class LocalApi implements Runnable {
 		}
 	}
 
-	public void update() throws Exception {
+	public void update(){
 		try {
 			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
 		} catch (Exception e2) {
 			LoggingService.logWarning(MODULE_NAME, "Unable to find the IP address of the machine running ioFabric: " + e2.getMessage());
 		}
-		StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
+
 		Map<String, String> oldConfigMap = new HashMap<String, String>();
 		oldConfigMap.putAll(ConfigurationMap.containerConfigMap);
 		updateContainerConfig();
