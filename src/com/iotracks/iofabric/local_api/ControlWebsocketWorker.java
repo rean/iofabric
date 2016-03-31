@@ -2,6 +2,7 @@ package com.iotracks.iofabric.local_api;
 
 import java.util.Map;
 
+import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -30,6 +31,7 @@ public class ControlWebsocketWorker  implements Runnable{
 				try {
 					WebSocketMap.unackControlSignalsMap.remove(ctx);
 					WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.controlWebsocketMap);
+					StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

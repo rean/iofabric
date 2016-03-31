@@ -40,7 +40,6 @@ public class LocalApi implements Runnable {
 
 	public static void main(String[] args) throws Exception {
 		Configuration.loadConfig();
-//		ElementManager.getInstance().loadFromApi();
 		LoggingService.logInfo("Main", "configuration loaded.");
 		MessageBus.getInstance();
 		LocalApi api = LocalApi.getInstance();
@@ -94,7 +93,7 @@ public class LocalApi implements Runnable {
 		}
 
 	}
-
+ 
 	public void retrieveContainerConfig() {
 		try {
 			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
@@ -113,14 +112,18 @@ public class LocalApi implements Runnable {
 		}
 	}
 
-	public void update() {
-		LoggingService.logInfo(MODULE_NAME, "Received update configuration signals");
+	public void update() throws Exception {
+		try {
+			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
+		} catch (Exception e2) {
+			LoggingService.logWarning(MODULE_NAME, "Unable to find the IP address of the machine running ioFabric: " + e2.getMessage());
+		}
+		StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
 		Map<String, String> oldConfigMap = new HashMap<String, String>();
 		oldConfigMap.putAll(ConfigurationMap.containerConfigMap);
 		updateContainerConfig();
 		Map<String, String> newConfigMap = new HashMap<String, String>();
 		newConfigMap.putAll(ConfigurationMap.containerConfigMap);
-		newConfigMap.put("viewer", "newconfiguration");
 		ControlWebsocketHandler handler = new ControlWebsocketHandler();
 		try {
 			handler.initiateControlSignal(oldConfigMap, newConfigMap);

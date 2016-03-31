@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -31,6 +32,7 @@ public class MessageWebsocketWorker implements Runnable{
 				WebSocketMap.unackMessageSendingMap.remove(ctx);
 				MessageBus.getInstance().disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
 				WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);	
+				StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
 				return;
 			}
 		}

@@ -6,6 +6,7 @@ import java.util.Hashtable;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -64,6 +65,7 @@ public class MessageWebsocketHandler {
 		
 		Hashtable<String, ChannelHandlerContext> messageSocketMap = WebSocketMap.messageWebsocketMap;
 		messageSocketMap.put(publisherId, ctx);
+		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
 		MessageBus.getInstance().enableRealTimeReceiving(publisherId);
 
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
@@ -179,6 +181,7 @@ public class MessageWebsocketHandler {
 			ctx.channel().close();
 			MessageBus.getInstance().disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
 			WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);
+			StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
 			return;
 		}
 	}
