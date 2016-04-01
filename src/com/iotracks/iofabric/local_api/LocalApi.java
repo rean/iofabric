@@ -70,8 +70,8 @@ public class LocalApi implements Runnable {
 		retrieveContainerConfig();
 
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-	    scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
-		scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+	    scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 10, 10, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 10, 10, TimeUnit.SECONDS);
 
 		server = new LocalApiServer();
 		try {

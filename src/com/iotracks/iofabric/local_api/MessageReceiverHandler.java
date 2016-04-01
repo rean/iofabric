@@ -47,7 +47,7 @@ public class MessageReceiverHandler implements Callable<Object> {
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
-		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
+		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).trim().split(";")[0].equalsIgnoreCase("application/json"))){
 			LoggingService.logWarning(MODULE_NAME,"Incorrect content type");
 			String errorMsg = " Incorrect content type ";
 			bytesData.writeBytes(errorMsg.getBytes());
@@ -55,7 +55,7 @@ public class MessageReceiverHandler implements Callable<Object> {
 		}
 
 		ByteBuf msgBytes = req.content();
-		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
+		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.UTF_8);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 

@@ -2,11 +2,20 @@ package com.iotracks.iofabric.local_api;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketAddress;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -74,6 +83,31 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		LoggingService.logInfo(MODULE_NAME, "In local api handler: handle request");
 
+		String remoteIp = getRemoteIP(ctx);
+		String localIp = getLocalIp();
+		List<Element> elements = ElementManager.getInstance().getElements();
+		boolean ipFound = false;
+		for(Element e: elements){
+			if(e.getContainerIpAddress() != null){
+				if(e.getContainerIpAddress().equals(remoteIp) || e.getContainerIpAddress() == remoteIp){
+					ipFound = true; break;
+				}
+			}
+		}
+
+		if(localIp.equals(remoteIp) || localIp == remoteIp){
+			ipFound = true;
+		}
+
+		if(!ipFound){
+			LoggingService.logWarning(MODULE_NAME, "IP address " + remoteIp + " not found as registered");
+			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+			String errorMsg = "IP address " + remoteIp + " not found as registered";
+			errorMsgBytes.writeBytes(errorMsg.getBytes());
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
+			return;
+		}
+
 		if (req.getUri().equals("/v2/config/get")) {
 			LoggingService.logInfo(MODULE_NAME, "In local api handler: Get configuration" );
 			Callable<? extends Object> callable = new GetConfigurationHandler(req, ctx.alloc().buffer());
@@ -120,7 +154,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			messageSocket.handle(ctx, req);
 			return;
 		}
-		
+
 		LoggingService.logWarning(MODULE_NAME, "Error: Request not found");
 		ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 		String errorMsg = " Request not found ";
@@ -182,5 +216,40 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
 			f.addListener(ChannelFutureListener.CLOSE);
 		}
+	}
+
+	private String getRemoteIP(ChannelHandlerContext ctx) throws Exception {
+		try {
+			SocketAddress address = ctx.channel().remoteAddress();
+			if(address instanceof InetSocketAddress){
+				return ((InetSocketAddress)address).getAddress().getHostAddress();
+			}
+			return address.toString().split("/")[1].split(":")[0];
+		} catch (Exception e) {
+			LoggingService.logWarning(MODULE_NAME, " Problem retrieving remote ip " + e.getMessage());
+		}
+		throw new Exception("unable to get remote ip address");
+	}
+
+	public String getLocalIp() throws Exception{
+		InetAddress address = null;
+		try {
+			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+			while (networkInterfaces.hasMoreElements()) {
+				NetworkInterface networkInterface = networkInterfaces.nextElement();
+				if (networkInterface.getName().equals("lo")) {
+					Enumeration<InetAddress> ipAddresses = networkInterface.getInetAddresses();
+					while (ipAddresses.hasMoreElements()) {
+						address = ipAddresses.nextElement();
+						if (address instanceof Inet4Address) {
+							return address.getHostAddress();
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			LoggingService.logWarning(MODULE_NAME, " Problem retrieving local ip " + e.getMessage());
+		}
+		throw new Exception("unable to get local ip address");
 	}
 }

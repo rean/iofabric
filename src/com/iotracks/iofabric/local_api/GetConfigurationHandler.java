@@ -53,7 +53,7 @@ public class GetConfigurationHandler implements Callable<Object> {
 		}
 
 		ByteBuf msgBytes = req.content();
-		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.US_ASCII);
+		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.UTF_8);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
