@@ -37,6 +37,8 @@ This format is really flexible but easy to abuse. It is intended to carry any JS
 
 ###Image JPEG
 
+Based on the standard MIME type, this is just a regular JPEG image file. Whether it is sent in raw bytes or encoded in base64, this message type contains exactly the same bytes as a .jpg file which would appear on a hard disk.
+
 #####InfoType
 <pre>
 	image/jpeg
