@@ -2,6 +2,12 @@ package com.iotracks.iofabric.utils;
 
 import java.io.PrintStream;
 
+/**
+ * holds IOFabric constants
+ * 
+ * @author saeid
+ *
+ */
 public class Constants {
 	public enum ModulesStatus {
 		STARTING, RUNNING, STOPPED
@@ -35,4 +41,7 @@ public class Constants {
 	public static final int STATUS_REPORT_FREQ_SECONDS = 5;
 
 	public static PrintStream systemOut;
+
+	public static final String address = "iofabric.message_bus";
+	public static final String commandlineAddress = "iofabric.commandline";
 }

@@ -1,6 +1,7 @@
 package com.iotracks.iofabric.process_manager;
 
 import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.Image;
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Registry;
@@ -9,6 +10,12 @@ import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * provides methods to manage Docker containers
+ * 
+ * @author saeid
+ *
+ */
 public class ContainerManager {
 
 	private DockerUtil docker;
@@ -22,6 +29,11 @@ public class ContainerManager {
 		elementManager = ElementManager.getInstance();
 	}
 	
+	/**
+	 * pulls {@link Image} from {@link Registry} and creates a new {@link Container}
+	 * 
+	 * @throws Exception
+	 */
 	private void addElement() throws Exception {
 		Element element = (Element) task.data;
 
@@ -76,6 +88,10 @@ public class ContainerManager {
 		}
 	}
 
+	/**
+	 * starts a {@link Container} and sets appropriate status
+	 * 
+	 */
 	private void startElement() {
 		Element element = (Element) task.data;
 		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.STARTING);
@@ -91,6 +107,10 @@ public class ContainerManager {
 		}
 	}
 	
+	/**
+	 * stops a {@link Container}
+	 * 
+	 */
 	private void stopContainer() {
 		LoggingService.logInfo(MODULE_NAME, String.format("stopping container \"%s\"", containerId));
 		try {
@@ -101,6 +121,11 @@ public class ContainerManager {
 		}
 	}
 
+	/**
+	 * removes a {@link Container}
+	 * 
+	 * @throws Exception
+	 */
 	private void removeContainer() throws Exception {
 		if (!docker.hasContainer(containerId))
 			return;
@@ -114,6 +139,11 @@ public class ContainerManager {
 		}
 	}
 
+	/**
+	 * removes an existing {@link Container} and creates a new one
+	 * 
+	 * @throws Exception
+	 */
 	private void updateContainer() throws Exception {
 		stopContainer();
 		removeContainer();
@@ -121,6 +151,12 @@ public class ContainerManager {
 		startElement();
 	}
 
+	/**
+	 * executes assigned task
+	 * 
+	 * @param task - taks to be executed
+	 * @return result
+	 */
 	public boolean execute(ContainerTask task) {
 		docker = DockerUtil.getInstance();
 		if (!docker.isConnected()) {

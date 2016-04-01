@@ -15,6 +15,12 @@ import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Supervisor module
+ * 
+ * @author saeid
+ *
+ */
 public class Supervisor {
 
 	private final String MODULE_NAME = "Supervisor";
@@ -27,6 +33,10 @@ public class Supervisor {
 	private Thread localApiThread;
 	private LocalApi localApi;
 	
+	/**
+	 * monitors {@link LocalApi} module status
+	 * 
+	 */
 	private Runnable checkLocalApiStatus = () -> {
 		try {
 			if (localApiThread != null && localApiThread.getState() == State.TERMINATED) {
@@ -39,6 +49,11 @@ public class Supervisor {
 	public Supervisor() {
 	}
 	
+	/**
+	 * starts Supervisor module
+	 * 
+	 * @throws Exception
+	 */
 	public void start() throws Exception {
 		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook, "shutdown hook"));
 		
@@ -110,6 +125,10 @@ public class Supervisor {
 		}
 	}
 
+	/**
+	 * shutdown hook to stop {@link MessageBus} and {@link LocalApi}
+	 * 
+	 */
 	private final Runnable shutdownHook = () -> {
 		try {
 			scheduler.shutdownNow();

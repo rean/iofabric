@@ -22,6 +22,12 @@ import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionMan
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * holds IOFabric instance configuration
+ * 
+ * @author saeid
+ *
+ */
 public final class Configuration {
 
 	private static Element configElement;
@@ -41,8 +47,15 @@ public final class Configuration {
 	private static String logDiskDirectory;
 	private static int logFileCount;
 	
-	public static boolean debugging = true;
+	public static boolean debugging = false;
 
+	/**
+	 * return XML node value
+	 * 
+	 * @param name - node name
+	 * @return node value
+	 * @throws ConfigurationItemException
+	 */
 	private static String getNode(String name) throws ConfigurationItemException {
 		NodeList nodes = configElement.getElementsByTagName(name);
 		if (nodes.getLength() != 1)
@@ -51,6 +64,13 @@ public final class Configuration {
 		return nodes.item(0).getTextContent();
 	}
 
+	/**
+	 * sets XML node value
+	 * 
+	 * @param name - node name
+	 * @param content - node value
+	 * @throws ConfigurationItemException
+	 */
 	private static void setNode(String name, String content) throws ConfigurationItemException {
 
 		NodeList nodes = configFile.getElementsByTagName(name);
@@ -62,6 +82,12 @@ public final class Configuration {
 
 	}
 	
+	/**
+	 * saves configuration data to config.xml
+	 * and informs other modules
+	 * 
+	 * @throws Exception
+	 */
 	public static void saveConfigUpdates() throws Exception {
 		FieldAgent.getInstance().instanceConfigUpdated();
 		ProcessManager.getInstance().instanceConfigUpdated();
@@ -74,21 +100,14 @@ public final class Configuration {
 		StreamResult result = new StreamResult(new File("/etc/iofabric/config.xml"));
 		DOMSource source = new DOMSource(configFile);
 		transformer.transform(source, result);
-//		Document dom;
-//		Element element = null;
-//		
-//	    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-//		try {
-//	        DocumentBuilder db = dbf.newDocumentBuilder();
-//	        dom = db.newDocument();
-//	        Element root = dom.createElement("config");
-//	        element = dom.createElement("access_token");
-//	        element.setNodeValue(accessToken);
-//	        root.appendChild(element);
-//	        
-//		} catch (Exception e) {}
 	}
 
+	/**
+	 * sets configuration base on commandline parameters
+	 * 
+	 * @param commandLineMap - map of config parameters
+	 * @throws Exception
+	 */
 	public static void setConfig(Map<String, Object> commandLineMap) throws Exception {
 		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
 			String option = command.getKey();
@@ -105,7 +124,7 @@ public final class Configuration {
 				setDiskLimit(Float.parseFloat(value));
 				break;
 			case "dl":
-				value = addSeperator(value);
+				value = addSeparator(value);
 				setNode("disk_directory", value);
 				setDiskDirectory(value);
 				break;
@@ -141,7 +160,7 @@ public final class Configuration {
 				setLogDiskLimit(Float.parseFloat(value));
 				break;
 			case "ld":
-				value = addSeperator(value);
+				value = addSeparator(value);
 				setNode("log_disk_directory", value);
 				setLogDiskDirectory(value);
 				break;
@@ -159,13 +178,27 @@ public final class Configuration {
 		saveConfigUpdates();
 	}
 
-	private static String addSeperator(String value) {
+	/**
+	 * adds file separator to end of directory names, if not exists 
+	 * 
+	 * @param value - name of directory
+	 * @return directory containing file separator at the end 
+	 */
+	private static String addSeparator(String value) {
 		if (value.charAt(value.length() - 1) == File.separatorChar)
 			return value;
 		else
 			return value + File.separatorChar;
 	}
 
+	/**
+	 * validates value
+	 * 
+	 * @param option - config parameter
+	 * @param value - value to be validated
+	 * @param typeOfValidation - type of validation
+	 * @throws ConfigurationItemException
+	 */
 	private static void validateValue(String option, String value, String typeOfValidation) throws ConfigurationItemException {
 		if(typeOfValidation == "isPositiveFloat"){
 			if (!value.matches("[0-9]*.?[0-9]*"))
@@ -176,6 +209,11 @@ public final class Configuration {
 		}
 	}
 	
+	/**
+	 * loads configuration from config.xml file
+	 * 
+	 * @throws Exception
+	 */
 	public static void loadConfig() throws Exception {
 		// TODO: load configuration XML file here
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -321,6 +359,11 @@ public final class Configuration {
 		Configuration.logFileCount = logFileCount;
 	}
 
+	/**
+	 * returns report for "info" commandline parameter
+	 * 
+	 * @return info report
+	 */
 	public static String getConfigReport() {
 		String ipAddress;
 		try {

@@ -2,6 +2,12 @@ package com.iotracks.iofabric.element;
 
 import java.util.List;
 
+/**
+ * Class represents IOElements
+ * 
+ * @author saeid
+ *
+ */
 public class Element {
 	private final String elementId;
 	private final String imageName;

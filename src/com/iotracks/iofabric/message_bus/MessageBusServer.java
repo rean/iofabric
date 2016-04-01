@@ -12,6 +12,7 @@ import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.SimpleString;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.core.client.ClientConsumer;
+import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientProducer;
 import org.hornetq.api.core.client.ClientSession;
 import org.hornetq.api.core.client.ClientSession.QueueQuery;
@@ -28,15 +29,20 @@ import org.hornetq.core.server.JournalType;
 import org.hornetq.core.settings.impl.AddressFullMessagePolicy;
 import org.hornetq.core.settings.impl.AddressSettings;
 
+import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-
+/**
+ * HornetQ server
+ * 
+ * @author saeid
+ *
+ */
 public class MessageBusServer {
 	
 	private final String MODULE_NAME = "Message Bus Server";
-	public static final String address = "iofabric.message_bus";
-	public static final String commandlineAddress = "iofabric.commandline";
 	private ClientSessionFactory sf;
 	private HornetQServer server;
 	private static ClientSession messageBusSession;
@@ -44,6 +50,7 @@ public class MessageBusServer {
 	private static ClientProducer commandlineProducer;
 	private static ClientProducer producer;
 	private static Map<String, ClientConsumer> consumers;
+	private ServerLocator serverLocator;
 	
 	protected boolean isServerActive() {
 		return server.isActive();
@@ -58,6 +65,11 @@ public class MessageBusServer {
 		return consumer == null || consumer.isClosed();
 	}
 	
+	/**
+	 * starts HornetQ server 
+	 * 
+	 * @throws Exception
+	 */
 	protected void startServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
@@ -75,7 +87,7 @@ public class MessageBusServer {
 		configuration.setPersistenceEnabled(true);
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
-        configuration.getAddressesSettings().put(address, addressSettings);
+        configuration.getAddressesSettings().put(Constants.address, addressSettings);
         
 		Map<String, Object> connectionParams = new HashMap<>();
 		connectionParams.put("port", 55555);
@@ -90,7 +102,7 @@ public class MessageBusServer {
 		server = HornetQServers.newHornetQServer(configuration);
 		server.start();
 
-        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
+        serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
 
         serverLocator.setUseGlobalPools(false);
         serverLocator.setScheduledThreadPoolMaxSize(10);
@@ -98,21 +110,27 @@ public class MessageBusServer {
         sf = serverLocator.createSessionFactory();
 	}
 	
+	/**
+	 * creates IOFabric message queues, {@link ClientMessage} producer
+	 * and {@link ClientSession}
+	 * 
+	 * @throws Exception
+	 */
 	protected void initialize() throws Exception {
 		messageBusSession = sf.createSession(true, true, 0);
-		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address));
+		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.address));
 		if (queueQuery.isExists())
-			messageBusSession.deleteQueue(address);
-		queueQuery = messageBusSession.queueQuery(new SimpleString(commandlineAddress));
+			messageBusSession.deleteQueue(Constants.address);
+		queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.commandlineAddress));
 		if (queueQuery.isExists())
-			messageBusSession.deleteQueue(commandlineAddress);
-		messageBusSession.createQueue(address, address, false);
-		messageBusSession.createQueue(commandlineAddress, commandlineAddress, false);
+			messageBusSession.deleteQueue(Constants.commandlineAddress);
+		messageBusSession.createQueue(Constants.address, Constants.address, false);
+		messageBusSession.createQueue(Constants.commandlineAddress, Constants.commandlineAddress, false);
 
-		producer = messageBusSession.createProducer(address);
-		commandlineProducer = messageBusSession.createProducer(commandlineAddress);
+		producer = messageBusSession.createProducer(Constants.address);
+		commandlineProducer = messageBusSession.createProducer(Constants.commandlineAddress);
 		
-		commandlineConsumer = messageBusSession.createConsumer(commandlineAddress, String.format("receiver = '%s'", "iofabric.commandline.command"));
+		commandlineConsumer = messageBusSession.createConsumer(Constants.commandlineAddress, String.format("receiver = '%s'", "iofabric.commandline.command"));
 		commandlineConsumer.setMessageHandler(new CommandLineHandler());
 		messageBusSession.start();
 
@@ -120,7 +138,7 @@ public class MessageBusServer {
 			@Override
 			public void run() {
 				try {
-					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address));
+					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.address));
 					LoggingService.logInfo(MODULE_NAME, String.valueOf(queueQuery.getMessageCount()));
 				} catch (HornetQException e) {
 				}
@@ -130,12 +148,29 @@ public class MessageBusServer {
 		scheduler.scheduleAtFixedRate(countMessages, 10, 10, TimeUnit.SECONDS);
 	}
 	
+	/**
+	 * creates a new {@link ClientConsumer} for receiver {@link Element}
+	 * 
+	 * @param name - ID of {@link Element}
+	 * @throws Exception
+	 */
 	protected void createCosumer(String name) throws Exception {
 		if (consumers == null)
 			consumers = new ConcurrentHashMap<>();
 
-		ClientConsumer consumer = messageBusSession.createConsumer(address, String.format("receiver = '%s'", name));
+		ClientConsumer consumer = messageBusSession.createConsumer(Constants.address, String.format("receiver = '%s'", name));
 		consumers.put(name, consumer);
+	}
+	
+	/**
+	 * removes {@link ClientConsumer} when a receiver {@link Element} has been removed
+	 * 
+	 * @param name - ID of {@link Element}
+	 */
+	protected void removeConsumer(String name) {
+		if (consumers == null)
+			return;
+		consumers.remove(name);
 	}
 	
 	protected static ClientSession getSession() {
@@ -150,12 +185,27 @@ public class MessageBusServer {
 		return commandlineProducer;
 	}
 
-	protected static ClientConsumer getConsumer(String receiver) {
-		if (consumers == null)
-			return null;
+	/**
+	 * returns {@link ClientConsumer} of a receiver {@link Element}
+	 * 
+	 * @param receiver - ID of {@link Element}
+	 * @return {@link ClientConsumer}
+	 */
+	protected ClientConsumer getConsumer(String receiver) {
+		if (consumers == null || !consumers.containsKey(receiver))
+			try {
+				createCosumer(receiver);
+			} catch (Exception e) {
+				return null;
+			}
 		return consumers.get(receiver);
 	}
 	
+	/**
+	 * stops all consumers, producers and HornetQ server
+	 * 
+	 * @throws Exception
+	 */
 	protected void stopServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "stopping...");
 		if (consumers != null)
@@ -168,6 +218,8 @@ public class MessageBusServer {
 			commandlineConsumer.close();
 		if (producer != null)
 			producer.close();
+		if (serverLocator != null)
+			serverLocator.close();
 		if (sf != null)
 			sf.close();
 		if (server != null)
@@ -176,15 +228,19 @@ public class MessageBusServer {
 	}
 
 	protected void openProducer() throws Exception {
-		producer = messageBusSession.createProducer(address);
+		producer = messageBusSession.createProducer(Constants.address);
 	}
 
+	/**
+	 * sets memory usage limit of HornetQ server
+	 * 
+	 */
 	public void setMemoryLimit() {
 		AddressSettings addressSettings = new AddressSettings();
 		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
 		addressSettings.setMaxSizeBytes(memoryLimit);
 		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 
-		server.getAddressSettingsRepository().addMatch(address, addressSettings);
+		server.getAddressSettingsRepository().addMatch(Constants.address, addressSettings);
 	}
 }

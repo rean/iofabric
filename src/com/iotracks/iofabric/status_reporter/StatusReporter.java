@@ -15,6 +15,12 @@ import com.iotracks.iofabric.supervisor.SupervisorStatus;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Status Reporter module
+ * 
+ * @author saeid
+ *
+ */
 public final class StatusReporter {
 	
 	private static int SET_SYSTEM_TIME_FREQ_SECONDS = 60;
@@ -28,7 +34,10 @@ public final class StatusReporter {
 	
 	private static String MODULE_NAME = "Status Reporter";
 	
-	// set status reporter's system time every 1 minute
+	/**
+	 * sets system time property
+	 * 
+	 */
 	private static Runnable setStatusReporterSystemTime = () -> {
 		try {
 			setStatusReporterStatus().setSystemTime(System.currentTimeMillis());
@@ -38,6 +47,11 @@ public final class StatusReporter {
 	private StatusReporter() {
 	}
 
+	/**
+	 * returns report for "status" command-line parameter
+	 * 
+	 * @return status report
+	 */
 	public static String getStatusReport() {
 		StringBuilder result = new StringBuilder();
 		
@@ -100,12 +114,6 @@ public final class StatusReporter {
 		return localApiStatus;
 	}
 
-	public static void start() {
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(setStatusReporterSystemTime, 0, SET_SYSTEM_TIME_FREQ_SECONDS, TimeUnit.SECONDS);
-		LoggingService.logInfo(MODULE_NAME, "started");
-	}
-
 	public static SupervisorStatus getSupervisorStatus() {
 		return supervisorStatus;
 	}
@@ -128,6 +136,16 @@ public final class StatusReporter {
 
 	public static LocalApiStatus getLocalApiStatus() {
 		return localApiStatus;
+	}
+
+	/**
+	 * starts Status Reporter module
+	 * 
+	 */
+	public static void start() {
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(setStatusReporterSystemTime, 0, SET_SYSTEM_TIME_FREQ_SECONDS, TimeUnit.SECONDS);
+		LoggingService.logInfo(MODULE_NAME, "started");
 	}
 
 }

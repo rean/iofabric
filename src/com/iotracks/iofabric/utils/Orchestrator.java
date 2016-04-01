@@ -38,6 +38,12 @@ import org.apache.http.message.BasicNameValuePair;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
+/**
+ * provides methods for IOFabric controller
+ * 
+ * @author saeid
+ *
+ */
 public class Orchestrator {
 	private String controllerUrl;
 	private String instanceId;
@@ -50,6 +56,12 @@ public class Orchestrator {
 		this.update();
 	}
 
+	/**
+	 * ping IOFabric controller
+	 * 
+	 * @return ping result
+	 * @throws Exception
+	 */
 	public boolean ping() throws Exception {
 		try {
 			JsonObject result = getJSON(controllerUrl + "status");
@@ -59,6 +71,13 @@ public class Orchestrator {
 		} 
 	}
 
+	/**
+	 * does provisioning
+	 * 
+	 * @param key - provisioning key
+	 * @return result in Json format
+	 * @throws Exception
+	 */
 	public JsonObject provision(String key) throws Exception {
 		JsonObject result = null;
 		try {
@@ -69,6 +88,12 @@ public class Orchestrator {
 		return result;
 	}
 	
+	/**
+	 * returns IPv4 address of IOFabric network interface
+	 * 
+	 * @return {@link Inet4Address}
+	 * @throws Exception
+	 */
 	public static InetAddress getInetAddress() throws Exception {
 		InetAddress address = null;
 		try {
@@ -94,6 +119,11 @@ public class Orchestrator {
 		return RequestConfig.copy(RequestConfig.DEFAULT).setLocalAddress(getInetAddress()).build();
 	}
 	
+	/**
+	 * initialize {@link TrustManager}
+	 * 
+	 * @throws Exception
+	 */
 	private void initialize() throws Exception {
 		TrustManager[] trustManager = new TrustManager[] {
 				new X509TrustManager() {
@@ -128,6 +158,12 @@ public class Orchestrator {
 	    client = HttpClients.custom().setSSLSocketFactory(sslsf).build();
 	}
 	
+	/**
+	 * converts {@link InputStream} to {@link Certificate}
+	 * 
+	 * @param is - {@link InputStream}
+	 * @return {@link Certificate}
+	 */
 	private Certificate getCert(InputStream is) {
 		try {
 			CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
@@ -138,21 +174,16 @@ public class Orchestrator {
 		}
 	}
 	
-	public static void main(String[] args) throws Exception {
-		System.out.println(Base64.getEncoder().encodeToString("HELLO WORLD".getBytes()));
-		Configuration.loadConfig();
-		Orchestrator o = new Orchestrator();
-		InputStream is = new FileInputStream("/home/saeid/iotracks.crt");
-		X509Certificate cert = (X509Certificate) o.getCert(is);
-		System.out.println(new String(cert.getSignature()));
-		System.out.println(Base64.getEncoder().encodeToString(cert.getSignature()));
-		System.exit(0);
-	}
-	
+	/**
+	 * gets Json result of a IOFabric Controller endpoint
+	 * 
+	 * @param surl - endpoind to be called
+	 * @return result in Json format
+	 * @throws Exception
+	 */
 	public JsonObject getJSON(String surl) throws Exception {
 		if (!surl.toLowerCase().startsWith("https"))
 			throw new Exception("unable to connect over non-secure connection");
-		initialize();
 		RequestConfig config = getRequestConfig();
 		HttpPost post = new HttpPost(surl);
 		post.setConfig(config);
@@ -170,6 +201,15 @@ public class Orchestrator {
 		return result;
 	}
 
+	/**
+	 * calls IOFabric Controller endpoind and returns Json result
+	 * 
+	 * @param command - endpoint to be called
+	 * @param queryParams - query string parameters
+	 * @param postParams - post parameters
+	 * @return result in Json format
+	 * @throws Exception
+	 */
 	public JsonObject doCommand(String command, Map<String, Object> queryParams, Map<String, Object> postParams) throws Exception {
 		if (!controllerUrl.toLowerCase().startsWith("https"))
 			throw new Exception("unable to connect over non-secure connection");
@@ -195,7 +235,6 @@ public class Orchestrator {
 			});
 
 		try {
-			initialize();
 			RequestConfig config = getRequestConfig();
 			HttpPost post = new HttpPost(uri.toString());
 			post.setConfig(config);
@@ -212,6 +251,10 @@ public class Orchestrator {
 		return result;
 	}
 
+	/**
+	 * updates local variables when changes applied
+	 * 
+	 */
 	public void update() {
 		instanceId = Configuration.getInstanceId();
 		accessToken = Configuration.getAccessToken();
@@ -222,5 +265,8 @@ public class Orchestrator {
 			controllerCert = null;
 		} 
 		eth = Configuration.getNetworkInterface();
+		try {
+			initialize();
+		} catch (Exception e) {}
 	}
 }

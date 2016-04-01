@@ -3,6 +3,12 @@ package com.iotracks.iofabric.utils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+/**
+ * provides methods for "number <=> byte array" conversions
+ * 
+ * @author saeid
+ *
+ */
 public class BytesUtil {
 	
 	public static byte[] copyOfRange(byte[] src, int from, int to) {
@@ -78,6 +84,13 @@ public class BytesUtil {
 		return new String(bytes);
 	}
 
+	/**
+	 * returns string presentation of byte array
+	 * byte[] a = {1, 2, 3, 4} => String a = "[1, 2, 3, 4]"
+	 * 
+	 * @param bytes
+	 * @return string
+	 */
 	public static String byteArrayToString(byte[] bytes) {
 		StringBuilder result = new StringBuilder();
 

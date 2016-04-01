@@ -9,13 +9,21 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
+import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Message Bus module
+ * 
+ * @author saeid
+ *
+ */
 public class MessageBus {
 	
 	private final String MODULE_NAME = "Message Bus";
@@ -48,7 +56,12 @@ public class MessageBus {
 	}
 	
 	
-	
+	/**
+	 * sets messageId and timestamp and publish the {@link Message}
+	 * 
+	 * @param message - {@link Message} to be published
+	 * @return published {@link Message} containing the id and timestamp 
+	 */
 	public Message publishMessage(Message message) {
 		long timestamp = System.currentTimeMillis();
 		StatusReporter.setMessageBusStatus().increasePublishedMessagesPerElement(message.getPublisher());
@@ -67,6 +80,12 @@ public class MessageBus {
 		return message;
 	}
 	
+	/**
+	 * gets list of {@link Message} for receiver
+	 * 
+	 * @param receiver - ID of {@link Element}
+	 * @return list of {@link Message}
+	 */
 	public List<Message> getMessages(String receiver) {
 		MessageReceiver rec = receivers.get(receiver); 
 		if (rec == null)
@@ -80,6 +99,11 @@ public class MessageBus {
 		return messages;
 	}
 	
+	/**
+	 * enables real-time {@link Message} receiving of an {@link Element} 
+	 * 
+	 * @param receiver - ID of {@link Element}
+	 */
 	public void enableRealTimeReceiving(String receiver) {
 		MessageReceiver rec = receivers.get(receiver); 
 		if (rec == null)
@@ -87,6 +111,11 @@ public class MessageBus {
 		rec.enableRealTimeReceiving();
 	}
 
+	/**
+	 * disables real-time {@link Message} receiving of an {@link Element} 
+	 * 
+	 * @param receiver - ID of {@link Element}
+	 */
 	public void disableRealTimeReceiving(String receiver) {
 		MessageReceiver rec = receivers.get(receiver); 
 		if (rec == null)
@@ -94,6 +123,10 @@ public class MessageBus {
 		rec.disableRealTimeReceiving();
 	}
 
+	/**
+	 * initialize list of {@link Message} publishers and receivers
+	 * 
+	 */
 	private void init() {
 		lastSpeedMessageCount = 0;
 		lastSpeedTime = System.currentTimeMillis();
@@ -121,21 +154,36 @@ public class MessageBus {
 									LoggingService.logWarning(MODULE_NAME + "(" + item + ")",
 											"unable to start receiver module --> " + e.getMessage());
 								}
-								return new MessageReceiver(item);
+								return new MessageReceiver(item, messageBusServer.getConsumer(item));
 							})));
 			});
 
 	}
 	
+	/**
+	 * gets list of {@link Message} within a time frame
+	 * 
+	 * @param publisher - ID of {@link Element}
+	 * @param receiver - ID of {@link Element}
+	 * @param from - beginning of time frame
+	 * @param to - end of time frame
+	 * @return list of {@link Message}
+	 */
 	public synchronized List<Message> messageQuery(String publisher, String receiver, long from, long to) {
 		Route route = routes.get(publisher); 
 		if (to < from || route == null || !route.getReceivers().contains(receiver))
 			return null;
 
-		List<Message> result = publishers.get(publisher).messageQuery(from, to);
-		return result;
+		MessagePublisher messagePublisher = publishers.get(publisher);
+		if (messagePublisher == null)
+			return null;
+		return messagePublisher.messageQuery(from, to);
 	}
 	
+	/**
+	 * calculates the average speed of {@link Message} moving through ioFabric
+	 * 
+	 */
 	private final Runnable calculateSpeed = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "calculating message processing speed");
@@ -150,6 +198,10 @@ public class MessageBus {
 		} catch (Exception e) {}
 	};
 	
+	/**
+	 * monitors HornetQ server
+	 * 
+	 */
 	private final Runnable checkMessageServerStatus = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "check message bus server status");
@@ -181,7 +233,7 @@ public class MessageBus {
 					entry.getValue().close();
 					try {
 						messageBusServer.createCosumer(entry.getKey());
-						receivers.put(entry.getKey(), new MessageReceiver(entry.getKey()));
+						receivers.put(entry.getKey(), new MessageReceiver(entry.getKey(), messageBusServer.getConsumer(entry.getKey())));
 						LoggingService.logInfo(MODULE_NAME, "consumer module restarted");
 					} catch (Exception e) {
 						LoggingService.logWarning(MODULE_NAME, "unable to restart consumer module for " + entry.getKey() + " --> " + e.getMessage());
@@ -191,6 +243,11 @@ public class MessageBus {
 		} catch (Exception e) {}
 	};
 	
+	/**
+	 * updates routing, list of publishers and receivers
+	 * Field Agent calls this method when any changes applied
+	 * 
+	 */
 	public void update() {
 		synchronized (updateLock) {
 			Map<String, Route> newRoutes = elementManager.getRoutes();
@@ -210,6 +267,10 @@ public class MessageBus {
 					});
 			}
 
+			publishers.entrySet().forEach(entry -> {
+				if (!newPublishers.contains(entry.getKey()))
+					entry.getValue().close();
+			});
 			publishers.entrySet().removeIf(entry -> !newPublishers.contains(entry.getKey()));
 			publishers.putAll(
 					newPublishers.stream()
@@ -217,12 +278,18 @@ public class MessageBus {
 					.collect(Collectors.toMap(publisher -> publisher, 
 							publisher -> new MessagePublisher(publisher, newRoutes.get(publisher)))));
 
+			receivers.entrySet().forEach(entry -> {
+				if (!newReceivers.contains(entry.getKey())) {
+					entry.getValue().close();
+					messageBusServer.removeConsumer(entry.getKey());
+				}
+			});
 			receivers.entrySet().removeIf(entry -> !newReceivers.contains(entry.getKey()));
 			receivers.putAll(
 					newReceivers.stream()
 					.filter(receiver -> !receivers.containsKey(receiver))
 					.collect(Collectors.toMap(receiver -> receiver, 
-							receiver -> new MessageReceiver(receiver))));
+							receiver -> new MessageReceiver(receiver, messageBusServer.getConsumer(receiver)))));
 
 			routes = newRoutes;
 
@@ -237,10 +304,19 @@ public class MessageBus {
 		}
 	}
 	
+	/**
+	 * sets  memory usage limit of HornetQ
+	 * {@link Configuration} calls this method when any changes applied
+	 * 
+	 */
 	public void instanceConfigUpdated() {
 		messageBusServer.setMemoryLimit();
 	}
 	
+	/**
+	 * starts Message Bus module
+	 * 
+	 */
 	public void start() {
 		elementManager = ElementManager.getInstance();
 		
@@ -265,6 +341,10 @@ public class MessageBus {
 		scheduler.scheduleAtFixedRate(checkMessageServerStatus, 5, 5, TimeUnit.SECONDS);
 	}
 	
+	/**
+	 * closes receivers and publishers and stops HornetQ server
+	 * 
+	 */
 	public void stop() {
 		for (MessageReceiver receiver : receivers.values()) 
 			receiver.close();

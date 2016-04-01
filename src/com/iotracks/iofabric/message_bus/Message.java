@@ -7,6 +7,12 @@ import javax.json.JsonObject;
 
 import com.iotracks.iofabric.utils.BytesUtil;
 
+/**
+ * represents IOMessage
+ * 
+ * @author saeid
+ *
+ */
 public class Message {
 	private final short VERSION = 4; 
 
@@ -54,13 +60,11 @@ public class Message {
 		contextData = null;		
 	}
 	
-	// set publisher
 	public Message(String publisher) {
 		super();
 		this.publisher = publisher;
 	}
 
-	// from json
 	public Message(JsonObject json) {
 		super();
 		if (json.containsKey("id"))
@@ -103,7 +107,6 @@ public class Message {
 			setContentData(json.getString("contentdata").getBytes());
 	}
 	
-	// from rawBytes
 	public Message(byte[] rawBytes) {
 		super();
 
@@ -229,7 +232,6 @@ public class Message {
 		}
 	}
 
-	// from rawBytes
 	public Message(byte[] header, byte[] data) {
 		super();
 
@@ -684,8 +686,6 @@ public class Message {
 				.add("difficultytarget", difficultyTarget)
 				.add("infotype", infoType == null ? "" : infoType)
 				.add("infoformat", infoFormat == null ? "" : infoFormat)
-//				.add("contextdata", contextData == null ? "" : Base64.getEncoder().encodeToString(contextData))
-//				.add("contentdata", contentData == null ? "" : Base64.getEncoder().encodeToString(contentData))
 				.add("contextdata", contextData == null ? "" : new String(contextData))
 				.add("contentdata", contentData == null ? "" : new String(contentData))
 				.build();

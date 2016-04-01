@@ -5,6 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Class IOElements common repository
+ * 
+ * @author saeid
+ *
+ */
 public class ElementManager {
 
 	private List<Element> elements;
@@ -94,7 +100,7 @@ public class ElementManager {
 		return false;
 	}
 
-	public void clearData() {
+	public void clear() {
 		synchronized (ElementManager.class) {
 			elements.clear();
 			routes.clear();

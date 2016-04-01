@@ -6,9 +6,16 @@ import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientProducer;
 import org.hornetq.api.core.client.ClientSession;
 
+import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * publisher {@link Element}
+ * 
+ * @author saeid
+ *
+ */
 public class MessagePublisher {
 	private final MessageArchive archive;
 	private final String name;
@@ -25,6 +32,12 @@ public class MessagePublisher {
 		session = MessageBusServer.getSession();
 	}
 	
+	/**
+	 * publishes a {@link Message}
+	 * 
+	 * @param message - {@link Message} to be published
+	 * @throws Exception
+	 */
 	protected void publish(Message message) throws Exception {
 		synchronized (lock) {
 			byte[] bytes = message.getBytes();
@@ -60,6 +73,14 @@ public class MessagePublisher {
 		}
 	}
 
+	/**
+	 * retrieves list of {@link Message} published by this {@link Element} 
+	 * within a time frame
+	 * 
+	 * @param from - beginning of time frame
+	 * @param to - end of time frame
+	 * @return list of {@link Message}
+	 */
 	public List<Message> messageQuery(long from, long to) {
 		return archive.messageQuery(from, to);
 	}

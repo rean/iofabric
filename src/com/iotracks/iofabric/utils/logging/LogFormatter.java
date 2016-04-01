@@ -7,6 +7,13 @@ import java.util.logging.LogRecord;
 
 import org.jboss.logmanager.Level;
 
+/**
+ * formats logs 
+ * [MM/dd/yyyy hh:mm:ss.SSS] [WARN/INFO] [MODULE] : Message
+ * 
+ * @author saeid
+ *
+ */
 public class LogFormatter extends Formatter {
 	public String format(LogRecord record) {
 		final DateFormat df = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss.SSS");

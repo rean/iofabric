@@ -1,8 +1,14 @@
 package com.iotracks.iofabric.status_reporter;
 
+/**
+ * represent Status Reporter status
+ * 
+ * @author saeid
+ *
+ */
 public class StatusReporterStatus {
-	private long systemTime;			// FC
-	private long lastUpdate;			// FC
+	private long systemTime;
+	private long lastUpdate;
 
 	public StatusReporterStatus() {
 		systemTime = System.currentTimeMillis();

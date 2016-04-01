@@ -1,5 +1,11 @@
 package com.iotracks.iofabric.element;
 
+/**
+ * Class represents registries
+ * 
+ * @author saeid
+ *
+ */
 public class Registry {
 	private String url;
 	private boolean secure;

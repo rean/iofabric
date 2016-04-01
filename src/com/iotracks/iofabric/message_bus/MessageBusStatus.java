@@ -7,6 +7,12 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
+/**
+ * represents Message Bus status
+ * 
+ * @author saeid
+ *
+ */
 public class MessageBusStatus {
 	private long processedMessages;
 	private Map<String, Long> publishedMessagesPerElement;

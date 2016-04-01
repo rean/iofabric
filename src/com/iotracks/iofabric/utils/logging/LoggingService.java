@@ -19,6 +19,12 @@ import java.util.logging.Logger;
 
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
+/**
+ * sets up and starts logging
+ * 
+ * @author saeid
+ *
+ */
 public final class LoggingService {
 
 	private static Logger logger = null;
@@ -27,6 +33,12 @@ public final class LoggingService {
 
 	}
 
+	/**
+	 * logs Level.INFO message
+	 * 
+	 * @param moduleName - name of module
+	 * @param msg - message
+	 */
 	public static void logInfo(String moduleName, String msg) {
 		if (Configuration.debugging)
 			System.out.println(String.format("%s : %s (%s)", moduleName, msg, new Date(System.currentTimeMillis())));
@@ -34,6 +46,12 @@ public final class LoggingService {
 			logger.log(Level.INFO, String.format("[%s] : %s", moduleName, msg));
 	}
 
+	/**
+	 * logs Level.WARNING message
+	 * 
+	 * @param moduleName - name of module
+	 * @param msg - message
+	 */
 	public static void logWarning(String moduleName, String msg) {
 		if (Configuration.debugging)
 			System.out.println(String.format("%s : %s (%s)", moduleName, msg, new Date(System.currentTimeMillis())));
@@ -41,6 +59,11 @@ public final class LoggingService {
 			logger.log(Level.WARNING, String.format("[%s] : %s", moduleName, msg));
 	}
 
+	/**
+	 * sets up logging
+	 * 
+	 * @throws IOException
+	 */
 	public static void setupLogger() throws IOException {
 		int maxFileSize = (int) (Configuration.getLogDiskLimit() * 1_000_000); 
 		int logFileCount = Configuration.getLogFileCount();
@@ -62,8 +85,7 @@ public final class LoggingService {
 				f.close();
 		}
 		
-		Handler logFileHandler = null;
-		logFileHandler = new FileHandler(logFilePattern, (maxFileSize / logFileCount) * 1_000, logFileCount);
+		Handler logFileHandler = new FileHandler(logFilePattern, (maxFileSize / logFileCount) * 1_000, logFileCount);
 	
 		logFileHandler.setFormatter(new LogFormatter());
 	
@@ -75,6 +97,11 @@ public final class LoggingService {
 		logger.info("logger started.");
 	}
 	
+	/**
+	 * resets logging with new configurations
+	 * this method called by {@link Configuration}
+	 * 
+	 */
 	public static void instanceConfigUpdated() {
 		try {
 			setupLogger();

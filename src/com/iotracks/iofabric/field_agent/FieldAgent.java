@@ -39,6 +39,15 @@ import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+import io.netty.util.internal.StringUtil;
+
+
+/**
+ * Class	Field Agent module
+ * 
+ * @author saeid
+ *
+ */
 public class FieldAgent {
 	private final String MODULE_NAME = "Field Agent";
 	private final int GET_CHANGES_LIST_FREQ_SECONDS = 30;
@@ -50,11 +59,11 @@ public class FieldAgent {
 	private long lastGetChangesList;
 	private ElementManager elementManager;
 	private static FieldAgent instance;
-	private boolean firstTime;
+	private boolean initialization;
 
 	private FieldAgent() {
 		lastGetChangesList = 0;
-		firstTime = true;
+		initialization = true;
 	}
 	
 	public static FieldAgent getInstance() {
@@ -67,15 +76,69 @@ public class FieldAgent {
 		return instance;
 	}
 	
+	/**
+	 * Method	creates IOFabric status report
+	 * 
+	 * @return	Map
+	 */
+	private Map<String, Object> getFabricStatus() {
+		Map<String, Object> result = new HashMap<>();
+		
+		result.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
+		result.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
+		result.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
+		result.put("memoryusage", StatusReporter.getResourceConsumptionManagerStatus().getMemoryUsage());
+		result.put("diskusage", StatusReporter.getResourceConsumptionManagerStatus().getDiskUsage());
+		result.put("cpuusage", StatusReporter.getResourceConsumptionManagerStatus().getCpuUsage());
+		result.put("memoryviolation", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation() ? "yes" : "no");
+		result.put("diskviolation", StatusReporter.getResourceConsumptionManagerStatus().isDiskViolation() ? "yes" : "no");
+		result.put("cpuviolation", StatusReporter.getResourceConsumptionManagerStatus().isCpuViolation() ? "yes" : "no");
+		result.put("elementstatus", StatusReporter.getProcessManagerStatus().getJsonElementsStatus());
+		result.put("repositorycount", StatusReporter.getProcessManagerStatus().getRegistriesCount());
+		result.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
+		result.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
+		result.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
+		result.put("ipaddress", StatusReporter.getLocalApiStatus().getCurrentIpAddress().getHostAddress());
+		result.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
+		result.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
+		result.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
+		result.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
+
+		return result;
+	}
+	
+	/**
+	 * Method	checks if IOFabric is not provisioned
+	 * 
+	 * @return	boolean
+	 */
+	private boolean notProvisioned() {
+		return StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED);
+	}
+	
+	/**
+	 * Method	checks if IOFabric controller connection is broken
+	 * 
+	 * @return	boolean
+	 * @throws	Exception
+	 */
+	private boolean controllerNotConnected() throws Exception {
+		return StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping(); 
+	}
+	
+	/**
+	 * Method	sends IOFabric instance status to IOFabric controller
+	 * 
+	 */
 	private final Runnable postStatus = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "post status");
-			if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+			if (notProvisioned()) {
 				LoggingService.logWarning(MODULE_NAME, "not provisioned");
 				return;
 			}
 			
-			if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping()) {
+			if (controllerNotConnected()) {
 				if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 					LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 				else
@@ -83,30 +146,8 @@ public class FieldAgent {
 				return;
 			}
 			
-			Map<String, Object> postParams = new HashMap<>();
-	
-			postParams.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
-			postParams.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
-			postParams.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
-			postParams.put("memoryusage", StatusReporter.getResourceConsumptionManagerStatus().getMemoryUsage());
-			postParams.put("diskusage", StatusReporter.getResourceConsumptionManagerStatus().getDiskUsage());
-			postParams.put("cpuusage", StatusReporter.getResourceConsumptionManagerStatus().getCpuUsage());
-			postParams.put("memoryviolation", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation() ? "yes" : "no");
-			postParams.put("diskviolation", StatusReporter.getResourceConsumptionManagerStatus().isDiskViolation() ? "yes" : "no");
-			postParams.put("cpuviolation", StatusReporter.getResourceConsumptionManagerStatus().isCpuViolation() ? "yes" : "no");
-			postParams.put("elementstatus", StatusReporter.getProcessManagerStatus().getJsonElementsStatus());
-			postParams.put("repositorycount", StatusReporter.getProcessManagerStatus().getRegistriesCount());
-			postParams.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
-			postParams.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
-			postParams.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
-			postParams.put("ipaddress", StatusReporter.getLocalApiStatus().getCurrentIpAddress().getHostAddress());
-			postParams.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
-			postParams.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
-			postParams.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
-			postParams.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
-	
 			try {
-				JsonObject result = orchestrator.doCommand("status", null, postParams);
+				JsonObject result = orchestrator.doCommand("status", null, getFabricStatus());
 				if (!result.getString("status").equals("ok"))
 					throw new Exception("error from fabric controller");
 			} catch (Exception e) {
@@ -117,21 +158,32 @@ public class FieldAgent {
 		} catch (Exception e) {}
 	};
 	
+	/**
+	 * Method	logs and sets appropriate status when controller 
+	 * 			certificate is not verified
+	 * 
+	 */
 	private void verficationFailed() {
 		LoggingService.logWarning(MODULE_NAME, "controller certificate verification failed");
-		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
+		if (!notProvisioned())
+			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
 		StatusReporter.setFieldAgentStatus().setControllerVerified(false);
 	}
 	
+	
+	/**
+	 * Method	retrieves IOFabric changes list from IOFabric controller
+	 * 
+	 */
 	private final Runnable getChangesList = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "get changes list");
-			if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+			if (notProvisioned()) {
 				LoggingService.logWarning(MODULE_NAME, "not provisioned");
 				return;
 			}
 			
-			if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping()) {
+			if (controllerNotConnected()) {
 				if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 					LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 				else
@@ -160,40 +212,46 @@ public class FieldAgent {
 	
 			JsonObject changes = result.getJsonObject("changes");
 			boolean changed = false;
-			if (changes.getBoolean("config") && !firstTime)
+			if (changes.getBoolean("config") && !initialization)
 				getFabricConfig();
 			
-			if (changes.getBoolean("registries") || firstTime) {
+			if (changes.getBoolean("registries") || initialization) {
 				loadRegistries(false);
 				changed = true;
 			}
-			if (changes.getBoolean("containerlist") || firstTime) {
+			if (changes.getBoolean("containerlist") || initialization) {
 				loadElementsList(false);
 				changed = true;
 			}
-			if (changes.getBoolean("containerconfig") || firstTime) {
+			if (changes.getBoolean("containerconfig") || initialization) {
 				loadElementsConfig(false);
 				changed = true;
 			}
-			if (changes.getBoolean("routing") || firstTime) {
+			if (changes.getBoolean("routing") || initialization) {
 				loadRoutes(false);
 				changed = true;
 			}
 			if (changed)
 				notifyModules();
 			
-			firstTime = false;
+			initialization = false;
 		} catch (Exception e) {}
 	};
 	
+	/**
+	 * Method	gets list of registries from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
 	public void loadRegistries(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get registries");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping() && !fromFile) {
+		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -237,7 +295,11 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "unable to get registries : " + e.getMessage());
 		}
 	}
-
+	
+	/**
+	 * Method	notifies other modules in case of any changes applied
+	 * 
+	 */
 	private void notifyModules() {
 		MessageBus.getInstance().update();
 		ProcessManager.getInstance().update();
@@ -245,14 +307,20 @@ public class FieldAgent {
 		
 	}
 
+	/**
+	 * Method	gets list of IOElement configurations from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
 	private void loadElementsConfig(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get elemets config");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping() && !fromFile) {
+		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -291,14 +359,20 @@ public class FieldAgent {
 		}
 	}
 
+	/**
+	 * Method	gets list of IOElement routings from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
 	private void loadRoutes(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get routes");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping() && !fromFile) {
+		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -344,14 +418,20 @@ public class FieldAgent {
 		}
 	}
 
+	/**
+	 * Method	gets list of IOElements from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
 	private void loadElementsList(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get elements");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping() && !fromFile) {
+		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -405,8 +485,13 @@ public class FieldAgent {
 		}
 	}
 	
+	/**
+	 * Method	pings IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
 	private boolean ping() throws Exception {
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return false;
 		}
@@ -427,6 +512,11 @@ public class FieldAgent {
 		return false;
 	}
 
+	/**
+	 * Method	pings IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
 	private final Runnable pingController = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "ping controller");
@@ -434,9 +524,15 @@ public class FieldAgent {
 		} catch (Exception e) {}
 	};
 
+	/**
+	 * Method	computes SHA1 checksum
+	 * 
+	 * @param data - input data
+	 * @return String
+	 */
 	private String checksum(String data) {
 		try {
-			byte[] base64 = Base64.getEncoder().encode(data.getBytes(StandardCharsets.US_ASCII));
+			byte[] base64 = Base64.getEncoder().encode(data.getBytes(StandardCharsets.UTF_8));
 			MessageDigest md = MessageDigest.getInstance("SHA1");
 			md.update(base64);
 			byte[] mdbytes = md.digest();
@@ -450,6 +546,13 @@ public class FieldAgent {
 		}
 	}
 
+	/**
+	 * Method	reads json data from file and compare data checksum
+	 * 			if checksum failed, returns null
+	 * 
+	 * @param filename - file name to read data from
+	 * @return JsonArray
+	 */
 	private JsonArray readFile(String filename) {
 		try {
 			if (!Files.exists(Paths.get(filename), LinkOption.NOFOLLOW_LINKS))
@@ -473,6 +576,12 @@ public class FieldAgent {
 		}
 	}
 	
+	/**
+	 * Method saves data and checksum to json file
+	 * 
+	 * @param data - data to be written into file
+	 * @param filename - file name 
+	 */
 	private void saveFile(JsonArray data, String filename) {
 		try {
 			String checksum = checksum(data.toString());
@@ -487,14 +596,19 @@ public class FieldAgent {
 		} catch (Exception e) {}
 	}
 	
+	/**
+	 * Method	gets IOFabric instance configuration from IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
 	private void getFabricConfig() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get fabric config");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping()) {
+		if (controllerNotConnected()) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -502,7 +616,7 @@ public class FieldAgent {
 			return;
 		}
 		
-		if (firstTime) {
+		if (initialization) {
 			postFabricConfig();
 			return;
 		}
@@ -510,18 +624,6 @@ public class FieldAgent {
 			JsonObject result = orchestrator.doCommand("config", null, null);
 			if (!result.getString("status").equals("ok"))
 				throw new Exception("error from fabric controller");
-			
-//			{
-//				"networkinterface":"eth0",
-//				"dockerurl":"unix:///var/run/docker.sock",
-//				"disklimit":"1",
-//				"diskdirectory":"/var/lib/iofabric/",
-//				"memorylimit":"256",
-//				"cpulimit":"55.55",
-//				"loglimit":"1",
-//				"logdirectory":"/var/log/iofabric/",
-//				"logfilecount":"10"
-//			}
 			
 			JsonObject configs = result.getJsonObject("config");
 			String networkInterface = configs.getString("networkinterface");
@@ -573,14 +675,19 @@ public class FieldAgent {
 		}
 	}
 	
+	/**
+	 * Method	sends IOFabric instance configuration to IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
 	public void postFabricConfig() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "post fabric config");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping()) {
+		if (controllerNotConnected()) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -610,6 +717,15 @@ public class FieldAgent {
 		}
 	}
 	
+	/**
+	 * Method	does the provisioning.
+	 * 			If successfully provisioned, updates Instance ID and Access Token in 
+	 * 			configuration file and loads IOElement data, otherwise sets appropriate
+	 * 			status.  
+	 * 
+	 * @param key - provisioning key sent by command-line
+	 * @return String
+	 */
 	public String provision(String key) {
 		LoggingService.logInfo(MODULE_NAME, "provisioning");
 		try {
@@ -629,7 +745,7 @@ public class FieldAgent {
 				loadRegistries(false);
 				notifyModules();
 				
-				return String.format("\nSuccess - instance ID is %s", result.getString("id"));
+				return result.getString("id");
 			}
 		} catch (CertificateException|SSLHandshakeException e) {
 			verficationFailed();
@@ -638,17 +754,23 @@ public class FieldAgent {
 			StatusReporter.setFieldAgentStatus().setControllerVerified(true);
 			LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
 		}
-		return "\nProvisioning failed";
+		return "";
 	}
 	
+	/**
+	 * Method	does de-provisioning  
+	 * 
+	 * @return String
+	 * @throws Exception
+	 */
 	public String deProvision() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "deprovisioning");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return "\nFailure - not provisioned";
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping()) {
+		if (controllerNotConnected()) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 			else
@@ -662,11 +784,15 @@ public class FieldAgent {
 		try {
 			Configuration.saveConfigUpdates();
 		} catch (Exception e) {}
-		elementManager.clearData();
+		elementManager.clear();
 		notifyModules();
 		return "\nSuccess - tokens and identifiers and keys removed";
 	}
 	
+	/**
+	 * Method	sends IOFabric configuration when any changes applied
+	 * 
+	 */
 	public void instanceConfigUpdated() {
 		try {
 			postFabricConfig();
@@ -674,9 +800,14 @@ public class FieldAgent {
 		orchestrator.update();
 	}
 	
+	/**
+	 * Method	starts Field Agent module
+	 * 
+	 * @throws Exception
+	 */
 	public void start() throws Exception {
-		if (Configuration.getInstanceId() == null || Configuration.getInstanceId().equals("")
-				|| Configuration.getAccessToken() == null || Configuration.getAccessToken().equals(""))
+		
+		if (StringUtil.isNullOrEmpty(Configuration.getInstanceId())	|| StringUtil.isNullOrEmpty(Configuration.getAccessToken()))
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 			
 		elementManager = ElementManager.getInstance();
@@ -685,7 +816,7 @@ public class FieldAgent {
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 		ping();
 		getFabricConfig();
-		if (!StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (!notProvisioned()) {
 			loadElementsList(true);
 			loadElementsConfig(true);
 			loadRoutes(true);

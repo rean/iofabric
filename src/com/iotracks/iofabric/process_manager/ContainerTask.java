@@ -1,5 +1,13 @@
 package com.iotracks.iofabric.process_manager;
 
+import com.github.dockerjava.api.model.Container;
+
+/**
+ * represents tasks applied on a {@link Container}
+ * 
+ * @author saeid
+ *
+ */
 public class ContainerTask {
 	public enum Tasks {
 		ADD,
@@ -9,10 +17,18 @@ public class ContainerTask {
 	
 	public Tasks action;
 	public Object data;
+	public int retries;
 	
 	public ContainerTask(Tasks action, Object data) {
 		this.action = action;
 		this.data = data;
+		this.retries = 0;
+	}
+	
+	public ContainerTask(Tasks action, Object data, int retries) {
+		this.action = action;
+		this.data = data;
+		this.retries = retries;
 	}
 	
 	@Override

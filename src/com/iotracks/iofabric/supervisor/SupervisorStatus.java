@@ -3,11 +3,17 @@ package com.iotracks.iofabric.supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 
+/**
+ * represents Supervisor status
+ * 
+ * @author saeid
+ *
+ */
 public class SupervisorStatus {
-	private ModulesStatus daemonStatus;			// FC
+	private ModulesStatus daemonStatus;
 	private ModulesStatus[] modulesStatus;
-	private long daemonLastStart;				// FC
-	private long operationDuration;				// FC
+	private long daemonLastStart;
+	private long operationDuration;
 	
 	
 	public SupervisorStatus() {

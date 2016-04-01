@@ -3,6 +3,12 @@ package com.iotracks.iofabric.field_agent;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
 
+/**
+ * represents Field Agent status
+ * 
+ * @author saeid
+ *
+ */
 public class FieldAgentStatus {
 
 	private Constants.ControllerStatus contollerStatus;

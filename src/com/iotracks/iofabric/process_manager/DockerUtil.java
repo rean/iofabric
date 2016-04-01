@@ -21,6 +21,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.Container.Port;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.Info;
@@ -31,22 +32,24 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementStatus;
+import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
-import com.iotracks.iofabric.utils.Constants;
 
+/**
+ * provides methods for Docker commands
+ * 
+ * @author saeid
+ *
+ */
 public class DockerUtil {
 	private final String MODULE_NAME = "Docker Util";
 	
 	private static DockerUtil instance;
-//	public DockerClient getDockerClient() {
-//		return dockerClient;
-//	}
-
 	private DockerClient dockerClient;
 	
 	private DockerUtil() {
@@ -62,6 +65,12 @@ public class DockerUtil {
 		return instance;
 	}
 	
+	/**
+	 * gets memory usage of given {@link Container}
+	 * 
+	 * @param containerId - id of {@link Container}
+	 * @return memory usage in bytes
+	 */
 	public long getMemoryUsage(String containerId) {
 		if (!hasContainer(containerId)) 
 			return 0;
@@ -77,6 +86,13 @@ public class DockerUtil {
 		return Long.parseLong(memoryUsage.get("usage").toString());
 	}
 	
+	/**
+	 * computes cpu usage of given {@link Container}
+	 * 
+	 * @param containerId - id of {@link Container}
+	 * @return a float number between 0-100
+	 */
+	@SuppressWarnings("unchecked")
 	public float getCpuUsage(String containerId) {
 		if (!hasContainer(containerId)) 
 			return 0;
@@ -111,6 +127,12 @@ public class DockerUtil {
 		return Math.abs(1000f * ((totalAfter - totalBefore) / (systemAfter - systemBefore)));
 	}
 	
+	/**
+	 * returns a Docker {@link Image} if exists
+	 * 
+	 * @param imageName - name of {@link Image}
+	 * @return {@link Image}
+	 */
 	public Image getImage(String imageName) {
 		List<Image> images = dockerClient.listImagesCmd().exec();
 		Optional<Image> result = images.stream()
@@ -122,6 +144,11 @@ public class DockerUtil {
 			return null;
 	}
 	
+	/**
+	 * connects to Docker daemon
+	 * 
+	 * @throws Exception
+	 */
 	public void connect() throws Exception {
 		dockerClient = DockerClientBuilder.getInstance(Configuration.getDockerUrl()).build();
 
@@ -134,6 +161,14 @@ public class DockerUtil {
 		}
 	}
 	
+	/**
+	 * generates Docker authConfig
+	 * based on Docker Remote API document
+	 * {@link https://docs.docker.com/engine/reference/api/docker_remote_api/}
+	 * 
+	 * @param registry - {@link Registry}
+	 * @return base64 encoded string
+	 */
 	private String getAuth(Registry registry) {
 		JsonObject auth = Json.createObjectBuilder()
 				.add("username", registry.getUserName())
@@ -144,6 +179,12 @@ public class DockerUtil {
 		return Base64.getEncoder().encodeToString(auth.toString().getBytes(StandardCharsets.US_ASCII));
 	}
 	
+	/**
+	 * logs in to a {@link Registry}
+	 * 
+	 * @param registry - {@link Registry}
+	 * @throws Exception
+	 */
 	public void login(Registry registry) throws Exception {
 		if (!isConnected()) {
 			try {
@@ -156,7 +197,6 @@ public class DockerUtil {
 		try {
 			DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder()
 					.withUri(Configuration.getDockerUrl())
-					.withDockerCertPath(Configuration.getControllerCert())
 					.withUsername(registry.getUserName())
 					.withPassword(registry.getPassword())
 					.withEmail(registry.getUserEmail())
@@ -180,12 +220,21 @@ public class DockerUtil {
 		}
 	}
 	
+	/**
+	 * closes Docker daemon connection
+	 * 
+	 */
 	public void close() {
 		try {
 			dockerClient.close();
 		} catch (Exception e) {}
 	}
 	
+	/**
+	 * check whether Docker daemon is connected or not
+	 * 
+	 * @return boolean
+	 */
 	public boolean isConnected() {
 		try {
 			dockerClient.infoCmd().exec();
@@ -195,18 +244,43 @@ public class DockerUtil {
 		}
 	}
 	
+	/**
+	 * starts a {@link Container}
+	 * 
+	 * @param id - id of {@link Container}
+	 * @throws Exception
+	 */
 	public void startContainer(String id) throws Exception {
 		dockerClient.startContainerCmd(id).exec();
 	}
 	
+	/**
+	 * stops a {@link Container}
+	 * 
+	 * @param id - id of {@link Container}
+	 * @throws Exception
+	 */
 	public void stopContainer(String id) throws Exception {
 		dockerClient.stopContainerCmd(id).exec();
 	}
 	
+	/**
+	 * removes a {@link Container}
+	 * 
+	 * @param id - id of {@link Container}
+	 * @throws Exception
+	 */
 	public void removeContainer(String id) throws Exception {
 		dockerClient.removeContainerCmd(id).withForce(true).exec();
 	}
 	
+	/**
+	 * gets IPv4 address of a {@link Container}
+	 * 
+	 * @param id - id of {@link Container}
+	 * @return ip address
+	 * @throws Exception
+	 */
 	public String getContainerIpAddress(String id) throws Exception {
 		try {
 			InspectContainerResponse inspect =  dockerClient.inspectContainerCmd(id).exec();
@@ -216,6 +290,12 @@ public class DockerUtil {
 		}
 	}
 	
+	/**
+	 * returns a {@link Container} if exists
+	 * 
+	 * @param elementId - name of {@link Container} (id of {@link Element})
+	 * @return
+	 */
 	public Container getContainer(String elementId) {
 		List<Container> containers = getContainers();
 		Optional<Container> result = containers.stream()
@@ -226,19 +306,32 @@ public class DockerUtil {
 			return null;
 	}
 	
-	private long getStartedTime(String date) {
-		int milli = Integer.parseInt(date.substring(20, 23));
-		date = date.substring(0, 10) + " " + date.substring(11, 19);
+	/**
+	 * computes started time in milliseconds
+	 * 
+	 * @param startedTime - string representing {@link Container} started time 
+	 * @return started time in milliseconds
+	 */
+	private long getStartedTime(String startedTime) {
+		int milli = Integer.parseInt(startedTime.substring(20, 23));
+		startedTime = startedTime.substring(0, 10) + " " + startedTime.substring(11, 19);
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 		try {
-			Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(date)));
+			Date local = dateFormat.parse(dateFormat.format(dateFormat.parse(startedTime)));
 			return local.getTime() + milli;
 		} catch (Exception e) {
 			return 0;
 		}
 	}
 	
+	/**
+	 * gets {@link Container} status
+	 * 
+	 * @param id - id of {@link Container}
+	 * @return {@link ElementStatus}
+	 * @throws Exception
+	 */
 	public ElementStatus getContainerStatus(String id) throws Exception {
 		try {
 			ContainerState status = dockerClient.inspectContainerCmd(id).exec().getState();
@@ -257,6 +350,11 @@ public class DockerUtil {
 		}
 	}
 	
+	/**
+	 * returns list of {@link Container} installed on Docker daemon
+	 * 
+	 * @return list of {@link Container}
+	 */
 	public List<Container> getContainers() {
 		if (!isConnected()) {
 			try {
@@ -268,6 +366,12 @@ public class DockerUtil {
 		return dockerClient.listContainersCmd().withShowAll(true).exec();
 	}
 
+	/**
+	 * removes a Docker {@link Image}
+	 * 
+	 * @param imageName - imageName of {@link Element}
+	 * @throws Exception
+	 */
 	public void removeImage(String imageName) throws Exception {
 		Image image = getImage(imageName);
 		if (image == null)
@@ -275,6 +379,12 @@ public class DockerUtil {
 		dockerClient.removeImageCmd(image.getId()).withForce(true).exec();
 	}
 	
+	/**
+	 * returns whether the {@link Container} exists or not
+	 * 
+	 * @param containerId - id of {@link Container}
+	 * @return
+	 */
 	public boolean hasContainer(String containerId) {
 		try {
 			getContainerStatus(containerId);
@@ -284,6 +394,12 @@ public class DockerUtil {
 		}
 	}
 
+	/**
+	 * pulls {@link Image} from {@link Registry}
+	 * 	
+	 * @param imageName - imageName of {@link Element}
+	 * @throws Exception
+	 */
 	public void pullImage(String imageName) throws Exception {
 		String tag = null;
 		String registry = imageName;
@@ -299,7 +415,15 @@ public class DockerUtil {
 		res = req.exec(res);
 		res.awaitSuccess();
 	}
-
+	
+	/**
+	 * creates {@link Container}
+	 * 
+	 * @param element - {@link Element}
+	 * @param host - host ip address
+	 * @return id of created {@link Container}
+	 * @throws Exception
+	 */
 	public String createContainer(Element element, String host) throws Exception {
 		RestartPolicy restartPolicy = RestartPolicy.onFailureRestart(10);
 
@@ -323,6 +447,44 @@ public class DockerUtil {
 				.withRestartPolicy(restartPolicy)
 				.exec();
 		return resp.getId();
+	}
+
+	/**
+	 * compares whether an {@link Element} {@link PortMapping} is 
+	 * same as its corresponding {@link Container} or not
+	 * 
+	 * @param element - {@link Element}
+	 * @return boolean
+	 */
+	public boolean comprarePorts(Element element) {
+		List<PortMapping> elementPorts = element.getPortMappings();
+		Container container = getContainer(element.getElementId());
+		if (container == null)
+			return false;
+		Port[] containerPorts = container.getPorts();
+		
+		if (elementPorts == null && containerPorts == null)
+			return true;
+		else if (containerPorts == null)
+			return  elementPorts.size() == 0;
+		else if (elementPorts == null)
+			return  containerPorts.length == 0;
+		else if (elementPorts.size() != containerPorts.length)
+			return false;
+		
+		for (PortMapping elementPort : elementPorts) {
+			boolean found = false;
+			for (Port containerPort : containerPorts)
+				if (containerPort.getPrivatePort().toString().equals(elementPort.getInside()))
+					if (containerPort.getPublicPort().toString().equals(elementPort.getOutside())) {
+						found = true;
+						break;
+					}
+			if (!found)
+				return false;
+		}
+		
+		return true;
 	}
 	
 }

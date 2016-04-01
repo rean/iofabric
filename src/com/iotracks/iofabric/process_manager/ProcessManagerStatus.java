@@ -7,12 +7,19 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
+import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.utils.Constants.DockerStatus;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 
+/**
+ * represents Process Manager status
+ * 
+ * @author saeid
+ *
+ */
 public class ProcessManagerStatus {
 	private int runningElementsCount;
 	private DockerStatus dockerStatus;
@@ -26,6 +33,11 @@ public class ProcessManagerStatus {
 		dockerStatus = DockerStatus.RUNNING;
 	}
 	
+	/**
+	 * returns {@link Element} status in json format
+	 * 
+	 * @return string in json format
+	 */
 	public String getJsonElementsStatus() {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		elementsStatus.entrySet().forEach(entry -> {
@@ -42,6 +54,11 @@ public class ProcessManagerStatus {
 		return arrayBuilder.build().toString();
 	}
 
+	/**
+	 * returns {@link Registry} status in json format
+	 * 
+	 * @return string in json format
+	 */
 	public String getJsonRegistriesStatus() {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		registriesStatus.entrySet().forEach(entry -> {

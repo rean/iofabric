@@ -8,10 +8,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * archives received {@link Message} from {@link Element}
+ * 
+ * @author saeid
+ *
+ */
 public class MessageArchive {
 	private final byte HEADER_SIZE = 33;
 	private final short MAXIMUM_MESSAGE_PER_FILE = 1000;
@@ -28,6 +35,10 @@ public class MessageArchive {
 		init();
 	}
 	
+	/**
+	 * sets the file name for {@link Message} to be archived
+	 * 
+	 */
 	protected void init() {
 		currentFileName = "";
 		diskDirectory = Configuration.getDiskDirectory() + "messages/archive/";
@@ -63,6 +74,12 @@ public class MessageArchive {
 			currentFileName = lastFile.getPath();
 	}
 	
+	/**
+	 * opens index and data file
+	 * 
+	 * @param timestamp- timestamp of first {@link Message} in the file
+	 * @throws Exception
+	 */
 	private void openFiles(long timestamp) throws Exception {
 		if (currentFileName.equals(""))
 			currentFileName = diskDirectory + name + "_" + timestamp + ".idx";
@@ -70,12 +87,19 @@ public class MessageArchive {
 		dataFile = new RandomAccessFile(new File(currentFileName.substring(0, currentFileName.indexOf(".")) + ".iomsg"), "rw");
 	}
 	
+	/**
+	 * archives {@link Message} to file. If size of the data file becomes more than
+	 * defined value, creates a new file 
+	 * 
+	 * @param message - {@link Message} to be archived
+	 * @param timestamp - timestamp of the {@link Message}
+	 * @throws Exception
+	 */
 	protected void save(byte[] message, long timestamp) throws Exception {
 		if (indexFile == null)
 			openFiles(timestamp);
 		
-//		if (indexFile.length() >= ((HEADER_SIZE + Long.BYTES) * MAXIMUM_MESSAGE_PER_FILE)) {
-		if ((message.length + dataFile.length()) >= (MAXIMUM_ARCHIVE_SIZE_MB * 1024 * 1024)) {
+		if ((message.length + dataFile.length()) >= (MAXIMUM_ARCHIVE_SIZE_MB * 1_000_000)) {
 			close();
 			openFiles(timestamp);
 		}
@@ -88,6 +112,10 @@ public class MessageArchive {
 		dataFile.write(message, HEADER_SIZE, message.length - HEADER_SIZE);
 	}
 	
+	/**
+	 * closes index and data files
+	 * 
+	 */
 	public void close() {
 		try {
 			currentFileName = "";
@@ -99,6 +127,12 @@ public class MessageArchive {
 		} catch (Exception e) {}
 	}
 	
+	/**
+	 * computes {@link Message} size
+	 * 
+	 * @param header - header of the {@link Message}
+	 * @return int
+	 */
 	private int getDataSize(byte[] header) {
 		int size = 0;
 		size = header[2];
@@ -123,6 +157,13 @@ public class MessageArchive {
 		return size;
 	}
 
+	/**
+	 * retrieves list of {@link Message} sent by this {@link Element} within the time frame 
+	 * 
+	 * @param from - beginning of time frame in milliseconds
+	 * @param to - end of time frame in milliseconds
+	 * @return list of {@link Message}
+	 */
 	public List<Message> messageQuery(long from, long to) {
 		List<Message> result = new ArrayList<>();
 		

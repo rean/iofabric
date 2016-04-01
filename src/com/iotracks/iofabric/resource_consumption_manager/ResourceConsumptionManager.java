@@ -15,6 +15,12 @@ import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Resource Consumption Manager module
+ * 
+ * @author saeid
+ *
+ */
 public class ResourceConsumptionManager {
 	private final long GET_USAGE_DATA_FREQ_SECONDS = 5;
 	private String MODULE_NAME = "Resource Consumption Manager";
@@ -33,15 +39,19 @@ public class ResourceConsumptionManager {
 		return instance;
 	}
 
+	/**
+	 * computes IOFabric resource usage data
+	 * and sets the {@link ResourceConsumptionManagerStatus}
+	 * removes old archives if disk usage goes more than limit 
+	 * 
+	 */
 	private Runnable getUsageData = () -> {
 		try {
 			LoggingService.logInfo(MODULE_NAME, "get usage data");
 	
 			float memoryUsage = getMemoryUsage();
 			float cpuUsage = getCpuUsage();
-			float logUsage = directorySize(Configuration.getLogDiskDirectory());
-			float archiveUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
-			float diskUsage = logUsage + archiveUsage;
+			float diskUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
 			
 			StatusReporter.setResourceConsumptionManagerStatus()
 					.setMemoryUsage(memoryUsage / 1_000_000)
@@ -52,16 +62,18 @@ public class ResourceConsumptionManager {
 					.setCpuViolation(cpuUsage > cpuLimit);
 			
 			if (diskUsage > diskLimit) {
-				float amount = diskUsage - diskLimit;
-				float logViolation = (amount / diskUsage) * logUsage;
-				float archiveViolation = (amount / diskUsage) * archiveUsage;
-				removeLogFiles(logViolation);
-				removeArchives(archiveViolation);
+				float amount = diskUsage - (diskLimit * 0.75f);
+				removeArchives(amount);
 			}
 		} catch (Exception e) {}
 	};
 
-	private void removeArchives(float archiveViolation) {
+	/**
+	 * remove old archives
+	 * 
+	 * @param amount - disk space to be freed in bytes
+	 */
+	private void removeArchives(float amount) {
 		String archivesDirectory = Configuration.getDiskDirectory() + "messages/archive/";
 		
 		final File workingDirectory = new File(archivesDirectory);
@@ -82,41 +94,20 @@ public class ResourceConsumptionManager {
 		
 		for (File indexFile : filesList) {
 			File dataFile = new File(archivesDirectory + indexFile.getName().substring(0, indexFile.getName().indexOf('.')) + ".iomsg");
-			archiveViolation -= indexFile.length();
+			amount -= indexFile.length();
 			indexFile.delete();
-			archiveViolation -= dataFile.length();
+			amount -= dataFile.length();
 			dataFile.delete();
-			if (archiveViolation < 0)
+			if (amount < 0)
 				break;
 		}
 	}
 	
-	private void removeLogFiles(float logViolation) {
-		String logsDirectory = Configuration.getLogDiskDirectory();
-		
-		final File workingDirectory = new File(logsDirectory);
-		File[] filesList = workingDirectory.listFiles(new FilenameFilter() {
-			@Override
-			public boolean accept(File dir, String fileName) {
-				String str = fileName.substring(fileName.indexOf('.') + 1);
-				return str.substring(str.indexOf(".")).equals(".log");
-			}
-		});
-		
-		Arrays.sort(filesList, new Comparator<File>() {
-			public int compare(File o1, File o2) {
-				return o2.getName().compareTo(o1.getName());
-			}
-		});
-		
-		for (File logFile : filesList) {
-			logViolation -= logFile.length();
-			logFile.delete();
-			if (logViolation < 0)
-				break;
-		}
-	}
-
+	/**
+	 * gets memory usage of IOFabric instance
+	 * 
+	 * @return memory usage in bytes
+	 */
 	private float getMemoryUsage() {
 		Runtime runtime = Runtime.getRuntime();
 		long allocatedMemory = runtime.totalMemory();
@@ -124,6 +115,11 @@ public class ResourceConsumptionManager {
 		return (allocatedMemory - freeMemory);
 	}
 
+	/**
+	 * computes cpu usage of IOFabric instance
+	 * 
+	 * @return float number between 0-100
+	 */
 	private float getCpuUsage() {
 		String processName = ManagementFactory.getRuntimeMXBean().getName();
 		String processId = processName.split("@")[0];
@@ -176,6 +172,12 @@ public class ResourceConsumptionManager {
 		return usage;
 	}
 
+	/**
+	 * computes a directory size
+	 * 
+	 * @param name - name of the directory
+	 * @return size in bytes
+	 */
 	private long directorySize(String name) {
 		File directory = new File(name);
 		if (!directory.exists())
@@ -192,12 +194,20 @@ public class ResourceConsumptionManager {
 		return length;
 	}
 
+	/**
+	 * updates limits when changes applied to {@link Configuration}
+	 * 
+	 */
 	public void instanceConfigUpdated() {
 		diskLimit = Configuration.getDiskLimit() * 1_000_000_000;
 		cpuLimit = Configuration.getCpuLimit();
 		memoryLimit = Configuration.getMemoryLimit() * 1_000_000;
 	}
 	
+	/**
+	 * starts Resource Consumption Manager module
+	 * 
+	 */
 	public void start() {
 		instanceConfigUpdated();
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);

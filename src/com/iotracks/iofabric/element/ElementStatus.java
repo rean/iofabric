@@ -1,8 +1,16 @@
 package com.iotracks.iofabric.element;
 
+import com.iotracks.iofabric.utils.Constants;
+
+/**
+ * Class represents IOElement status
+ * 
+ * @author saeid
+ *
+ */
 public class ElementStatus {
 
-	private com.iotracks.iofabric.utils.Constants.ElementState status;
+	private Constants.ElementState status;
 	private long startTime;
 	private float cpuUsage;
 	private long memoryUsage;

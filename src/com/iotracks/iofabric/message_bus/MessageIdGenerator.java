@@ -7,8 +7,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * class to generate unique id for {@link Message}
+ * 
+ * @author saeid
+ *
+ */
 public class MessageIdGenerator {
 	private final char[] ALPHABETS_ARRAY = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789".toCharArray();
+
+	/**
+	 * converts base 10 to base 58
+	 * 
+	 * @param number - number to be converted
+	 * @return base 58 presentation of number
+	 */
 	private String toBase58(long number) {
 		StringBuilder result = new StringBuilder();
 		while (number >= 58) {
@@ -20,10 +33,14 @@ public class MessageIdGenerator {
 	}
 
 	
-	// timestamp-sequence
 	private final int MAX_SEQUENCE = 100000000;
 	private volatile long lastTime = 0;
 	private volatile int sequence = MAX_SEQUENCE;
+	/**
+	 * generates unique id based on time and sequence  
+	 * 
+	 * @param time - timestamp in milliseconds
+	 */
 	public synchronized String generate(long time) {
 		if (lastTime == time) {
 			sequence--;
@@ -36,9 +53,13 @@ public class MessageIdGenerator {
 
 	
 	// uuid
-	private final int PRE_GENERATED_IDS_COUNT = 100000;
+	private final int PRE_GENERATED_IDS_COUNT = 100_000;
 	private boolean isRefilling = false;
 	Queue<String> generatedIds = new LinkedList<>();
+	/**
+	 * generates unique id based on UUID
+	 * 
+	 */
 	private final Runnable refill = () -> {
 		if (isRefilling)
 			return;
@@ -50,6 +71,11 @@ public class MessageIdGenerator {
 		isRefilling = false;
 	};
 	
+	/**
+	 * returns next generated id from list
+	 * 
+	 * @return id
+	 */
 	public String getNextId() {
 		while (generatedIds.size() == 0);
 		synchronized (generatedIds) {

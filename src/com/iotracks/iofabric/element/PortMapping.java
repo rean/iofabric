@@ -1,5 +1,11 @@
 package com.iotracks.iofabric.element;
 
+/**
+ * Class represents IOElements port mappings
+ * 
+ * @author saeid
+ *
+ */
 public class PortMapping {
 	final String outside;
 	final String inside;

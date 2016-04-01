@@ -10,7 +10,21 @@ import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Class to parse command-line parameters 
+ * 
+ * @author saeid
+ *
+ */
 public class CommandLineParser {
+
+	/**
+	* Method parse command-line parameters 
+	* 
+	* @param command - command-line parameters
+	* 
+	* @return String
+	*/
 	public static String parse(String command) {
 		String[] args = command.split(" ");
 		StringBuilder result = new StringBuilder();
@@ -65,7 +79,11 @@ public class CommandLineParser {
 			}
 			String provisionKey = args[1];
 			result.append("Provisioning with key \"" + provisionKey + "\"...");
-			result.append(FieldAgent.getInstance().provision(provisionKey));
+			String instanceId = FieldAgent.getInstance().provision(provisionKey); 
+			if (instanceId.equals(""))
+				result.append("\nProvisioning failed");
+			else
+				result.append(String.format("\nSuccess - instance ID is %s", instanceId));
 
 			return result.toString();
 		}
@@ -106,6 +124,11 @@ public class CommandLineParser {
 		return showHelp();
 	}
 
+	/**
+	* Method returns help 
+	* 
+	* @return String
+	*/
 	private static String showHelp() {
 		StringBuilder help = new StringBuilder();
 		help.append("Usage: iofabric [OPTIONS] COMMAND [arg...]\n" + 
