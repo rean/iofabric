@@ -21,6 +21,13 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 
+/**
+ * Hadler for the real-time message websocket
+ * Open real-time message websocket
+ * Send and receive real-time messages
+ * @author ashita
+ * @since 2016
+ */
 public class MessageWebsocketHandler {
 
 	private static final Byte OPCODE_PING = 0x9; 
@@ -30,11 +37,15 @@ public class MessageWebsocketHandler {
 	private static final Byte OPCODE_RECEIPT = 0xE;
 
 	private final String MODULE_NAME = "Local API";
-	//private static int userCount = 0;
 	private static final String WEBSOCKET_PATH = "/v2/message/socket";
 
 	private WebSocketServerHandshaker handshaker;
-
+	
+	/**
+	 * Handler to open the websocket for the real-time message websocket
+	 * @param ChannelHandlerContext, FullHttpRequest
+	 * @return void
+	 */
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
 
 		LoggingService.logInfo(MODULE_NAME,"In message websocket handler : handle");
@@ -56,10 +67,8 @@ public class MessageWebsocketHandler {
 		WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req), null, true);
 		handshaker = wsFactory.newHandshaker(req);
 		if (handshaker == null) {
-			LoggingService.logInfo(MODULE_NAME,"In handshake initation");
 			WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
 		} else {
-			LoggingService.logInfo(MODULE_NAME,"In handshake retrieval");
 			handshaker.handshake(ctx.channel(), req);
 		}
 		
@@ -71,7 +80,14 @@ public class MessageWebsocketHandler {
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 		return;
 	}
-
+	
+	/**
+	 * Handler for the real-time messages
+	 * Receive ping and send pong
+	 * Sending and receiving real-time messages
+	 * @param ChannelHandlerContext, WebSocketFrame
+	 * @return void
+	 */
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
 
 		if (frame instanceof PingWebSocketFrame) {
@@ -121,21 +137,6 @@ public class MessageWebsocketHandler {
 							LoggingService.logInfo(MODULE_NAME,"Validation fail");
 						}
 
-						LoggingService.logInfo(MODULE_NAME,"Right message format");
-						LoggingService.logInfo(MODULE_NAME,"Validation successful");
-
-						//To be removed - For testing
-//						System.out.println("usercount" + userCount);
-//						if(userCount == 0){
-//							System.out.println("Sending message back to the container viewer1 start.......");
-//							sendRealTimeMessage( "viewer",  message);
-//							userCount++;
-//							return;
-//					}
-//
-//						userCount++;
-						//To be removed - For testing
-
 						MessageBus messageBus = MessageBus.getInstance();
 						Message messageWithId = messageBus.publishMessage(message);
 
@@ -153,8 +154,7 @@ public class MessageWebsocketHandler {
 						//Send opcode, id and timestamp
 						buffer1.writeBytes(messageId.getBytes()); 
 						buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
-						LoggingService.logInfo(MODULE_NAME,"Message Sent complete");
-						LoggingService.logInfo(MODULE_NAME,"Sending Receipt....");
+						LoggingService.logInfo(MODULE_NAME,"Message Sent complete: Sending Receipt...");
 
 						ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 					}
@@ -185,9 +185,13 @@ public class MessageWebsocketHandler {
 			return;
 		}
 	}
-
+	
+	/**
+	 * Helper to send real-time messages
+	 * @param String, Message
+	 * @return void
+	 */
 	public void sendRealTimeMessage(String receiverId, Message message){
-		LoggingService.logInfo(MODULE_NAME,"In Message Websocket : sending real-time message");
 		ChannelHandlerContext ctx = null;
 		Hashtable<String, ChannelHandlerContext> messageSocketMap = WebSocketMap.messageWebsocketMap;
 
@@ -205,22 +209,26 @@ public class MessageWebsocketHandler {
 			try {
 				bytesMsg = message.getBytes();
 			} catch (Exception e) {
-				LoggingService.logInfo(MODULE_NAME, "Problem in retrieving the message");
+				LoggingService.logWarning(MODULE_NAME, "Problem in retrieving the message");
 			}
 			
 			totalMsgLength = bytesMsg.length;
 			//Total Length
-			System.out.println("Total message length: "+ totalMsgLength);
 			buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
 			//Message
 			buffer1.writeBytes(bytesMsg);
 			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
 		}else{
-			LoggingService.logInfo(MODULE_NAME, "No active real-time websocket found for "+ receiverId);
+			LoggingService.logWarning(MODULE_NAME, "No active real-time websocket found for "+ receiverId);
 		}
 
 	}
-
+	
+	/**
+	 * Websocket path
+	 * @param FullHttpRequest
+	 * @return void
+	 */
 	private static String getWebSocketLocation(FullHttpRequest req) {
 		String location =  req.headers().get(HOST) + WEBSOCKET_PATH;
 		if (LocalApiServer.SSL) {

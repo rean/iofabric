@@ -9,6 +9,12 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
+/**
+ * Pipeline factory to initialize the channel and assign handler for the request.
+ * Thread pool for the performance
+ * @author ashita
+ * @since 2016
+ */
 public class LocalApiServerPipelineFactory extends ChannelInitializer<SocketChannel>{
 	private final SslContext sslCtx;
 	private final EventExecutorGroup executor;
@@ -17,7 +23,12 @@ public class LocalApiServerPipelineFactory extends ChannelInitializer<SocketChan
 		this.sslCtx = sslCtx;
 		this.executor = new DefaultEventExecutorGroup(10);
 	}
-
+	
+	/**
+	 * Initialize channel for communication and assign handler
+	 * @param SocketChannel
+	 * @return void
+	 */
 	public void initChannel(SocketChannel ch) throws Exception {
 		ChannelPipeline pipeline = ch.pipeline();
 		if (sslCtx != null) {

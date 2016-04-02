@@ -22,6 +22,11 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+/**
+ * Handler to get the current configuration of the container 
+ * @author ashita
+ * @since 2016
+ */
 public class GetConfigurationHandler implements Callable<Object> {
 
 	private final String MODULE_NAME = "Local API";
@@ -34,7 +39,11 @@ public class GetConfigurationHandler implements Callable<Object> {
 		this.bytesData = bytesData;
 	}
 
-
+	/**
+	 * Handler method to get the configuration for the container 
+	 * @param None
+	 * @return Object
+	 */
 	public Object handleGetConfigurationRequest() {
 		LoggingService.logInfo(MODULE_NAME,"In Get Configuration Handler: handle");
 
@@ -46,7 +55,7 @@ public class GetConfigurationHandler implements Callable<Object> {
 		HttpHeaders headers = req.headers();
 
 		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			LoggingService.logWarning(MODULE_NAME,"Incorrect content type");
+			LoggingService.logWarning(MODULE_NAME,"Incorrect content-type");
 			String errorMsg = " Incorrect content type ";
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
@@ -57,9 +66,9 @@ public class GetConfigurationHandler implements Callable<Object> {
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
-		if(getErrorMessageInReq(jsonObject) != null){
+		if(validateRequest(jsonObject) != null){
 			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
-			String errorMsg = getErrorMessageInReq(jsonObject);
+			String errorMsg = validateRequest(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
@@ -67,14 +76,12 @@ public class GetConfigurationHandler implements Callable<Object> {
 		String receiverId = jsonObject.getString("id");
 
 		if(ConfigurationMap.containerConfigMap.containsKey(receiverId)){
-			LoggingService.logInfo(MODULE_NAME,"Element found: status ok");
 			String containerConfig = ConfigurationMap.containerConfigMap.get(receiverId);
 			JsonBuilderFactory factory = Json.createBuilderFactory(null);
 			JsonObjectBuilder builder = factory.createObjectBuilder();
 			builder.add("status", "okay");
 			builder.add("config", containerConfig);
 			String configData = builder.build().toString();
-			LoggingService.logInfo(MODULE_NAME, "Configuration found for the receiver" + receiverId);
 			bytesData.writeBytes(configData.getBytes());
 			FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
 			HttpHeaders.setContentLength(res, bytesData.readableBytes());
@@ -87,14 +94,24 @@ public class GetConfigurationHandler implements Callable<Object> {
 		}
 		
 	}
-
-	private String getErrorMessageInReq(JsonObject jsonObject){
+	
+	/**
+	 * Validate the request
+	 * @param JsonObject
+	 * @return String
+	 */
+	private String validateRequest(JsonObject jsonObject){
 		String error = null;
 		if(!jsonObject.containsKey("id")) return " Id not found ";
 		if(jsonObject.getString("id").equals(null) || jsonObject.getString("id").trim().equals("")) return " Id value not found ";
 		return error;
 	}
-
+	
+	/**
+	 * Overriden method of the Callable interface which call the handler method
+	 * @param None
+	 * @return Object
+	 */
 	@Override
 	public Object call() throws Exception {
 		return handleGetConfigurationRequest();

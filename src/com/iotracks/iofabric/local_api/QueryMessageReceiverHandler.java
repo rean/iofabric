@@ -27,6 +27,12 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+/**
+ * Handler to deliver the messages to the receiver, if found any. 
+ * Messages are delivered for the particular query from the receiver. 
+ * @author ashita
+ * @since 2016
+ */
 public class QueryMessageReceiverHandler implements Callable<Object> {
 	private final String MODULE_NAME = "Local API";
 	
@@ -37,7 +43,13 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		this.req = req;
 		this.bytesData = bytesData;
 	}
-
+	
+	/**
+	 * Handler method to deliver the messages to the receiver as per the query.
+	 * Get the messages from message bus
+	 * @param None
+	 * @return Object
+	 */
 	public Object handleQueryMessageRequest() throws Exception{
 		
 		LoggingService.logInfo(MODULE_NAME,"In Query message receiver handler : handle");
@@ -68,7 +80,6 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
-		LoggingService.logInfo(MODULE_NAME,"Validation successful");
 		String receiverId = jsonObject.getString("id");
 		long timeframeStart = Long.parseLong(jsonObject.get("timeframestart").toString());
 		long timeframeEnd = Long.parseLong(jsonObject.get("timeframeend").toString());
@@ -106,21 +117,25 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
 		return res;
 	}
-
+	
+	/**
+	 * Validate the request and the query for the messages
+	 * @param JsonObject
+	 * @return String
+	 */
 	private String validateMessageQueryInput(JsonObject message){
-		LoggingService.logInfo(MODULE_NAME,"In validateMessageQuery");
 		if(!message.containsKey("id")){
-			LoggingService.logInfo(MODULE_NAME,"id not found");
+			LoggingService.logWarning(MODULE_NAME,"id not found");
 			return "Error: Missing input field id";
 		}
 
 		if(!(message.containsKey("timeframestart") && message.containsKey("timeframeend"))){
-			LoggingService.logInfo(MODULE_NAME,"timeframestart or timeframeend not found");
+			LoggingService.logWarning(MODULE_NAME,"timeframestart or timeframeend not found");
 			return "Error: Missing input field timeframe start or end";
 		}
 
 		if(!message.containsKey("publishers")){
-			LoggingService.logInfo(MODULE_NAME,"Publisher not found");
+			LoggingService.logWarning(MODULE_NAME,"Publisher not found");
 			return "Error: Missing input field publishers";
 		}
 
@@ -140,7 +155,12 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 
 		return null;
 	}
-
+	
+	/**
+	 * Overriden method of the Callable interface which call the handler method
+	 * @param None
+	 * @return Object
+	 */
 	@Override
 	public Object call() throws Exception {
 		return handleQueryMessageRequest();

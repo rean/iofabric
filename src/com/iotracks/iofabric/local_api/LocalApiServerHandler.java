@@ -35,6 +35,13 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
+/**
+ * Provide handler for the rest api and real-time websocket depending on the request.
+ * Send response after processing. 
+ * @author ashita
+ * @since 2016
+ */
+
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 	private final String MODULE_NAME = "Local API";
@@ -46,6 +53,12 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		this.executor = executor;
 	}
 
+	/**
+	 * Method to be called on channel initializing
+	 * Can take requests as HttpRequest or Websocket frame
+	 * @param ChannelHandlerContext, Object
+	 * @return void
+	 */
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, Object msg){
 
@@ -68,17 +81,27 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			}
 			return;
 		} catch (Exception e) {
-			e.printStackTrace();
 			LoggingService.logWarning(MODULE_NAME, "Failed to initialize channel for the request: " + e.getMessage());
 		}
 	}
 
+	/**
+	 * Method to be called on channel complete 
+	 * @param ChannelHandlerContext
+	 * @return void
+	 */
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception{
 		LoggingService.logInfo(MODULE_NAME, "In LocalApiServerHandler: Channel read complete");
 		ctx.flush();
 	}
 
+	/**
+	 * Method to be called if the request is HttpRequest 
+	 * Pass the request to the handler call as per the request URI
+	 * @param ChannelHandlerContext, FullHttpRequest
+	 * @return void
+	 */
 	private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception {
 
 		LoggingService.logInfo(MODULE_NAME, "In local api handler: handle request");
@@ -188,6 +211,11 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		return mapName;
 	}
 
+	/**
+	 * Helper for request thread
+	 * @param Callable, ChannelHandlerContext, FullHttpRequest
+	 * @return void
+	 */
 	private void runTask(Callable<? extends Object> callable, ChannelHandlerContext ctx, FullHttpRequest req) {
 		final Future<? extends Object> future = executor.submit(callable);
 		future.addListener(new GenericFutureListener<Future<Object>>() {
@@ -203,6 +231,11 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		});
 	}
 
+	/**
+	 * Provide the response as per the requests
+	 * @param ChannelHandlerContext, FullHttpRequest, FullHttpResponse
+	 * @return void
+	 */
 	private static void sendHttpResponse(
 			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) throws Exception{
 		if (res.getStatus().code() != 200) {
@@ -218,6 +251,11 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		}
 	}
 
+	/**
+	 * Return the client IP address in the request channel
+	 * @param ChannelHandlerContext
+	 * @return String
+	 */
 	private String getRemoteIP(ChannelHandlerContext ctx) throws Exception {
 		try {
 			SocketAddress address = ctx.channel().remoteAddress();
@@ -230,7 +268,12 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		}
 		throw new Exception("unable to get remote ip address");
 	}
-
+	
+	/**
+	 * Return the local host IP address 
+	 * @param none
+	 * @return String
+	 */
 	public String getLocalIp() throws Exception{
 		InetAddress address = null;
 		try {

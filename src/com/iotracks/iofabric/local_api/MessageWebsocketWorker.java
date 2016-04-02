@@ -12,11 +12,23 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 
+/**
+ * Helper class for the message websocket
+ * Initiate message sending for the unacknowledged messages in map
+ * @author ashita
+ * @since 2016
+ */
 public class MessageWebsocketWorker implements Runnable{
 	private final String MODULE_NAME = "Local API";
 	private static final Byte OPCODE_MSG = 0xD;
 	private static int count = 0;
 	
+	/**
+	 * Initiating message sending for the unacknowledged messages
+	 * If tried for 10 times, then disable real-time service for the channel
+	 * @param none
+	 * @return void
+	 */
 	@Override
 	public void run() {
 		LoggingService.logInfo(MODULE_NAME,"Initiating message sending for the unacknowledged messages");
@@ -38,7 +50,12 @@ public class MessageWebsocketWorker implements Runnable{
 		}
 		return;
 	}
-
+	
+	/**
+	 * Helper method to send real-time messages
+	 * @param ChannelHandlerContext
+	 * @return void
+	 */
 	private void sendRealTimeMessage(ChannelHandlerContext ctx){
 		count++;
 		LoggingService.logInfo(MODULE_NAME,"Sending real-time unacknowledged message" + count);

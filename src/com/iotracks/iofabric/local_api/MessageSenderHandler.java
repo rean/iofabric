@@ -24,6 +24,11 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+/**
+ * Handler to publish the messages from the container to message bus
+ * @author ashita
+ * @since 2016
+ */
 public class MessageSenderHandler implements Callable<Object> {
 	private final String MODULE_NAME = "Local API";
 
@@ -34,7 +39,12 @@ public class MessageSenderHandler implements Callable<Object> {
 		this.req = req;
 		this.bytesData = bytesData;
 	}
-
+	
+	/**
+	 * Handler method to publish the messages from the container to message bus
+	 * @param None
+	 * @return Object
+	 */
 	public Object handleMessageSenderRequest() throws Exception{
 
 		LoggingService.logInfo(MODULE_NAME,"In message sender handler : handle");		
@@ -60,19 +70,15 @@ public class MessageSenderHandler implements Callable<Object> {
 
 		if(validateMessage(jsonObject) != null){
 			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
-			LoggingService.logInfo(MODULE_NAME,"Validation Error");
+			LoggingService.logWarning(MODULE_NAME,"Validation Error");
 			String errorMsg = validateMessage(jsonObject);
 			bytesData.writeBytes(errorMsg.getBytes());
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
-		LoggingService.logInfo(MODULE_NAME,"Message validation successful");
-
 		MessageBus bus = MessageBus.getInstance();
 		Message message = new Message(jsonObject);
 		Message messageWithId = bus.publishMessage(message);
-
-		LoggingService.logInfo(MODULE_NAME,"Message id:  " + messageWithId.getId() + "  timestamp: " + messageWithId.getTimestamp());
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
 		JsonObjectBuilder builder = factory.createObjectBuilder();
@@ -87,9 +93,13 @@ public class MessageSenderHandler implements Callable<Object> {
 		HttpHeaders.setContentLength(res, bytesData.readableBytes());
 		return res;
 	}
-
+	
+	/**
+	 * Validate the request and the message to be publish
+	 * @param JsonObject
+	 * @return String
+	 */
 	private String validateMessage(JsonObject message) throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In validate Message");
 
 		if(!message.containsKey("publisher")) return "Error: Missing input field publisher ";
 		if(!message.containsKey("version")) return "Error: Missing input field version ";
@@ -143,7 +153,12 @@ public class MessageSenderHandler implements Callable<Object> {
 
 		return null;
 	}
-
+	
+	/**
+	 * Overriden method of the Callable interface which call the handler method
+	 * @param None
+	 * @return Object
+	 */
 	@Override
 	public Object call() throws Exception {
 		// TODO Auto-generated method stub

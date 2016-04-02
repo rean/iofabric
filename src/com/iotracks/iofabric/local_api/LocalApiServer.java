@@ -11,6 +11,11 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 
+/**
+ * Local Api Server
+ * @author ashita
+ * @since 2016
+ */
 public final class LocalApiServer {
 	private final String MODULE_NAME = "Local API";
 
@@ -20,8 +25,13 @@ public final class LocalApiServer {
 	static final boolean SSL = System.getProperty("ssl") != null;
 	static final int PORT = 54321;
 
+	/**
+	 * Create and start local api server
+	 * @param None
+	 * @return void
+	 */
+	
 	public void start() throws Exception {
-		// Configure SSL.
 		final SslContext sslCtx;
 		if (SSL) {
 			SelfSignedCertificate ssc = new SelfSignedCertificate();
@@ -42,10 +52,15 @@ public final class LocalApiServer {
 		}finally{
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();
-			
+
 		}
 	}
 
+	/**
+	 * Stop local api server
+	 * @param None
+	 * @return void
+	 */
 	protected void stop() throws Exception {
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();

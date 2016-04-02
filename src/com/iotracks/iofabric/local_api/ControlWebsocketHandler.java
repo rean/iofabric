@@ -20,6 +20,13 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 
+/**
+ * Handler for the real-time control websocket
+ * Open real-time control websocket
+ * Send control-signals
+ * @author ashita
+ * @since 2016
+ */
 public class ControlWebsocketHandler {
 	private final String MODULE_NAME = "Local API";
 
@@ -31,7 +38,12 @@ public class ControlWebsocketHandler {
 	private static final String WEBSOCKET_PATH = "/v2/control/socket";
 
 	private WebSocketServerHandshaker handshaker;	
-
+	
+	/**
+	 * Handler to open the websocket for the real-time control signals
+	 * @param ChannelHandlerContext, FullHttpRequest
+	 * @return void
+	 */
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
 		LoggingService.logInfo(MODULE_NAME,"In control websocket Handler : handle");
 		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
@@ -47,17 +59,14 @@ public class ControlWebsocketHandler {
 			return;
 		}else {
 			 id = tokens[4].trim();
-			LoggingService.logInfo(MODULE_NAME,"Receiver Id: "+ id);
 		}
 
 		// Handshake
 		WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req), null, true);
 		handshaker = wsFactory.newHandshaker(req);
 		if (handshaker == null) {
-			LoggingService.logInfo(MODULE_NAME,"In handshake initation");
 			WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
 		} else {
-			LoggingService.logInfo(MODULE_NAME,"In handshake retrieval");
 			handshaker.handshake(ctx.channel(), req);
 		}
 		
@@ -65,15 +74,17 @@ public class ControlWebsocketHandler {
 		controlMap.put(id, ctx);
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
-
-//		//Code for testing - To be removed later - start
-//		LoggingService.logInfo(MODULE_NAME,"Initiating the control signal...");
-//		LocalApi.getInstance().update();
-//		//Code for testing - end
-
+		
 		return;
 	}
-
+	
+	/**
+	 * Handler for the real-time control signals
+	 * Receive ping and send pong
+	 * Send control signals to container on configuration change
+	 * @param ChannelHandlerContext, WebSocketFrame
+	 * @return void
+	 */
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception{
 
 		if (frame instanceof PingWebSocketFrame) {
@@ -101,11 +112,9 @@ public class ControlWebsocketHandler {
 			ByteBuf buffer2 = frame.content();
 			if (buffer2.readableBytes() == 1) {
 				Byte opcode = buffer2.readByte(); 
-				LoggingService.logInfo(MODULE_NAME,"OPCODE Acknowledgment: " + opcode);
 				if(opcode == OPCODE_ACK.intValue()){
 					WebSocketMap.unackControlSignalsMap.remove(ctx);
-					LoggingService.logInfo(MODULE_NAME,"Acknowledgement received");
-					LoggingService.logInfo(MODULE_NAME,"Control signals send successfully");
+					LoggingService.logInfo(MODULE_NAME,"Control signals send successfully: Receive acknowledgment");
 					return;
 				}
 			}
@@ -119,7 +128,12 @@ public class ControlWebsocketHandler {
 			return;
 		}
 	}
-
+	
+	/**
+	 * Helper method to compare the configuration map to start control signals
+	 * @param Map<String, String>, Map<String, String>
+	 * @return void
+	 */
 	public void initiateControlSignal(Map<String, String> oldConfigMap, Map<String, String> newConfigMap) throws Exception{
 		LoggingService.logInfo(MODULE_NAME,"In control websocket handler : initiating control signals");
 		ChannelHandlerContext ctx = null;
@@ -144,7 +158,6 @@ public class ControlWebsocketHandler {
 
 		for(String changedConfigElmtId : changedConfigElmtsList){
 			if(controlMap.containsKey(changedConfigElmtId)){
-				LoggingService.logInfo(MODULE_NAME,"Found container id in map ");
 				ctx = controlMap.get(changedConfigElmtId);
 				WebSocketMap.unackControlSignalsMap.put(ctx, 1);
 
@@ -155,7 +168,12 @@ public class ControlWebsocketHandler {
 		}
 
 	}
-
+	
+	/**
+	 * Websocket path
+	 * @param FullHttpRequest
+	 * @return void
+	 */
 	private static String getWebSocketLocation(FullHttpRequest req) throws Exception{
 		String location =  req.headers().get(HOST) + WEBSOCKET_PATH;
 		if (LocalApiServer.SSL) {

@@ -7,14 +7,18 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.element.ElementManager;
-import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
 import com.iotracks.iofabric.utils.Orchestrator;
-import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Local api point of start using iofabric. 
+ * Get and update the configuration for local api module.
+ * @author ashita
+ * @since 2016
+ */
 public class LocalApi implements Runnable {
 
 	private final String MODULE_NAME = "Local API";
@@ -26,6 +30,11 @@ public class LocalApi implements Runnable {
 
 	} 
 
+	/**
+	 * Instantiate local api - singleton
+	 * @param None
+	 * @return LocalApi
+	 */
 	public static LocalApi getInstance(){
 		if (instance == null) {
 			synchronized (LocalApi.class) {
@@ -38,40 +47,43 @@ public class LocalApi implements Runnable {
 		return instance;
 	}
 
-	public static void main(String[] args) throws Exception {
-		Configuration.loadConfig();
-		LoggingService.logInfo("Main", "configuration loaded.");
-		MessageBus.getInstance();
-		LocalApi api = LocalApi.getInstance();
-		new Thread(api).start();
-	}
-
+	/**
+	 * Stop local api server
+	 * @param None
+	 * @return void
+	 */
 	public void stopServer() throws Exception {
 		server.stop();
 	}
 
+
+	/**
+	 * Start local api server
+	 * Instantiate websocket map and configuration map
+	 * @param None
+	 * @return void
+	 */
 	@Override
 	public void run() {
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STARTING);
 
 		WebSocketMap.getInstance();
 		ConfigurationMap.getInstance();
-		LoggingService.logInfo("Main", "Initialized configuration and websocket map");
 
 		try {
 			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
 		} catch (Exception e2) {
 			LoggingService.logWarning(MODULE_NAME, "Unable to find the IP address of the machine running ioFabric: " + e2.getMessage());
 		}
-		
+
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 		StatusReporter.setLocalApiStatus().setOpenMessageSocketsCount(WebSocketMap.messageWebsocketMap.size());
 
 		retrieveContainerConfig();
 
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-	    scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 10, 10, TimeUnit.SECONDS);
-		scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 10, 10, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
 
 		server = new LocalApiServer();
 		try {
@@ -93,7 +105,12 @@ public class LocalApi implements Runnable {
 		}
 
 	}
- 
+
+	/**
+	 * Get the containers configuration and store it.
+	 * @param None
+	 * @return void
+	 */
 	public void retrieveContainerConfig() {
 		try {
 			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
@@ -103,6 +120,11 @@ public class LocalApi implements Runnable {
 		}	  
 	}
 
+	/**
+	 * Update the containers configuration and store it.
+	 * @param None
+	 * @return void
+	 */
 	public void updateContainerConfig(){
 		try {
 			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
@@ -112,6 +134,12 @@ public class LocalApi implements Runnable {
 		}
 	}
 
+	/**
+	 * Initiate the real-time control signal when the cofiguration changes.
+	 * Called by field-agtent.
+	 * @param None
+	 * @return void
+	 */
 	public void update(){
 		try {
 			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
@@ -128,7 +156,7 @@ public class LocalApi implements Runnable {
 		try {
 			handler.initiateControlSignal(oldConfigMap, newConfigMap);
 		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to start the control signal sending " + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "Unable to complete the control signal sending " + e.getMessage());
 		}
 	}
 }
