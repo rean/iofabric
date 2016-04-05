@@ -44,6 +44,7 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
  *
  */
 public class Orchestrator {
+	private final int CONNECTION_TIMEOUT = 5000;
 	private String controllerUrl;
 	private String instanceId;
 	private String accessToken;
@@ -117,9 +118,9 @@ public class Orchestrator {
 	private RequestConfig getRequestConfig() throws Exception {
 		return RequestConfig.copy(RequestConfig.DEFAULT)
 				.setLocalAddress(getInetAddress())
-				.setConnectionRequestTimeout(2000)
-				.setSocketTimeout(2000)
-				.setConnectTimeout(2000)
+//				.setConnectionRequestTimeout(CONNECTION_TIMEOUT)
+//				.setSocketTimeout(CONNECTION_TIMEOUT)
+				.setConnectTimeout(CONNECTION_TIMEOUT)
 				.build();
 	}
 	

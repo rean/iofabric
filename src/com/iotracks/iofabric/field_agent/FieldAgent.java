@@ -728,10 +728,10 @@ public class FieldAgent {
 					Configuration.saveConfigUpdates();
 				} catch (Exception e) {}
 	
+				loadRegistries(false);
 				loadElementsList(false);
 				loadElementsConfig(false);
 				loadRoutes(false);
-				loadRegistries(false);
 				notifyModules();
 				
 				return result.getString("id");
@@ -816,10 +816,10 @@ public class FieldAgent {
 		ping();
 		getFabricConfig();
 		if (!notProvisioned()) {
+			loadRegistries(true);
 			loadElementsList(true);
 			loadElementsConfig(true);
 			loadRoutes(true);
-			loadRegistries(true);
 		}
 		scheduler.scheduleAtFixedRate(pingController, 0, PING_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
 		scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);

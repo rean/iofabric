@@ -45,7 +45,6 @@ public class ControlWebsocketHandler {
 	 * @return void
 	 */
 	public void handle(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In control websocket Handler : handle");
 		LoggingService.logInfo(MODULE_NAME,"Handshake start.... ");
 
 		String uri = req.getUri();
