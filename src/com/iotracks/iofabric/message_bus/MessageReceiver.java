@@ -33,7 +33,7 @@ public class MessageReceiver {
 	 * @return list of {@link Message}
 	 * @throws Exception
 	 */
-	protected List<Message> getMessages() throws Exception {
+	protected synchronized List<Message> getMessages() throws Exception {
 		List<Message> result = new ArrayList<>();
 		
 		if (consumer != null || listener == null) {
@@ -52,7 +52,7 @@ public class MessageReceiver {
 	 * @return {@link Message}
 	 * @throws Exception
 	 */
-	protected Message getMessage() throws Exception {
+	private Message getMessage() throws Exception {
 		if (consumer == null || listener != null)
 			return null;
 

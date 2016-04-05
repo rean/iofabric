@@ -3,7 +3,7 @@ package com.iotracks.iofabric.element;
 import com.iotracks.iofabric.utils.Constants;
 
 /**
- * Class represents IOElement status
+ * represents IOElement status
  * 
  * @author saeid
  *

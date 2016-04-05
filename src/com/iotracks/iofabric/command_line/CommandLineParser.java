@@ -11,7 +11,7 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 /**
- * Class to parse command-line parameters 
+ * to parse command-line parameters 
  * 
  * @author saeid
  *
@@ -19,7 +19,7 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 public class CommandLineParser {
 
 	/**
-	* Method parse command-line parameters 
+	* parse command-line parameters 
 	* 
 	* @param command - command-line parameters
 	* 
@@ -125,7 +125,7 @@ public class CommandLineParser {
 	}
 
 	/**
-	* Method returns help 
+	* returns help 
 	* 
 	* @return String
 	*/

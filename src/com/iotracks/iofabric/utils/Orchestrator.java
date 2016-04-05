@@ -116,7 +116,12 @@ public class Orchestrator {
 	}
 	
 	private RequestConfig getRequestConfig() throws Exception {
-		return RequestConfig.copy(RequestConfig.DEFAULT).setLocalAddress(getInetAddress()).build();
+		return RequestConfig.copy(RequestConfig.DEFAULT)
+				.setLocalAddress(getInetAddress())
+				.setConnectionRequestTimeout(2000)
+				.setSocketTimeout(2000)
+				.setConnectTimeout(2000)
+				.build();
 	}
 	
 	/**
@@ -184,6 +189,7 @@ public class Orchestrator {
 	public JsonObject getJSON(String surl) throws Exception {
 		if (!surl.toLowerCase().startsWith("https"))
 			throw new Exception("unable to connect over non-secure connection");
+		initialize();
 		RequestConfig config = getRequestConfig();
 		HttpPost post = new HttpPost(surl);
 		post.setConfig(config);
@@ -235,6 +241,7 @@ public class Orchestrator {
 			});
 
 		try {
+			initialize();
 			RequestConfig config = getRequestConfig();
 			HttpPost post = new HttpPost(uri.toString());
 			post.setConfig(config);

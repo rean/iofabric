@@ -57,54 +57,11 @@ public class MessageBus {
 	
 	
 	/**
-	 * sets messageId and timestamp and publish the {@link Message}
-	 * 
-	 * @param message - {@link Message} to be published
-	 * @return published {@link Message} containing the id and timestamp 
-	 */
-	public Message publishMessage(Message message) {
-		long timestamp = System.currentTimeMillis();
-		StatusReporter.setMessageBusStatus().increasePublishedMessagesPerElement(message.getPublisher());
-		message.setId(idGenerator.getNextId());
-		message.setTimestamp(timestamp);
-		
-		MessagePublisher publisher = publishers.get(message.getPublisher());
-
-		if (publisher != null)
-			try {
-				publisher.publish(message);
-			} catch (Exception e) {
-				LoggingService.logWarning(MODULE_NAME + "(" + message.getPublisher() + ")", "unable to send message --> " + e.getMessage());
-			}
-
-		return message;
-	}
-	
-	/**
-	 * gets list of {@link Message} for receiver
-	 * 
-	 * @param receiver - ID of {@link Element}
-	 * @return list of {@link Message}
-	 */
-	public List<Message> getMessages(String receiver) {
-		MessageReceiver rec = receivers.get(receiver); 
-		if (rec == null)
-			return null;
-		List<Message> messages = new ArrayList<>();
-		try {
-			messages = rec.getMessages();
-		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME + "(" + receiver + ")", "unable to receive messages --> " + e.getMessage());
-		} 
-		return messages;
-	}
-	
-	/**
 	 * enables real-time {@link Message} receiving of an {@link Element} 
 	 * 
 	 * @param receiver - ID of {@link Element}
 	 */
-	public void enableRealTimeReceiving(String receiver) {
+	public synchronized void enableRealTimeReceiving(String receiver) {
 		MessageReceiver rec = receivers.get(receiver); 
 		if (rec == null)
 			return;
@@ -116,7 +73,7 @@ public class MessageBus {
 	 * 
 	 * @param receiver - ID of {@link Element}
 	 */
-	public void disableRealTimeReceiving(String receiver) {
+	public synchronized void disableRealTimeReceiving(String receiver) {
 		MessageReceiver rec = receivers.get(receiver); 
 		if (rec == null)
 			return;
@@ -143,7 +100,17 @@ public class MessageBus {
 			.filter(route -> route.getValue() != null)
 			.filter(route -> route.getValue().getReceivers() != null)
 			.forEach(entry -> {
-					publishers.put(entry.getKey(), new MessagePublisher(entry.getKey(), entry.getValue()));
+					String publisher = entry.getKey();
+					Route route = entry.getValue();
+				
+					try {
+						messageBusServer.createProducer(publisher);
+					} catch (Exception e) {
+						LoggingService.logWarning(MODULE_NAME + "(" + publisher + ")",
+								"unable to start publisher module --> " + e.getMessage());
+					}
+					publishers.put(publisher, new MessagePublisher(publisher, route, messageBusServer.getProducer(publisher)));
+
 					receivers.putAll(entry.getValue().getReceivers()
 							.stream()
 							.filter(item -> !receivers.containsKey(item))
@@ -161,26 +128,6 @@ public class MessageBus {
 	}
 	
 	/**
-	 * gets list of {@link Message} within a time frame
-	 * 
-	 * @param publisher - ID of {@link Element}
-	 * @param receiver - ID of {@link Element}
-	 * @param from - beginning of time frame
-	 * @param to - end of time frame
-	 * @return list of {@link Message}
-	 */
-	public synchronized List<Message> messageQuery(String publisher, String receiver, long from, long to) {
-		Route route = routes.get(publisher); 
-		if (to < from || route == null || !route.getReceivers().contains(receiver))
-			return null;
-
-		MessagePublisher messagePublisher = publishers.get(publisher);
-		if (messagePublisher == null)
-			return null;
-		return messagePublisher.messageQuery(from, to);
-	}
-	
-	/**
 	 * calculates the average speed of {@link Message} moving through ioFabric
 	 * 
 	 */
@@ -191,7 +138,7 @@ public class MessageBus {
 			long now = System.currentTimeMillis();
 			long msgs = StatusReporter.getMessageBusStatus().getProcessedMessages();
 
-			float speed = ((float)(msgs - lastSpeedMessageCount)) / (now - lastSpeedTime);
+			float speed = ((float)(msgs - lastSpeedMessageCount)) / ((now - lastSpeedTime) / 1000f);
 			StatusReporter.setMessageBusStatus().setAverageSpeed(speed);
 			lastSpeedMessageCount = msgs;
 			lastSpeedTime = now;
@@ -217,26 +164,37 @@ public class MessageBus {
 				}
 			}
 			
-			if (messageBusServer.isProducerClosed()) {
-				LoggingService.logWarning(MODULE_NAME, "producer module stopped. restarting...");
-				try {
-					messageBusServer.openProducer();
-					LoggingService.logInfo(MODULE_NAME, "producer module restarted");
-				} catch (Exception e) {
-					LoggingService.logWarning(MODULE_NAME, "unable to start producer module --> " + e.getMessage());
+			publishers.entrySet().forEach(entry -> {
+				String publisher = entry.getKey();
+				if (messageBusServer.isProducerClosed(publisher)) {
+					LoggingService.logWarning(MODULE_NAME, "producer module for " + publisher + " stopped. restarting...");
+					entry.getValue().close();
+					Route route = routes.get(publisher);
+					if (route.equals(null) || route.getReceivers() == null || route.getReceivers().size() == 0) {
+						publishers.remove(publisher);
+ 					} else {
+						try {
+							messageBusServer.createProducer(publisher);
+							publishers.put(publisher, new MessagePublisher(publisher, route, messageBusServer.getProducer(publisher)));
+							LoggingService.logInfo(MODULE_NAME, "producer module restarted");
+						} catch (Exception e) {
+							LoggingService.logWarning(MODULE_NAME, "unable to restart producer module for " + publisher + " --> " + e.getMessage());
+						}
+ 					}
 				}
-			}
+			});
 			
 			receivers.entrySet().forEach(entry -> {
-				if (messageBusServer.isConsumerClosed(entry.getKey())) {
-					LoggingService.logWarning(MODULE_NAME, "consumer module for " + entry.getKey() + " stopped. restarting...");
+				String receiver = entry.getKey();
+				if (messageBusServer.isConsumerClosed(receiver)) {
+					LoggingService.logWarning(MODULE_NAME, "consumer module for " + receiver + " stopped. restarting...");
 					entry.getValue().close();
 					try {
-						messageBusServer.createCosumer(entry.getKey());
-						receivers.put(entry.getKey(), new MessageReceiver(entry.getKey(), messageBusServer.getConsumer(entry.getKey())));
+						messageBusServer.createCosumer(receiver);
+						receivers.put(receiver, new MessageReceiver(receiver, messageBusServer.getConsumer(receiver)));
 						LoggingService.logInfo(MODULE_NAME, "consumer module restarted");
 					} catch (Exception e) {
-						LoggingService.logWarning(MODULE_NAME, "unable to restart consumer module for " + entry.getKey() + " --> " + e.getMessage());
+						LoggingService.logWarning(MODULE_NAME, "unable to restart consumer module for " + receiver + " --> " + e.getMessage());
 					}
 				}
 			});
@@ -268,15 +226,17 @@ public class MessageBus {
 			}
 
 			publishers.entrySet().forEach(entry -> {
-				if (!newPublishers.contains(entry.getKey()))
+				if (!newPublishers.contains(entry.getKey())) {
 					entry.getValue().close();
+					messageBusServer.removeProducer(entry.getKey());
+				}
 			});
 			publishers.entrySet().removeIf(entry -> !newPublishers.contains(entry.getKey()));
 			publishers.putAll(
 					newPublishers.stream()
 					.filter(publisher -> !publishers.containsKey(publisher))
 					.collect(Collectors.toMap(publisher -> publisher, 
-							publisher -> new MessagePublisher(publisher, newRoutes.get(publisher)))));
+							publisher -> new MessagePublisher(publisher, newRoutes.get(publisher), messageBusServer.getProducer(publisher)))));
 
 			receivers.entrySet().forEach(entry -> {
 				if (!newReceivers.contains(entry.getKey())) {
@@ -339,6 +299,7 @@ public class MessageBus {
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 		scheduler.scheduleAtFixedRate(calculateSpeed, 0, SPEED_CALCULATION_FREQ_MINUTES, TimeUnit.MINUTES);
 		scheduler.scheduleAtFixedRate(checkMessageServerStatus, 5, 5, TimeUnit.SECONDS);
+		
 	}
 	
 	/**
@@ -354,5 +315,43 @@ public class MessageBus {
 		try {
 			messageBusServer.stopServer();
 		} catch (Exception e) {}
+	}
+
+	/**
+	 * returns {@link MessagePublisher}
+	 * 
+	 * @param publisher - ID of {@link Element}
+	 * @return
+	 */
+	public MessagePublisher getPublisher(String publisher) {
+		return publishers.get(publisher);
+	}
+
+	/**
+	 * returns {@link MessageReceiver}
+	 * 
+	 * @param receiver - ID of {@link Element}
+	 * @return
+	 */
+	public MessageReceiver getReceiver(String receiver) {
+		return receivers.get(receiver);
+	}
+	
+	/**
+	 * returns next generated message id
+	 * 
+	 * @return
+	 */
+	public synchronized String getNextId() {
+		return idGenerator.getNextId();
+	}
+	
+	/**
+	 * returns routes
+	 * 
+	 * @return
+	 */
+	public synchronized Map<String, Route> getRoutes() {
+		return elementManager.getRoutes();
 	}
 }

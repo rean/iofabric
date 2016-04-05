@@ -43,7 +43,7 @@ import io.netty.util.internal.StringUtil;
 
 
 /**
- * Class	Field Agent module
+ * Field Agent module
  * 
  * @author saeid
  *
@@ -77,7 +77,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	creates IOFabric status report
+	 * creates IOFabric status report
 	 * 
 	 * @return	Map
 	 */
@@ -98,7 +98,7 @@ public class FieldAgent {
 		result.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
 		result.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
 		result.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
-		result.put("ipaddress", StatusReporter.getLocalApiStatus().getCurrentIpAddress().getHostAddress());
+		result.put("ipaddress", StatusReporter.getLocalApiStatus().getCurrentIpAddress());
 		result.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
 		result.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
 		result.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
@@ -108,7 +108,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	checks if IOFabric is not provisioned
+	 * checks if IOFabric is not provisioned
 	 * 
 	 * @return	boolean
 	 */
@@ -117,20 +117,24 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	checks if IOFabric controller connection is broken
+	 * checks if IOFabric controller connection is broken
 	 * 
 	 * @return	boolean
 	 * @throws	Exception
 	 */
 	private boolean controllerNotConnected() throws Exception {
-		return StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !ping(); 
+		return !StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && !ping(); 
 	}
 	
 	/**
-	 * Method	sends IOFabric instance status to IOFabric controller
+	 * sends IOFabric instance status to IOFabric controller
 	 * 
 	 */
 	private final Runnable postStatus = () -> {
+		Map<String , Object> status = getFabricStatus();
+		if (Configuration.debugging) {
+			LoggingService.logInfo(MODULE_NAME, status.toString());
+		}
 		try {
 			LoggingService.logInfo(MODULE_NAME, "post status");
 			if (notProvisioned()) {
@@ -147,7 +151,7 @@ public class FieldAgent {
 			}
 			
 			try {
-				JsonObject result = orchestrator.doCommand("status", null, getFabricStatus());
+				JsonObject result = orchestrator.doCommand("status", null, status);
 				if (!result.getString("status").equals("ok"))
 					throw new Exception("error from fabric controller");
 			} catch (Exception e) {
@@ -159,8 +163,8 @@ public class FieldAgent {
 	};
 	
 	/**
-	 * Method	logs and sets appropriate status when controller 
-	 * 			certificate is not verified
+	 * logs and sets appropriate status when controller 
+	 * certificate is not verified
 	 * 
 	 */
 	private void verficationFailed() {
@@ -172,7 +176,7 @@ public class FieldAgent {
 	
 	
 	/**
-	 * Method	retrieves IOFabric changes list from IOFabric controller
+	 * retrieves IOFabric changes list from IOFabric controller
 	 * 
 	 */
 	private final Runnable getChangesList = () -> {
@@ -211,35 +215,32 @@ public class FieldAgent {
 			StatusReporter.setFieldAgentStatus().setLastCommandTime(lastGetChangesList);
 	
 			JsonObject changes = result.getJsonObject("changes");
-			boolean changed = false;
 			if (changes.getBoolean("config") && !initialization)
 				getFabricConfig();
 			
 			if (changes.getBoolean("registries") || initialization) {
 				loadRegistries(false);
-				changed = true;
+				ProcessManager.getInstance().update();
 			}
 			if (changes.getBoolean("containerlist") || initialization) {
 				loadElementsList(false);
-				changed = true;
+				ProcessManager.getInstance().update();
 			}
 			if (changes.getBoolean("containerconfig") || initialization) {
 				loadElementsConfig(false);
-				changed = true;
+				LocalApi.getInstance().update();
 			}
 			if (changes.getBoolean("routing") || initialization) {
 				loadRoutes(false);
-				changed = true;
+				MessageBus.getInstance().update();
 			}
-			if (changed)
-				notifyModules();
 			
 			initialization = false;
 		} catch (Exception e) {}
 	};
 	
 	/**
-	 * Method	gets list of registries from file or IOFabric controller
+	 * gets list of registries from file or IOFabric controller
 	 * 
 	 * @param fromFile - load from file 	
 	 * @throws Exception
@@ -297,18 +298,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	notifies other modules in case of any changes applied
-	 * 
-	 */
-	private void notifyModules() {
-		MessageBus.getInstance().update();
-		ProcessManager.getInstance().update();
-		LocalApi.getInstance().update();
-		
-	}
-
-	/**
-	 * Method	gets list of IOElement configurations from file or IOFabric controller
+	 * gets list of IOElement configurations from file or IOFabric controller
 	 * 
 	 * @param fromFile - load from file 	
 	 * @throws Exception
@@ -360,7 +350,7 @@ public class FieldAgent {
 	}
 
 	/**
-	 * Method	gets list of IOElement routings from file or IOFabric controller
+	 * gets list of IOElement routings from file or IOFabric controller
 	 * 
 	 * @param fromFile - load from file 	
 	 * @throws Exception
@@ -419,7 +409,7 @@ public class FieldAgent {
 	}
 
 	/**
-	 * Method	gets list of IOElements from file or IOFabric controller
+	 * gets list of IOElements from file or IOFabric controller
 	 * 
 	 * @param fromFile - load from file 	
 	 * @throws Exception
@@ -486,7 +476,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	pings IOFabric controller
+	 * pings IOFabric controller
 	 * 
 	 * @throws Exception
 	 */
@@ -503,17 +493,16 @@ public class FieldAgent {
 				return true;
 			}
 		} catch (CertificateException|SSLHandshakeException e) {
-			LoggingService.logWarning(MODULE_NAME, "controller certificate verification failed");
+			verficationFailed();
 		} catch (Exception e) {
+			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
 			LoggingService.logWarning(MODULE_NAME, e.getMessage());
 		}
-		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
-		StatusReporter.setFieldAgentStatus().setControllerVerified(false);
 		return false;
 	}
 
 	/**
-	 * Method	pings IOFabric controller
+	 * pings IOFabric controller
 	 * 
 	 * @throws Exception
 	 */
@@ -525,7 +514,7 @@ public class FieldAgent {
 	};
 
 	/**
-	 * Method	computes SHA1 checksum
+	 * computes SHA1 checksum
 	 * 
 	 * @param data - input data
 	 * @return String
@@ -547,8 +536,8 @@ public class FieldAgent {
 	}
 
 	/**
-	 * Method	reads json data from file and compare data checksum
-	 * 			if checksum failed, returns null
+	 * reads json data from file and compare data checksum
+	 * if checksum failed, returns null
 	 * 
 	 * @param filename - file name to read data from
 	 * @return JsonArray
@@ -577,7 +566,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method saves data and checksum to json file
+	 * saves data and checksum to json file
 	 * 
 	 * @param data - data to be written into file
 	 * @param filename - file name 
@@ -597,7 +586,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	gets IOFabric instance configuration from IOFabric controller
+	 * gets IOFabric instance configuration from IOFabric controller
 	 * 
 	 * @throws Exception
 	 */
@@ -676,7 +665,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	sends IOFabric instance configuration to IOFabric controller
+	 * sends IOFabric instance configuration to IOFabric controller
 	 * 
 	 * @throws Exception
 	 */
@@ -718,10 +707,10 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	does the provisioning.
-	 * 			If successfully provisioned, updates Instance ID and Access Token in 
-	 * 			configuration file and loads IOElement data, otherwise sets appropriate
-	 * 			status.  
+	 * does the provisioning.
+	 * If successfully provisioned, updates Instance ID and Access Token in 
+	 * configuration file and loads IOElement data, otherwise sets appropriate
+	 * status.  
 	 * 
 	 * @param key - provisioning key sent by command-line
 	 * @return String
@@ -758,7 +747,17 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	does de-provisioning  
+	 * notifies other modules
+	 * 
+	 */
+	private void notifyModules() {
+		MessageBus.getInstance().update();
+		LocalApi.getInstance().update();
+		ProcessManager.getInstance().update();
+	}
+
+	/**
+	 * does de-provisioning  
 	 * 
 	 * @return String
 	 * @throws Exception
@@ -790,7 +789,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	sends IOFabric configuration when any changes applied
+	 * sends IOFabric configuration when any changes applied
 	 * 
 	 */
 	public void instanceConfigUpdated() {
@@ -801,7 +800,7 @@ public class FieldAgent {
 	}
 	
 	/**
-	 * Method	starts Field Agent module
+	 * starts Field Agent module
 	 * 
 	 * @throws Exception
 	 */

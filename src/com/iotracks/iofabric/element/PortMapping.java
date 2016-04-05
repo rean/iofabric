@@ -1,7 +1,7 @@
 package com.iotracks.iofabric.element;
 
 /**
- * Class represents IOElements port mappings
+ * represents IOElements port mappings
  * 
  * @author saeid
  *

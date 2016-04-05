@@ -3,7 +3,7 @@ package com.iotracks.iofabric.element;
 import java.util.List;
 
 /**
- * Class represents IOElements
+ * represents IOElements
  * 
  * @author saeid
  *

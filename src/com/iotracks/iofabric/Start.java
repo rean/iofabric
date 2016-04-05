@@ -39,7 +39,7 @@ public class Start {
 	private static ClientSessionFactory sf = null;
 	
 	/**
-	* Method check if another instance of ioFabric is running
+	* check if another instance of ioFabric is running
 	*
 	* @return boolean
 	*/
@@ -60,7 +60,7 @@ public class Start {
 	}
 	
 	/**
-	* Method send command-line parameters to ioFabric daemon
+	* send command-line parameters to ioFabric daemon
 	* 
 	* @param args - parameters
 	*
@@ -113,7 +113,7 @@ public class Start {
 	}
 
 	/**
-	* Method creates and grants permission to daemon files directory
+	* creates and grants permission to daemon files directory
 	*/
 	private static void setupEnvironment() {
 		final File daemonFilePath = new File("/var/run/iofabric");
@@ -134,7 +134,7 @@ public class Start {
 	}
 	
 	/**
-	* Method loads config.xml
+	* loads config.xml
 	*/
 	private static void loadConfiguration() {
 		try {
@@ -150,7 +150,7 @@ public class Start {
 	}
 	
 	/**
-	* Method starts logging service
+	* starts logging service
 	*/
 	private static void startLoggingService() {
 		try {
@@ -164,7 +164,7 @@ public class Start {
 	}
 	
 	/**
-	* Method ports standard output to null
+	* ports standard output to null
 	*/
 	private static void outToNull() {
 		Constants.systemOut = System.out;

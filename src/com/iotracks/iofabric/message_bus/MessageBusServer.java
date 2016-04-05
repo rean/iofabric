@@ -48,16 +48,17 @@ public class MessageBusServer {
 	private static ClientSession messageBusSession;
 	private ClientConsumer commandlineConsumer;
 	private static ClientProducer commandlineProducer;
-	private static ClientProducer producer;
-	private static Map<String, ClientConsumer> consumers;
+	private Map<String, ClientConsumer> consumers;
+	private Map<String, ClientProducer> producers;
 	private ServerLocator serverLocator;
 	
 	protected boolean isServerActive() {
 		return server.isActive();
 	}
 	
-	protected boolean isProducerClosed() {
-		return producer.isClosed();
+	protected boolean isProducerClosed(String name) {
+		ClientProducer producer = producers.get(name);
+		return producer == null || producer.isClosed();
 	}
 	
 	protected boolean isConsumerClosed(String name) {
@@ -127,7 +128,6 @@ public class MessageBusServer {
 		messageBusSession.createQueue(Constants.address, Constants.address, false);
 		messageBusSession.createQueue(Constants.commandlineAddress, Constants.commandlineAddress, false);
 
-		producer = messageBusSession.createProducer(Constants.address);
 		commandlineProducer = messageBusSession.createProducer(Constants.commandlineAddress);
 		
 		commandlineConsumer = messageBusSession.createConsumer(Constants.commandlineAddress, String.format("receiver = '%s'", "iofabric.commandline.command"));
@@ -163,29 +163,6 @@ public class MessageBusServer {
 	}
 	
 	/**
-	 * removes {@link ClientConsumer} when a receiver {@link Element} has been removed
-	 * 
-	 * @param name - ID of {@link Element}
-	 */
-	protected void removeConsumer(String name) {
-		if (consumers == null)
-			return;
-		consumers.remove(name);
-	}
-	
-	protected static ClientSession getSession() {
-		return messageBusSession;
-	}
-	
-	protected static ClientProducer getProducer() {
-		return producer;
-	}
-	
-	public static ClientProducer getCommandlineProducer() {
-		return commandlineProducer;
-	}
-
-	/**
 	 * returns {@link ClientConsumer} of a receiver {@link Element}
 	 * 
 	 * @param receiver - ID of {@link Element}
@@ -202,6 +179,65 @@ public class MessageBusServer {
 	}
 	
 	/**
+	 * removes {@link ClientConsumer} when a receiver {@link Element} has been removed
+	 * 
+	 * @param name - ID of {@link Element}
+	 */
+	protected void removeConsumer(String name) {
+		if (consumers == null)
+			return;
+		consumers.remove(name);
+	}
+	
+	/**
+	 * creates a new {@link ClientProducer} for publisher {@link Element}
+	 * 
+	 * @param name - ID of {@link Element}
+	 * @throws Exception
+	 */
+	protected void createProducer(String name) throws Exception {
+		if (producers == null)
+			producers = new ConcurrentHashMap<>();
+		ClientProducer producer = messageBusSession.createProducer(Constants.address);
+		producers.put(name, producer);
+	}
+	
+	/**
+	 * returns {@link ClientProducer} of a publisher {@link Element} 
+	 * 
+	 * @param publisher - ID of {@link Element}
+	 * @return {@link ClientProducer}
+	 */
+	protected ClientProducer getProducer(String publisher) {
+		if (producers == null || !producers.containsKey(publisher))
+			try {
+				createProducer(publisher);
+			} catch (Exception e) {
+				return null;
+			}
+		return producers.get(publisher);
+	}
+	
+	/**
+	 * removes {@link ClientConsumer} when a receiver {@link Element} has been removed
+	 * 
+	 * @param name - ID of {@link Element}
+	 */
+	protected void removeProducer(String name) {
+		if (producers == null)
+			return;
+		producers.remove(name);
+	}
+	
+	protected static ClientSession getSession() {
+		return messageBusSession;
+	}
+	
+	public static ClientProducer getCommandlineProducer() {
+		return commandlineProducer;
+	}
+
+	/**
 	 * stops all consumers, producers and HornetQ server
 	 * 
 	 * @throws Exception
@@ -216,8 +252,12 @@ public class MessageBusServer {
 			});
 		if (commandlineConsumer != null)
 			commandlineConsumer.close();
-		if (producer != null)
-			producer.close();
+		if (producers != null)
+			producers.entrySet().forEach(entry -> {
+				try {
+					entry.getValue().close();
+				} catch (Exception e) {	}
+			});
 		if (serverLocator != null)
 			serverLocator.close();
 		if (sf != null)
@@ -225,10 +265,6 @@ public class MessageBusServer {
 		if (server != null)
 			server.stop();
 		LoggingService.logInfo(MODULE_NAME, "stopped");
-	}
-
-	protected void openProducer() throws Exception {
-		producer = messageBusSession.createProducer(Constants.address);
 	}
 
 	/**

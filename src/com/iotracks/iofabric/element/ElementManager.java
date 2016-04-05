@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Class IOElements common repository
+ * IOElements common repository
  * 
  * @author saeid
  *

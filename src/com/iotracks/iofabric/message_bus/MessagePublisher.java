@@ -22,43 +22,44 @@ public class MessagePublisher {
 	private ClientProducer producer;
 	private ClientSession session;
 	private Route route;
-	private Object lock = new Object();
 	
-	public MessagePublisher(String name, Route route) {
+	public MessagePublisher(String name, Route route, ClientProducer producer) {
 		this.archive = new MessageArchive(name);
 		this.route = route;
 		this.name = name;
-		producer = MessageBusServer.getProducer();
-		session = MessageBusServer.getSession();
+		this.producer = producer;
+		this.session = MessageBusServer.getSession();
 	}
 	
+	public String getName() {
+		return name;
+	}
+
 	/**
 	 * publishes a {@link Message}
 	 * 
 	 * @param message - {@link Message} to be published
 	 * @throws Exception
 	 */
-	protected void publish(Message message) throws Exception {
-		synchronized (lock) {
-			byte[] bytes = message.getBytes();
+	protected synchronized void publish(Message message) throws Exception {
+		byte[] bytes = message.getBytes();
 
-			try {
-				archive.save(bytes, message.getTimestamp());
-			} catch (Exception e) {
-				LoggingService.logWarning("Message Publisher (" + this.name + ")", "unable to archive massage --> " + e.getMessage());
-			}
-			for (String receiver : route.getReceivers()) {
-				ClientMessage msg = session.createMessage(false);
-				msg.putObjectProperty("receiver", receiver);
-				msg.putBytesProperty("message", bytes);
-				producer.send(msg);
-			}
+		try {
+			archive.save(bytes, message.getTimestamp());
+		} catch (Exception e) {
+			LoggingService.logWarning("Message Publisher (" + this.name + ")", "unable to archive massage --> " + e.getMessage());
+		}
+		for (String receiver : route.getReceivers()) {
+			ClientMessage msg = session.createMessage(false);
+			msg.putObjectProperty("receiver", receiver);
+			msg.putBytesProperty("message", bytes);
+			producer.send(msg);
 		}
 	}
 	
-	protected void update() {
-		session = MessageBusServer.getSession();
-		producer = MessageBusServer.getProducer();
+	protected void update(ClientProducer producer, ClientSession session) {
+		this.session = session;
+		this.producer = producer;
 	}
 	
 	protected void updateRoute(Route route) {
@@ -66,11 +67,9 @@ public class MessagePublisher {
 	}
 
 	public void close() {
-		synchronized (lock) {
-			try {
-				archive.close();
-			} catch (Exception e) {}
-		}
+		try {
+			archive.close();
+		} catch (Exception e) {}
 	}
 
 	/**
@@ -81,7 +80,8 @@ public class MessagePublisher {
 	 * @param to - end of time frame
 	 * @return list of {@link Message}
 	 */
-	public List<Message> messageQuery(long from, long to) {
+	public synchronized List<Message> messageQuery(long from, long to) {
 		return archive.messageQuery(from, to);
 	}
+	
 }

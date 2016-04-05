@@ -1,7 +1,7 @@
 package com.iotracks.iofabric.element;
 
 /**
- * Class represents registries
+ * represents registries
  * 
  * @author saeid
  *
