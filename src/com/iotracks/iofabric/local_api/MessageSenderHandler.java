@@ -14,7 +14,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.iotracks.iofabric.message_bus.Message;
-import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.message_bus.MessageBusUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -76,7 +76,7 @@ public class MessageSenderHandler implements Callable<Object> {
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
 		}
 
-		MessageBus bus = MessageBus.getInstance();
+		MessageBusUtil bus = new MessageBusUtil();
 		Message message = new Message(jsonObject);
 		Message messageWithId = bus.publishMessage(message);
 

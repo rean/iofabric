@@ -17,7 +17,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.iotracks.iofabric.message_bus.Message;
-import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.message_bus.MessageBusUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -89,7 +89,7 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		JsonObjectBuilder builder = factory.createObjectBuilder();
 		JsonArrayBuilder messagesArray = factory.createArrayBuilder();
 
-		MessageBus bus = MessageBus.getInstance();
+		MessageBusUtil bus = new MessageBusUtil();
 		int msgCount = 0;
 
 		for(int i=0; i<publishersArray.size(); i++){

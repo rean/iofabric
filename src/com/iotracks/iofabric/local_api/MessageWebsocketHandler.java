@@ -6,6 +6,7 @@ import java.util.Hashtable;
 
 import com.iotracks.iofabric.message_bus.Message;
 import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.message_bus.MessageBusUtil;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.BytesUtil;
 import com.iotracks.iofabric.utils.logging.LoggingService;
@@ -137,7 +138,7 @@ public class MessageWebsocketHandler {
 							LoggingService.logInfo(MODULE_NAME,"Validation fail");
 						}
 
-						MessageBus messageBus = MessageBus.getInstance();
+						MessageBusUtil messageBus = new MessageBusUtil();
 						Message messageWithId = messageBus.publishMessage(message);
 
 						String messageId = messageWithId.getId();
