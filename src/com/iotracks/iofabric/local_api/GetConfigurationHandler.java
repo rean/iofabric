@@ -5,6 +5,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
 
 import javax.json.Json;
@@ -17,13 +18,14 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * Handler to get the current configuration of the container 
+ * Handler to get the current configuration of the container
+ * 
  * @author ashita
  * @since 2016
  */
@@ -31,84 +33,87 @@ public class GetConfigurationHandler implements Callable<Object> {
 
 	private final String MODULE_NAME = "Local API";
 
-	private final FullHttpRequest req;
-	private ByteBuf bytesData;
+	private final HttpRequest req;
+	private ByteBuf outputBuffer;
+	private final byte[] content;
 
-	public GetConfigurationHandler(FullHttpRequest req, ByteBuf	bytesData) {
+	public GetConfigurationHandler(HttpRequest req, ByteBuf outputBuffer, byte[] content) {
 		this.req = req;
-		this.bytesData = bytesData;
+		this.outputBuffer = outputBuffer;
+		this.content = content;
 	}
 
 	/**
-	 * Handler method to get the configuration for the container 
+	 * Handler method to get the configuration for the container
+	 * 
 	 * @param None
 	 * @return Object
 	 */
 	public Object handleGetConfigurationRequest() {
-		LoggingService.logInfo(MODULE_NAME,"In Get Configuration Handler: handle");
-
 		if (req.getMethod() != POST) {
-			LoggingService.logWarning(MODULE_NAME,"Request method not allowed");
+			LoggingService.logWarning(MODULE_NAME, "Request method not allowed");
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
 		HttpHeaders headers = req.headers();
 
-		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))){
-			LoggingService.logWarning(MODULE_NAME,"Incorrect content-type");
+		if (!(headers.get(HttpHeaders.Names.CONTENT_TYPE).equals("application/json"))) {
 			String errorMsg = " Incorrect content type ";
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
+			outputBuffer.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, outputBuffer);
 		}
 
-		ByteBuf msgBytes = req.content();
-		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.UTF_8);
+		String requestBody = new String(content, StandardCharsets.UTF_8);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
-		if(validateRequest(jsonObject) != null){
-			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
-			String errorMsg = validateRequest(jsonObject);
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+		try {
+			validateRequest(jsonObject);
+		} catch (Exception e) {
+			String errorMsg = "Incorrect content/data, " + e.getMessage();
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
+			outputBuffer.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, outputBuffer);
 		}
 
 		String receiverId = jsonObject.getString("id");
 
-		if(ConfigurationMap.containerConfigMap.containsKey(receiverId)){
+		if (ConfigurationMap.containerConfigMap.containsKey(receiverId)) {
 			String containerConfig = ConfigurationMap.containerConfigMap.get(receiverId);
 			JsonBuilderFactory factory = Json.createBuilderFactory(null);
 			JsonObjectBuilder builder = factory.createObjectBuilder();
 			builder.add("status", "okay");
 			builder.add("config", containerConfig);
-			String configData = builder.build().toString();
-			bytesData.writeBytes(configData.getBytes());
-			FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
-			HttpHeaders.setContentLength(res, bytesData.readableBytes());
+			String result = builder.build().toString();
+			outputBuffer.writeBytes(result.getBytes());
+			FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, outputBuffer);
+			HttpHeaders.setContentLength(res, outputBuffer.readableBytes());
 			return res;
-		}else{
-			String errorMsg = "No configuration found for the id" + receiverId;
-			LoggingService.logWarning(MODULE_NAME,"No configuration found for the id" + receiverId);
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+		} else {
+			String errorMsg = "No configuration found for the id " + receiverId;
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
+			outputBuffer.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, outputBuffer);
 		}
-		
 	}
-	
+
 	/**
 	 * Validate the request
+	 * 
 	 * @param JsonObject
 	 * @return String
 	 */
-	private String validateRequest(JsonObject jsonObject){
-		String error = null;
-		if(!jsonObject.containsKey("id")) return " Id not found ";
-		if(jsonObject.getString("id").equals(null) || jsonObject.getString("id").trim().equals("")) return " Id value not found ";
-		return error;
+	private void validateRequest(JsonObject jsonObject) throws Exception {
+		if (!jsonObject.containsKey("id"))
+			throw new Exception(" Id not found ");
+		if (jsonObject.getString("id").equals(null) || jsonObject.getString("id").trim().equals(""))
+			throw new Exception(" Id value not found ");
 	}
-	
+
 	/**
 	 * Overriden method of the Callable interface which call the handler method
+	 * 
 	 * @param None
 	 * @return Object
 	 */

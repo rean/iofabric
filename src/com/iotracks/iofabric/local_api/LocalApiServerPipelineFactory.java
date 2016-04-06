@@ -35,6 +35,7 @@ public class LocalApiServerPipelineFactory extends ChannelInitializer<SocketChan
 			pipeline.addLast(sslCtx.newHandler(ch.alloc()));
 		}
 		pipeline.addLast(new HttpServerCodec());
+//		pipeline.addLast(new HttpRequestDecoder(4 * Constants.KiB, 64 * Constants.KiB, 2 * Constants.MiB));
 		pipeline.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
 		pipeline.addLast(new LocalApiServerHandler(executor));	
 	}

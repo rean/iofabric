@@ -5,6 +5,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -21,13 +22,14 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * Handler to deliver the messages to the receiver, if found any. 
+ * Handler to deliver the messages to the receiver, if found any.
+ * 
  * @author ashita
  * @since 2016
  */
@@ -35,46 +37,49 @@ public class MessageReceiverHandler implements Callable<Object> {
 
 	private final String MODULE_NAME = "Local API";
 
-	private final FullHttpRequest req;
-	private ByteBuf bytesData;
+	private final HttpRequest req;
+	private ByteBuf outputBuffer;
+	private final byte[] content;
 
-	public MessageReceiverHandler(FullHttpRequest req, ByteBuf	bytesData) {
+	public MessageReceiverHandler(HttpRequest req, ByteBuf outputBuffer, byte[] content) {
 		this.req = req;
-		this.bytesData = bytesData;
+		this.outputBuffer = outputBuffer;
+		this.content = content;
 	}
-	
+
 	/**
-	 * Handler method to deliver the messages to the receiver.
-	 * Get the messages from message bus
+	 * Handler method to deliver the messages to the receiver. Get the messages
+	 * from message bus
+	 * 
 	 * @param None
 	 * @return Object
 	 */
-	public Object handleMessageRecievedRequest() throws Exception{
-		LoggingService.logInfo(MODULE_NAME,"In message receiver handler : handle");
+	public Object handleMessageRecievedRequest() throws Exception {
 		HttpHeaders headers = req.headers();
 
 		if (req.getMethod() != POST) {
-			LoggingService.logWarning(MODULE_NAME,"Request method not allowed");
+			LoggingService.logWarning(MODULE_NAME, "Request method not allowed");
 			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
 		}
 
-		if(!(headers.get(HttpHeaders.Names.CONTENT_TYPE).trim().split(";")[0].equalsIgnoreCase("application/json"))){
-			LoggingService.logWarning(MODULE_NAME,"Incorrect content-type");
+		if (!(headers.get(HttpHeaders.Names.CONTENT_TYPE).trim().split(";")[0].equalsIgnoreCase("application/json"))) {
 			String errorMsg = " Incorrect content type ";
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
+			outputBuffer.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, outputBuffer);
 		}
 
-		ByteBuf msgBytes = req.content();
-		String requestBody = msgBytes.toString(io.netty.util.CharsetUtil.UTF_8);
+		String requestBody = new String(content, StandardCharsets.UTF_8);
 		JsonReader reader = Json.createReader(new StringReader(requestBody));
 		JsonObject jsonObject = reader.readObject();
 
-		if(validateRequest(jsonObject) != null){
-			LoggingService.logWarning(MODULE_NAME,"Incorrect content/data");
-			String errorMsg = validateRequest(jsonObject);
-			bytesData.writeBytes(errorMsg.getBytes());
-			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, bytesData);
+		try {
+			validateRequest(jsonObject);
+		} catch (Exception e) {
+			String errorMsg = "Incorrect content/data" + e.getMessage();
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
+			outputBuffer.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, outputBuffer);
 		}
 
 		String receiverId = jsonObject.getString("id");
@@ -86,46 +91,38 @@ public class MessageReceiverHandler implements Callable<Object> {
 		MessageBusUtil bus = new MessageBusUtil();
 		List<Message> messageList = bus.getMessages(receiverId);
 
-		if(messageList == null){
-			LoggingService.logInfo(MODULE_NAME,"No messages found for the receiver id: " + receiverId);
-			builder.add("status", "Failed");
-			builder.add("error", "id not found");
-		}else{
-
-			int msgCount = 0;
-			for(Message msg : messageList){
-				JsonObject msgJson = msg.toJson();
-				messagesArray.add(msgJson);
-				msgCount++;
-			}
-
-			builder.add("status", "okay");
-			builder.add("count", msgCount);
-			builder.add("messages", messagesArray);
+		for (Message msg : messageList) {
+			JsonObject msgJson = msg.toJson();
+			messagesArray.add(msgJson);
 		}
-		
-		String configData = builder.build().toString();
-		bytesData.writeBytes(configData.getBytes());
-		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, bytesData);
-		LoggingService.logInfo(MODULE_NAME,"Request completed successfully");
-		HttpHeaders.setContentLength(res, bytesData.readableBytes());
+		builder.add("status", "okay");
+		builder.add("count", messageList.size());
+		builder.add("messages", messagesArray);
+
+		String result = builder.build().toString();
+		outputBuffer.writeBytes(result.getBytes());
+		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK, outputBuffer);
+		LoggingService.logInfo(MODULE_NAME, "Request completed successfully");
+		HttpHeaders.setContentLength(res, outputBuffer.readableBytes());
 		return res;
 	}
-	
+
 	/**
 	 * Validate the request
+	 * 
 	 * @param JsonObject
 	 * @return String
 	 */
-	private String validateRequest(JsonObject jsonObject){
-		String error = null;
-		if(!jsonObject.containsKey("id")) return " Id not found ";
-		if(jsonObject.getString("id").equals(null) || jsonObject.getString("id").trim().equals("")) return " Id value not found ";
-		return error;
+	private void validateRequest(JsonObject jsonObject) throws Exception {
+		if (!jsonObject.containsKey("id"))
+			throw new Exception(" Id not found ");
+		if (jsonObject.getString("id").equals(null) || jsonObject.getString("id").trim().equals(""))
+			throw new Exception(" Id value not found ");
 	}
-	
+
 	/**
 	 * Overriden method of the Callable interface which call the handler method
+	 * 
 	 * @param None
 	 * @return Object
 	 */

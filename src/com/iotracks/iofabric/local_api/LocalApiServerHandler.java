@@ -2,11 +2,12 @@ package com.iotracks.iofabric.local_api;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.SocketAddress;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -27,8 +28,11 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -45,6 +49,10 @@ import io.netty.util.concurrent.GenericFutureListener;
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 	private final String MODULE_NAME = "Local API";
+	
+	private HttpRequest request;
+	private ByteArrayOutputStream baos;
+	private byte[] content;
 
 	private final EventExecutorGroup executor;
 
@@ -52,7 +60,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		super(false);
 		this.executor = executor;
 	}
-
+	
 	/**
 	 * Method to be called on channel initializing
 	 * Can take requests as HttpRequest or Websocket frame
@@ -61,120 +69,124 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	 */
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, Object msg){
-
 		try {
-			LoggingService.logInfo(MODULE_NAME, "In local api server handler: Channel read start");
 			if (msg instanceof FullHttpRequest) {
-				handleHttpRequest(ctx, (FullHttpRequest) msg);
+				// full request
+				FullHttpRequest request = (FullHttpRequest) msg;
+				this.request = request;
+				ByteBuf content = request.content();
+				this.content = new byte[content.readableBytes()];
+				content.readBytes(this.content);
+				handleHttpRequest(ctx);
 				return;
+			} else if (msg instanceof HttpRequest) {
+				// chunked request
+				if (this.baos == null)
+					this.baos = new ByteArrayOutputStream();
+				request = (HttpRequest) msg;
 			} else if (msg instanceof WebSocketFrame) {
 				String mapName = findContextMapName(ctx);
-				if(mapName!=null && mapName.equals("control")){
+				if (mapName != null && mapName.equals("control")) {
 					ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
-					controlSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
-				}else if(mapName!=null && mapName.equals("message")){
+					controlSocket.handleWebSocketFrame(ctx, (WebSocketFrame) msg);
+				} else if (mapName != null && mapName.equals("message")) {
 					MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
-					messageSocket.handleWebSocketFrame(ctx, (WebSocketFrame)msg);
-				}else{
+					messageSocket.handleWebSocketFrame(ctx, (WebSocketFrame) msg);
+				} else {
 					LoggingService.logWarning(MODULE_NAME, "Cannot initiate real-time service: Context not found");
 				}
+			} else if (msg instanceof HttpContent) {
+				HttpContent httpContent = (HttpContent) msg;
+				ByteBuf content = httpContent.content();
+				if (content.isReadable()) {
+					try {
+						content.readBytes(this.baos, content.readableBytes());
+					} catch (IOException e) {
+						String errorMsg = "Out of memory";
+						LoggingService.logWarning(MODULE_NAME, errorMsg);
+						ByteBuf	errorMsgBytes = ctx.alloc().buffer();
+						errorMsgBytes.writeBytes(errorMsg.getBytes());
+						sendHttpResponse(ctx, request, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
+						return;
+					}
+				}
+
+				if (msg instanceof LastHttpContent) {		// last chunk
+					this.content = baos.toByteArray();
+					handleHttpRequest(ctx);
+				}
 			}
-			return;
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "Failed to initialize channel for the request: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * Method to be called on channel complete 
+	 * Method to be called if the request is HttpRequest 
+	 * Pass the request to the handler call as per the request URI
 	 * @param ChannelHandlerContext
 	 * @return void
 	 */
-	@Override
-	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception{
-		LoggingService.logInfo(MODULE_NAME, "In LocalApiServerHandler: Channel read complete");
-		ctx.flush();
-	}
-
-	/**
-	 * Method to be called if the request is HttpRequest 
-	 * Pass the request to the handler call as per the request URI
-	 * @param ChannelHandlerContext, FullHttpRequest
-	 * @return void
-	 */
-	private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception {
-
-		LoggingService.logInfo(MODULE_NAME, "In local api handler: handle request");
-
-		String remoteIp = getRemoteIP(ctx);
-		String localIp = getLocalIp();
+	private void handleHttpRequest(ChannelHandlerContext ctx) throws Exception {
+		String remoteIpAddress = getRemoteIP(ctx);
 		List<Element> elements = ElementManager.getInstance().getElements();
-		boolean ipFound = false;
+		boolean found = false;
 		for(Element e: elements){
-			if(e.getContainerIpAddress() != null){
-				if(e.getContainerIpAddress().equals(remoteIp) || e.getContainerIpAddress() == remoteIp){
-					ipFound = true; break;
-				}
+			if(e.getContainerIpAddress() != null && e.getContainerIpAddress().equals(remoteIpAddress)) {
+				found = true; 
+				break;
 			}
 		}
+		
+		found = true;
 
-		if(localIp.equals(remoteIp) || localIp == remoteIp){
-			ipFound = true;
-		}
-
-		if(!ipFound){
-			LoggingService.logWarning(MODULE_NAME, "IP address " + remoteIp + " not found as registered");
+		if(!found){
+			String errorMsg = "IP address " + remoteIpAddress + " not found as registered";
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
 			ByteBuf	errorMsgBytes = ctx.alloc().buffer();
-			String errorMsg = "IP address " + remoteIp + " not found as registered";
 			errorMsgBytes.writeBytes(errorMsg.getBytes());
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
+			sendHttpResponse(ctx, request, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
 			return;
 		}
 
-		if (req.getUri().equals("/v2/config/get")) {
-			LoggingService.logInfo(MODULE_NAME, "In local api handler: Get configuration" );
-			Callable<? extends Object> callable = new GetConfigurationHandler(req, ctx.alloc().buffer());
-			runTask(callable, ctx, req);
+		if (request.getUri().equals("/v2/config/get")) {
+			Callable<? extends Object> callable = new GetConfigurationHandler(request, ctx.alloc().buffer(), content);
+			runTask(callable, ctx, request);
 			return;
 		}
 
-		if (req.getUri().equals("/v2/messages/next")) {
-			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get next messages" );
-			Callable<? extends Object> callable = new MessageReceiverHandler(req, ctx.alloc().buffer());
-			runTask(callable, ctx, req);
+		if (request.getUri().equals("/v2/messages/next")) {
+			Callable<? extends Object> callable = new MessageReceiverHandler(request, ctx.alloc().buffer(), content);
+			runTask(callable, ctx, request);
 			return;
 		}
 
-		if (req.getUri().equals("/v2/messages/new")) {
-			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Send new message" );
-			Callable<? extends Object> callable = new MessageSenderHandler(req, ctx.alloc().buffer());
-			runTask(callable, ctx, req);
+		if (request.getUri().equals("/v2/messages/new")) {
+			Callable<? extends Object> callable = new MessageSenderHandler(request, ctx.alloc().buffer(), content);
+			runTask(callable, ctx, request);
 			return;
 		}
 
-		if (req.getUri().equals("/v2/messages/query")) {
-			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Get queried messages" );
-			Callable<? extends Object> callable = new QueryMessageReceiverHandler(req, ctx.alloc().buffer());
-			runTask(callable, ctx, req);
+		if (request.getUri().equals("/v2/messages/query")) {
+			Callable<? extends Object> callable = new QueryMessageReceiverHandler(request, ctx.alloc().buffer(), content);
+			runTask(callable, ctx, request);
 			return;
 		}
 
-		String uri = req.getUri();
+		String uri = request.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
 		String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
 
 		if (url.equals("/v2/control/socket")) {
-			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Open control websocket" );
 			ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
-			controlSocket.handle(ctx, req);
+			controlSocket.handle(ctx, request);
 			return;
 		}
 
 		if (url.equals("/v2/message/socket")) {
-			LoggingService.logInfo(MODULE_NAME, "In Local Api Handler: Open message websocket" );
 			MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
-			messageSocket.handle(ctx, req);
+			messageSocket.handle(ctx, request);
 			return;
 		}
 
@@ -182,7 +194,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 		String errorMsg = " Request not found ";
 		errorMsgBytes.writeBytes(errorMsg.getBytes());
-		sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
+		sendHttpResponse(ctx, request, new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.NOT_FOUND, errorMsgBytes));
 		return;
 
 	}
@@ -210,13 +222,23 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		return mapName;
 	}
+	
+	/**
+	 * Method to be called on channel complete 
+	 * @param ChannelHandlerContext
+	 * @return void
+	 */
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception{
+		ctx.flush();
+	}
 
 	/**
 	 * Helper for request thread
 	 * @param Callable, ChannelHandlerContext, FullHttpRequest
 	 * @return void
 	 */
-	private void runTask(Callable<? extends Object> callable, ChannelHandlerContext ctx, FullHttpRequest req) {
+	private void runTask(Callable<? extends Object> callable, ChannelHandlerContext ctx, HttpRequest req) {
 		final Future<? extends Object> future = executor.submit(callable);
 		future.addListener(new GenericFutureListener<Future<Object>>() {
 			public void operationComplete(Future<Object> future)
@@ -236,8 +258,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	 * @param ChannelHandlerContext, FullHttpRequest, FullHttpResponse
 	 * @return void
 	 */
-	private static void sendHttpResponse(
-			ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) throws Exception{
+	private static void sendHttpResponse(ChannelHandlerContext ctx, HttpRequest req, FullHttpResponse res) throws Exception {
 		if (res.getStatus().code() != 200) {
 			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
 			res.content().writeBytes(buf);
@@ -256,17 +277,10 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	 * @param ChannelHandlerContext
 	 * @return String
 	 */
-	private String getRemoteIP(ChannelHandlerContext ctx) throws Exception {
-		try {
-			SocketAddress address = ctx.channel().remoteAddress();
-			if(address instanceof InetSocketAddress){
-				return ((InetSocketAddress)address).getAddress().getHostAddress();
-			}
-			return address.toString().split("/")[1].split(":")[0];
-		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, " Problem retrieving remote ip " + e.getMessage());
-		}
-		throw new Exception("unable to get remote ip address");
+	private String getRemoteIP(ChannelHandlerContext ctx) {
+		InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+	    InetAddress inetaddress = socketAddress.getAddress();
+	    return inetaddress.getHostAddress();
 	}
 	
 	/**
@@ -274,7 +288,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	 * @param none
 	 * @return String
 	 */
-	public String getLocalIp() throws Exception{
+	public String getLocalIp() throws Exception {
 		InetAddress address = null;
 		try {
 			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
