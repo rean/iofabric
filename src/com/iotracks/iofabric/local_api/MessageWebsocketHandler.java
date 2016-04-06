@@ -120,9 +120,15 @@ public class MessageWebsocketHandler {
 			input.getBytes(readerIndex, byteArray);
 			Byte opcode = 0;
 
-			if (byteArray.length >= 2) {
+			if(byteArray.length >= 1){
 				opcode = byteArray[0];
-				if (opcode == OPCODE_MSG.intValue()) {
+			}else{
+				return;
+			}
+
+			if (opcode == OPCODE_MSG.intValue()) {
+				if (byteArray.length >= 2) {
+					opcode = byteArray[0];
 					Message message = null;
 
 					if (WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap)) {
@@ -157,14 +163,9 @@ public class MessageWebsocketHandler {
 					}
 					return;
 				}
-			}
-		}
-
-		if (frame instanceof BinaryWebSocketFrame) {
-			ByteBuf input = frame.content();
-			Byte opcode = input.readByte();
-			if (opcode == OPCODE_ACK.intValue()) {
-				WebSocketMap.unackMessageSendingMap.remove(ctx);
+			} else if (opcode == OPCODE_ACK.intValue()) {
+			//	WebSocketMap.unackMessageSendingMap.remove(ctx);
+				return;
 			}
 
 			return;
@@ -174,7 +175,7 @@ public class MessageWebsocketHandler {
 		if (frame instanceof CloseWebSocketFrame) {
 			ctx.channel().close();
 			MessageBus.getInstance()
-					.disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
+			.disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
 			WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);
 			StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
 			return;
@@ -213,7 +214,7 @@ public class MessageWebsocketHandler {
 			buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
 			// Message
 			buffer1.writeBytes(bytesMsg);
-			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+			ctx.channel().writeAndFlush(new BinaryWebSocketFrame(buffer1));
 		} else {
 			LoggingService.logWarning(MODULE_NAME, "No active real-time websocket found for " + receiverId);
 		}
