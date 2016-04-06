@@ -22,7 +22,7 @@ public class MessageBusUtil {
 	 * @param message - {@link Message} to be published
 	 * @return published {@link Message} containing the id and timestamp 
 	 */
-	public Message publishMessage(Message message) {
+	public void publishMessage(Message message) {
 		long timestamp = System.currentTimeMillis();
 		StatusReporter.setMessageBusStatus().increasePublishedMessagesPerElement(message.getPublisher());
 		message.setId(messageBus.getNextId());
@@ -36,8 +36,6 @@ public class MessageBusUtil {
 				LoggingService.logWarning("Message Publisher (" + publisher.getName() + ")", "unable to send message --> " + e.getMessage());
 			}
 		}
-
-		return message;
 	}
 	
 	/**

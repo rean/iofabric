@@ -22,6 +22,7 @@ import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Container.Port;
+import com.github.dockerjava.api.model.Device;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.Info;
@@ -438,6 +439,7 @@ public class DockerUtil {
 			});
 		String[] extraHosts = { host };
 		CreateContainerResponse resp = dockerClient.createContainerCmd(element.getImageName())
+//				.withDevices(new Device("permission", "pathInContainer", "pathOnHost"))
 				.withCpuset("0")
 				.withExtraHosts(extraHosts)
 				.withExposedPorts(exposedPorts.toArray(new ExposedPort[0]))

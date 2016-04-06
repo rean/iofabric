@@ -85,7 +85,7 @@ public class MessageBusServer {
 		configuration.setJournalType(JournalType.NIO);
         configuration.setBindingsDirectory(workingDirectory + "messages/binding");
 		configuration.setCreateBindingsDir(true);
-		configuration.setPersistenceEnabled(true);
+		configuration.setPersistenceEnabled(false);
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
         configuration.getAddressesSettings().put(Constants.address, addressSettings);

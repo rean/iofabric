@@ -44,4 +44,8 @@ public class Constants {
 
 	public static final String address = "iofabric.message_bus";
 	public static final String commandlineAddress = "iofabric.commandline";
+	
+	public static final int KiB = 1024;
+	public static final int MiB = 1024 * 1024;
+	public static final int GiB = 1024 * 1024 * 1024;
 }
