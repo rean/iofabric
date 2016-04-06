@@ -164,10 +164,10 @@ public class MessageWebsocketHandler {
 					return;
 				}
 			} else if (opcode == OPCODE_ACK.intValue()) {
-			//	WebSocketMap.unackMessageSendingMap.remove(ctx);
+				WebSocketMap.unackMessageSendingMap.remove(ctx);
 				return;
 			}
-
+			
 			return;
 		}
 

@@ -58,7 +58,6 @@ public class MessageWebsocketWorker implements Runnable{
 	 */
 	private void sendRealTimeMessage(ChannelHandlerContext ctx){
 		count++;
-		LoggingService.logInfo(MODULE_NAME,"Sending real-time unacknowledged message" + count);
 		MessageSendContextCount messageContextAndCount = WebSocketMap.unackMessageSendingMap.get(ctx);
 		int tryCount = messageContextAndCount.getSendTryCount();
 		Message message = messageContextAndCount.getMessage();

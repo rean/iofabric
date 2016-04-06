@@ -54,9 +54,13 @@ public class WebsocketUtil {
 	 * @return String
 	 */
 	public static String getIdForWebsocket(ChannelHandlerContext ctx, Hashtable<String, ChannelHandlerContext> socketMap){
-		String id = null;
-		if(socketMap.containsKey(ctx)){
-			socketMap.get(ctx);
+		String id = "";
+		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = socketMap.entrySet().iterator(); it.hasNext();) {
+			Map.Entry<String,ChannelHandlerContext> e = it.next();
+			if (ctx.equals(e.getValue())) {
+				LoggingService.logInfo(MODULE_NAME,"Context found as real-time websocket");
+				return e.getKey();
+			}
 		}
 		return id;
 	}
