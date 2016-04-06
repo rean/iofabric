@@ -18,9 +18,9 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
-	
+
 	private static int testCounter = 0;
-	
+
 	private static final Byte OPCODE_MSG = 0xD;
 	private static final Byte OPCODE_RECEIPT = 0xE;
 	private String publisherId = "";
@@ -75,7 +75,7 @@ public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHan
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
 		System.out.println("In client handleWebSocketFrame.....");
-		
+
 		if (frame instanceof BinaryWebSocketFrame) {
 			System.out.println("In websocket client.....  Text WebSocket Frame...Receiving Receipt" );
 			ByteBuf input = frame.content();
@@ -115,7 +115,7 @@ public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHan
 	public void sendRealTimeMessageTest(ChannelHandlerContext ctx){
 		System.out.println("In clienttest : sendRealTimeMessageTest");
 		System.out.println("Test Counter: " + testCounter);
-		
+
 		ByteBuf buffer1 = Unpooled.buffer(1024);
 		buffer1.writeByte(OPCODE_MSG);
 
@@ -124,7 +124,11 @@ public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHan
 		String id = ""; //id
 		String tag = "Bosch Camera 8798797"; //tag
 		String messageGroupId = "group1"; //messageGroupId
-		Integer seqNum = testCounter; //sequence number
+		Integer seqNum;
+		synchronized(this){
+			testCounter++;
+			seqNum = testCounter; //sequence number
+		}
 		Integer seqTot = 100; //sequence total
 		Byte priority = 5; //priority 
 		Long timestamp = (long)0; //timestamp
@@ -139,7 +143,9 @@ public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHan
 		String infotype = "image/jpeg"; //infotype
 		String infoformat = "base64"; //infoformat
 		String contextData = "gghh";
-		String contentData = "sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328testcounter" + testCounter;
+		String contentData = "sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328testcounter";
+		
+		System.out.println("Publisher: " + publisherId + "," + "testcounter: " + testCounter);
 
 		Message m = new Message();
 		m.setId(id);
@@ -176,7 +182,6 @@ public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHan
 
 		ctx.channel().writeAndFlush(new BinaryWebSocketFrame(buffer1));
 		System.out.println("Send RealTime Message : done");
-		testCounter++;
 		return;
 	}
 

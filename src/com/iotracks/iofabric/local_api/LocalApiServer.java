@@ -46,11 +46,12 @@ public final class LocalApiServer {
 			.childHandler(new LocalApiServerPipelineFactory(sslCtx));
 
 			Channel ch = b.bind(PORT).sync().channel();	
-//			ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-//			scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
-//			scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+			
 			LoggingService.logInfo(MODULE_NAME, "Local api server started at port: " + PORT + "\n");
-
+			
+			ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+			scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+			scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
 			ch.closeFuture().sync();
 		}finally{
 			bossGroup.shutdownGracefully();
