@@ -2,9 +2,6 @@ package com.iotracks.iofabric.local_api;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
@@ -81,14 +78,11 @@ public class LocalApi implements Runnable {
 
 		retrieveContainerConfig();
 
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
-		scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
-
 		server = new LocalApiServer();
 		try {
 			server.start();
 			isSeverStarted = true;
+			
 		} catch (Exception e) {
 			try {
 				stopServer();

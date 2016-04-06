@@ -1,5 +1,9 @@
 package com.iotracks.iofabric.local_api;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -46,6 +50,9 @@ public final class LocalApiServer {
 			.childHandler(new LocalApiServerPipelineFactory(sslCtx));
 
 			Channel ch = b.bind(PORT).sync().channel();	
+//			ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+//			scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+//			scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
 			LoggingService.logInfo(MODULE_NAME, "Local api server started at port: " + PORT + "\n");
 
 			ch.closeFuture().sync();

@@ -55,8 +55,8 @@ public class WebSocketClientControl {
 		}
 
 		EventLoopGroup group = new NioEventLoopGroup();
-		final WebSocketClientHandler handler =
-				new WebSocketClientHandler(
+		final WebSocketClientHandlerControl handler =
+				new WebSocketClientHandlerControl(
 						WebSocketClientHandshakerFactory.newHandshaker(
 								uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
 

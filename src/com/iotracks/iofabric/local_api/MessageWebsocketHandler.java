@@ -41,7 +41,7 @@ public class MessageWebsocketHandler {
 	private static final String WEBSOCKET_PATH = "/v2/message/socket";
 
 	private WebSocketServerHandshaker handshaker;
-	
+
 	/**
 	 * Handler to open the websocket for the real-time message websocket
 	 * @param ChannelHandlerContext, FullHttpRequest
@@ -56,12 +56,12 @@ public class MessageWebsocketHandler {
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
 		String publisherId;
-		
+
 		if(tokens.length < 5){
 			LoggingService.logWarning(MODULE_NAME, " Missing ID or ID value in URL " );
 			return;
 		}else {
-			 publisherId = tokens[4].trim();
+			publisherId = tokens[4].trim();
 		}
 
 		// Handshake
@@ -72,7 +72,7 @@ public class MessageWebsocketHandler {
 		} else {
 			handshaker.handshake(ctx.channel(), req);
 		}
-		
+
 		Hashtable<String, ChannelHandlerContext> messageSocketMap = WebSocketMap.messageWebsocketMap;
 		messageSocketMap.put(publisherId, ctx);
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
@@ -81,7 +81,7 @@ public class MessageWebsocketHandler {
 		LoggingService.logInfo(MODULE_NAME,"Handshake end....");
 		return;
 	}
-	
+
 	/**
 	 * Handler for the real-time messages
 	 * Receive ping and send pong
@@ -121,54 +121,54 @@ public class MessageWebsocketHandler {
 			byte[] byteArray = new byte[input.readableBytes()];
 			int readerIndex = input.readerIndex();
 			input.getBytes(readerIndex, byteArray);
+			Byte opcode = 0;
 
-			if(byteArray.length >= 2){
-				Byte opcode = byteArray[0];
-				if(opcode == OPCODE_MSG.intValue()){
-					Message message = null;
-
-					if(WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap)){
-
-						int totalMsgLength = BytesUtil.bytesToInteger(BytesUtil.copyOfRange(byteArray, 1, 5)); 
-						try {
-							message = new Message(BytesUtil.copyOfRange(byteArray, 5, totalMsgLength));
-							LoggingService.logInfo(MODULE_NAME,message.toString());
-						} catch (Exception e) {
-							LoggingService.logInfo(MODULE_NAME,"wrong message format  " + e.getMessage());
-							LoggingService.logInfo(MODULE_NAME,"Validation fail");
-						}
-
-						MessageBusUtil messageBus = new MessageBusUtil();
-						Message messageWithId = messageBus.publishMessage(message);
-
-						String messageId = messageWithId.getId();
-						Long msgTimestamp = messageWithId.getTimestamp();
-						ByteBuf buffer1 = ctx.alloc().buffer();
-
-						buffer1.writeByte(OPCODE_RECEIPT.intValue());
-
-						//send Length
-						int msgIdLength = messageId.length();
-						buffer1.writeByte(msgIdLength); 
-						buffer1.writeByte(Long.BYTES); 
-
-						//Send opcode, id and timestamp
-						buffer1.writeBytes(messageId.getBytes()); 
-						buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
-						LoggingService.logInfo(MODULE_NAME,"Message Sent complete: Sending Receipt...");
-
-						ctx.channel().write(new BinaryWebSocketFrame(buffer1));
-					}
-					return;
-				}
+			if(byteArray.length >= 1){
+				opcode = byteArray[0];
 			}
-		}
 
-		if (frame instanceof BinaryWebSocketFrame) {
-			LoggingService.logInfo(MODULE_NAME,"In websocket handle - websocket frame: binary acknowledgment frame" );
-			ByteBuf input = frame.content();
-			Byte opcode = input.readByte(); 
-			if(opcode == OPCODE_ACK.intValue()){
+			if(opcode == OPCODE_MSG.intValue()){
+				if(byteArray.length >= 2){
+					//Byte opcode = byteArray[0];
+					if(opcode == OPCODE_MSG.intValue()){
+						Message message = null;
+
+						if(WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap)){
+
+							int totalMsgLength = BytesUtil.bytesToInteger(BytesUtil.copyOfRange(byteArray, 1, 5)); 
+							try {
+								message = new Message(BytesUtil.copyOfRange(byteArray, 5, 5 + totalMsgLength));
+								LoggingService.logInfo(MODULE_NAME,message.toString());
+							} catch (Exception e) {
+								LoggingService.logInfo(MODULE_NAME,"wrong message format  " + e.getMessage());
+								LoggingService.logInfo(MODULE_NAME,"Validation fail");
+							}
+
+							MessageBusUtil messageBus = new MessageBusUtil();
+							Message messageWithId = messageBus.publishMessage(message);
+
+							String messageId = messageWithId.getId();
+							Long msgTimestamp = messageWithId.getTimestamp();
+							ByteBuf buffer1 = ctx.alloc().buffer();
+
+							buffer1.writeByte(OPCODE_RECEIPT.intValue());
+
+							//send Length
+							int msgIdLength = messageId.length();
+							buffer1.writeByte(msgIdLength); 
+							buffer1.writeByte(Long.BYTES); 
+
+							//Send opcode, id and timestamp
+							buffer1.writeBytes(messageId.getBytes()); 
+							buffer1.writeBytes(BytesUtil.longToBytes(msgTimestamp));
+							LoggingService.logInfo(MODULE_NAME,"Message Sent complete: Sending Receipt...");
+
+							ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+						}
+						return;
+					}
+				}
+			}else if(opcode == OPCODE_ACK.intValue()){
 				LoggingService.logInfo(MODULE_NAME,"Received acknowledgment for the message sent successfully");
 				WebSocketMap.unackMessageSendingMap.remove(ctx);
 			}
@@ -186,7 +186,7 @@ public class MessageWebsocketHandler {
 			return;
 		}
 	}
-	
+
 	/**
 	 * Helper to send real-time messages
 	 * @param String, Message
@@ -212,19 +212,19 @@ public class MessageWebsocketHandler {
 			} catch (Exception e) {
 				LoggingService.logWarning(MODULE_NAME, "Problem in retrieving the message");
 			}
-			
+
 			totalMsgLength = bytesMsg.length;
 			//Total Length
 			buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
 			//Message
 			buffer1.writeBytes(bytesMsg);
-			ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+			ctx.channel().writeAndFlush(new BinaryWebSocketFrame(buffer1));
 		}else{
 			LoggingService.logWarning(MODULE_NAME, "No active real-time websocket found for "+ receiverId);
 		}
 
 	}
-	
+
 	/**
 	 * Websocket path
 	 * @param FullHttpRequest

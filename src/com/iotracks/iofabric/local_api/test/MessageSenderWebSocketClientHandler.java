@@ -17,22 +17,20 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
-public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
+public class MessageSenderWebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 	
 	private static int testCounter = 0;
 	
-	private static final Byte OPCODE_PING = 0x9; 
-	private static final Byte OPCODE_PONG = 0xA; 
-	private static final Byte OPCODE_ACK = 0xB; 
 	private static final Byte OPCODE_MSG = 0xD;
-	private static final Byte OPCODE_CONTROL_SIGNAL = 0xC;
 	private static final Byte OPCODE_RECEIPT = 0xE;
+	private String publisherId = "";
 
 	private final WebSocketClientHandshaker handshaker;
 	private ChannelPromise handshakeFuture;
 
-	public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
+	public MessageSenderWebSocketClientHandler(WebSocketClientHandshaker handshaker, String id) {
 		this.handshaker = handshaker;
+		publisherId = id;
 	}
 
 	public ChannelFuture handshakeFuture() {
@@ -77,39 +75,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 
 	public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
 		System.out.println("In client handleWebSocketFrame.....");
-		if (frame instanceof BinaryWebSocketFrame) {
-			System.out.println("In websocket client.....  Text WebSocket Frame...Receiving message" );
-			ByteBuf input = frame.content();
-			if (!input.isReadable()) {
-				return;
-			}
-
-			byte[] byteArray = new byte[input.readableBytes()];
-			int readerIndex = input.readerIndex();
-			input.getBytes(readerIndex, byteArray);
-
-			Byte opcode = byteArray[0];
-			System.out.println("Opcode: " + opcode);
-			if(opcode.intValue() == OPCODE_MSG){
-
-				int totalMsgLength = BytesUtil.bytesToInteger(Arrays.copyOfRange(byteArray, 1, 5)); 
-				Message message = null;
-				try { 
-					message = new Message(Arrays.copyOfRange(byteArray, 5, totalMsgLength));
-					System.out.println(message.toString());
-				} catch (Exception e) {
-					System.out.println("wrong message format  " + e.getMessage());
-				}
-
-				ByteBuf buffer1 = ctx.alloc().buffer();
-
-				buffer1.writeByte(5);
-				System.out.println("Message received.. Send acknoledgmwnt");
-				ctx.channel().writeAndFlush(new BinaryWebSocketFrame(buffer1));
-				return;
-			}
-		}
-
+		
 		if (frame instanceof BinaryWebSocketFrame) {
 			System.out.println("In websocket client.....  Text WebSocket Frame...Receiving Receipt" );
 			ByteBuf input = frame.content();
@@ -154,7 +120,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		buffer1.writeByte(OPCODE_MSG);
 
 		//Actual Message
-		short version = 4;//version
+		//short version = 4;//version
 		String id = ""; //id
 		String tag = "Bosch Camera 8798797"; //tag
 		String messageGroupId = "group1"; //messageGroupId
@@ -162,7 +128,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		Integer seqTot = 100; //sequence total
 		Byte priority = 5; //priority 
 		Long timestamp = (long)0; //timestamp
-		String publisher = "DTCnTG4dLyrGC7XYrzzTqNhW7R78hk3V"; //publisher
+		String publisher = publisherId; //publisher
 		String authid = "auth"; //authid
 		String authGroup = "authgrp"; //auth group
 		Long chainPos = (long)10; //chain position
@@ -173,7 +139,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object>{
 		String infotype = "image/jpeg"; //infotype
 		String infoformat = "base64"; //infoformat
 		String contextData = "gghh";
-		String contentData = "sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328";
+		String contentData = "sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328testcounter" + testCounter;
 
 		Message m = new Message();
 		m.setId(id);

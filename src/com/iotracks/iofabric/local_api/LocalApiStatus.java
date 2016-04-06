@@ -8,7 +8,7 @@ import java.net.InetAddress;
  * @since 2016
  */
 public class LocalApiStatus {
-	private InetAddress currentIpAddress;
+	private String currentIpAddress = "";
 	private int openConfigSocketsCount;
 	private int openMessageSocketsCount;
 	
@@ -17,7 +17,7 @@ public class LocalApiStatus {
 	 * @param None
 	 * @return InetAddress
 	 */
-	public InetAddress getCurrentIpAddress() {
+	public String getCurrentIpAddress() {
 		return currentIpAddress;
 	}
 	
@@ -27,7 +27,7 @@ public class LocalApiStatus {
 	 * @return LocalApiStatus
 	 */
 	public LocalApiStatus setCurrentIpAddress(InetAddress currentIpAddress) {
-		this.currentIpAddress = currentIpAddress;
+		this.currentIpAddress = currentIpAddress == null ? "" : currentIpAddress.getHostAddress();
 		return this;
 	}
 	
