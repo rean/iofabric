@@ -46,6 +46,7 @@ The Debug Console hosts a REST API on port 80 that provides access to the messag
 
 * Use the local JSON message storage files to get the messages needed for output on the REST API
 
+* Use the Java Container SDK to build the container
 
 
 ####Stream Viewer Container Requirements
