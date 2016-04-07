@@ -8,3 +8,8 @@ target/
 # ignore all files ending with ~
 *~ 
 
+*.classpath
+src/com/iotracks/iofabric/utils/configuration/.project
+*.dll
+*.cache
+*.suo
