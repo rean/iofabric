@@ -184,6 +184,8 @@ This endpoing allows a container to post a message to the system. The message ID
 
 This endpoint allows a container to query for messages from any number of publishers within any timeframe. The messages will only be provided for publishers that the container is allowed to access. In other words, if a container doesn't normally receive messages from a particular publisher, then the container can try to query for messages from that publisher but it won't receive any. The message retrieval and security controls are all performed by the Message Bus module and the allowed messages are passed to the Local API to send out.
 
+Beause of memory limitations, the Local API may only send a portion of the requested messages. The Local API will decide how many messages are appropriate to send and will return the adjusted starting and ending timeframe as illustrated in the sample response output below. The Local API will always use the starting timeframe and will adjust the ending timeframe to reflect the timestamp of the actual last message in the list.
+
 #####Endpoint
 
 <pre>
@@ -196,6 +198,8 @@ This endpoint allows a container to query for messages from any number of publis
 	{
 		"status":"okay",
 		"count":2,
+		"timeframestart":1234567890123,
+		"timeframeend":9876543210123,
 		"messages":
 			[
 				{
