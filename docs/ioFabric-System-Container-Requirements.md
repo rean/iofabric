@@ -13,7 +13,77 @@ The Debug Console hosts a REST API on port 80 that provides access to the messag
 
 ####Core Networking Container Requirements
 
-* abc
+* Hold a pool of socket connections to the ComSat specified in the configuration
+
+* Create the number of pool connections specified in the configuration
+
+* If configured in "private" mode, receive and post messages from and to the ioFabric
+
+* If configured in "public" mode, take incoming bytes on the ComSat socket and pipe them directly into a local network request
+
+* Make local network requests based on the configuration provided for this container
+
+* Pipe the response from the local network request directly back to the ComSat socket which sent the bytes
+
+* When a ComSat socket closes, remove it from the connection pool
+
+* Monitor the connection pool and make sure it always has the configured number of open connections
+
+* If connectivity to the ComSat disappears for any reason (gets dropped, network unavailable, etc.) then close all connections in the pool and open fresh connections to the ComSat
+
+* If connections to the ComSat cannot be opened, try again regularly but don't consume too much CPU usage
+
+* Send the ComSat socket passcode (provided in container configuration) immediately upon successfully opening each ComSat socket
+
+* When in "private" mode, use the real-time data message Websocket to send and receive messages to and from the ioFabric Local API
+
+* Use the real-time control message Websocket to make sure any changes to container configuration are received immediately
+
+* When a "new config" control message is received, immediately make a request on the ioFabric REST API to retrieve the updated container configuration
+
+* Build this system container with the Node.js Container SDK
+
+* Use TLS secure socket connections to the ComSat, which will not open successfully if the identity of the ComSat cannot be verified
+
+* Use a local intermediate public certificate file to verify the identity of the ComSat
+
+* Send a heartbeat transmission to the ComSat on every open socket at the interval specified in the container configuration
+
+* Send the ASCII byte values 'BEAT' as the heartbeat transmission on the ComSat sockets
+
+* Keep track of the last time each socket had successful communication with the ComSat (the "last active" timestamp)
+
+* Check incoming socket messages to see if they are equal to 'BEAT' or 'BEATBEAT'... if they are, update the "last active" timestamp for the receiving socket
+
+* When a ComSat socket has been inactive past the threshold (set in container config) then close the socket so a new one can be opened
+
+* Check incoming socket messages to see if they are equal to "AUTHORIZED"... if they are, update the "last active" timestamp for the receiving socket... this is a response that the ComSat will provide when the passcode was correct for a newly opened socket
+
+* When sending a message on a ComSat socket, send a 'TXEND' transmission immediately after the end of the actual message
+
+* When receiving a message on a ComSat socket, accumulate the incoming message bytes until receiving a 'TXEND' transmission... then it is OK to parse the message
+
+* After receiving a 'TXEND' transmission on a ComSat socket, send an 'ACK' transmission 
+
+* When operating in "private" mode, keep a buffer of messages to be sent on the ComSat socket... this this allows messages to still be delivered under troublesome network connectivity situations
+
+* Remove a message from the buffer when an "ACK" message has been received after sending the message
+
+* If an 'ACK' is not received after sending a message on a ComSat socket, send the same message again after a short time period
+
+* Limit the amount of messages stored in the buffer to a safe level to avoid memory limit crashes... simply delete the oldest message when a new one arrives
+
+* Limit the number of bytes being buffered by a receiving ComSat socket to a safe level... drop bytes out of memory if needed and do not attempt to parse messages that have missing bytes... and close a socket connection if needed in order to avoid memory limit crashes... alternatively you can drop bytes until receiving a 'TXEND' and then send an 'ACK' in order to avoid receiving the same large message again
+
+* Parse and consume container configuration according to this example:
+
+<pre>
+	{"mode":"public","host":"comsat1.iotracks.com","port":35046,"connectioncount":60,"passcode":"vy7cvpztnhgc3jdptgxp9ttmzxfyfbqh","localhost":"iofabric","localport":60401,"heartbeatfrequency":20000,"heartbeatabsencethreshold":60000}
+
+	Or
+
+	{"mode":"private","host":"comsat2.iotracks.com","port":35081,"connectioncount":1,"passcode":"vy7cvpztnhgc3jdptgxp9ttmzxfyfbqh","localhost":"","localport":0,"heartbeatfrequency":20000,"heartbeatabsencethreshold":60000}
+</pre>
 
 
 ####Debug Console Container Requirements
