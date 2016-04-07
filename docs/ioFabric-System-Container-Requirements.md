@@ -16,13 +16,41 @@ The Debug Console hosts a REST API on port 80 that provides access to the messag
 * abc
 
 
+####Debug Console Container Requirements
+
+* Get the current container configuration from the ioFabric Local API immediately when the container starts
+
+* Open a control message Websocket connection to the ioFabric Local API and make sure that an open connection is always present
+
+* When a new config message is received on the control message Websocket, send an "acknowledge" response and then make a request to the ioFabric Local API REST endpoing to get the current container configuration
+
+* Whenever container configuration is received, use the configuration information to set up the container's operations according to the config information - the template for the configuration information can be found in the Debug Console Specification document
+
+* Open a data message Websocket connection to the ioFabric Local API and make sure that an open connection is always present
+
+* Receive messages that arrive on the data message Websocket connection and send an "acknowledge" response and then store each message in the appropriate file
+
+* Store messages in a different file for each publisher
+
+* Store messages in JSON format in the files in a way that allows them to be retrieved and turned into an array easily
+
+* Name the storage files as "XXXX.json" where the XXXX is the actual publisher ID
+
+* Limit the stored file size for each publisher -  The limit storage size will be provided in the container configuration
+
+* When a file for a particular publisher file has reached its size limit, simply delete the oldest message to make room for the next new message
+
+* Provide a REST API on port 80 according to the Debug Console Specification document
+
+* Provide a "404 Not Found" response to any request on the REST API that does not include a valid access token
+
+* Use the local JSON message storage files to get the messages needed for output on the REST API
+
+
+
 ####Stream Viewer Container Requirements
 
 * dsgsds
 
-
-####Debug Console Container Requirements
-
-* sdsdf
 
 
