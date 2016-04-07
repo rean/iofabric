@@ -7,6 +7,12 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
+/**
+ * represents Message Bus status
+ * 
+ * @author saeid
+ *
+ */
 public class MessageBusStatus {
 	private long processedMessages;
 	private Map<String, Long> publishedMessagesPerElement;
@@ -24,6 +30,10 @@ public class MessageBusStatus {
 
 	public Long getPublishedMessagesPerElement(String element) {
 		return publishedMessagesPerElement.get(element);
+	}
+
+	public Map<String, Long> getPublishedMessagesPerElement() {
+		return publishedMessagesPerElement;
 	}
 
 	public MessageBusStatus increasePublishedMessagesPerElement(String element) {
@@ -45,6 +55,11 @@ public class MessageBusStatus {
 		return this;
 	}
 	
+	public void removePublishedMessagesPerElement(String element) {
+		if (publishedMessagesPerElement.containsKey(element))
+			publishedMessagesPerElement.remove(element);
+	}
+	
 	public String getJsonPublishedMessagesPerElement() {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		publishedMessagesPerElement.entrySet().forEach(entry -> {
@@ -54,7 +69,7 @@ public class MessageBusStatus {
 			arrayBuilder.add(objectBuilder);
 					
 		});
-		return arrayBuilder.toString();
+		return arrayBuilder.build().toString();
 	}
 
 }

@@ -1,15 +1,21 @@
 package com.iotracks.iofabric.field_agent;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.json.Json;
@@ -17,36 +23,47 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonWriter;
+import javax.net.ssl.SSLHandshakeException;
 
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.element.Route;
-import com.iotracks.iofabric.field_agent.controller.APIServer;
+import com.iotracks.iofabric.local_api.LocalApi;
+import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
-import com.iotracks.iofabric.utils.Observer;
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+import io.netty.util.internal.StringUtil;
+
+
+/**
+ * Field Agent module
+ * 
+ * @author saeid
+ *
+ */
 public class FieldAgent {
 	private final String MODULE_NAME = "Field Agent";
 	private final int GET_CHANGES_LIST_FREQ_SECONDS = 30;
-	private final int CHECK_CONTROLLER_FREQ_SECONDS = 60;
+	private final int PING_CONTROLLER_FREQ_SECONDS = 60;
+	private final int POST_STATUS_FREQ_SECONDS = 5;
 	private final String filesPath = "/etc/iofabric/";
 
 	private Orchestrator orchestrator;
 	private long lastGetChangesList;
 	private ElementManager elementManager;
 	private static FieldAgent instance;
-	private List<Observer> observers;
-	private boolean firstTime = true;
+	private boolean initialization;
 
 	private FieldAgent() {
 		lastGetChangesList = 0;
+		initialization = true;
 	}
 	
 	public static FieldAgent getInstance() {
@@ -59,74 +76,187 @@ public class FieldAgent {
 		return instance;
 	}
 	
-	private final Runnable getChangesList = () -> {
-		LoggingService.logInfo(MODULE_NAME, "get changes list");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
-			LoggingService.logWarning(MODULE_NAME, "not provisioned");
-			return;
-		}
+	/**
+	 * creates IOFabric status report
+	 * 
+	 * @return	Map
+	 */
+	private Map<String, Object> getFabricStatus() {
+		Map<String, Object> result = new HashMap<>();
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
-			return;
-		}
-		
-		Map<String, Object> queryParams = new HashMap<>();
-		queryParams.put("timestamp", lastGetChangesList);
-		
-		JsonObject result = null;
-		try {
-			result = orchestrator.doCommand("changes", queryParams, null);
-			if (!result.getString("status").equals("ok"))
-				throw new Exception("error from fabric controller");
-		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to get changes : " + e.getMessage());
-			return;
-		}
+		result.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
+		result.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
+		result.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
+		result.put("memoryusage", StatusReporter.getResourceConsumptionManagerStatus().getMemoryUsage());
+		result.put("diskusage", StatusReporter.getResourceConsumptionManagerStatus().getDiskUsage());
+		result.put("cpuusage", StatusReporter.getResourceConsumptionManagerStatus().getCpuUsage());
+		result.put("memoryviolation", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation() ? "yes" : "no");
+		result.put("diskviolation", StatusReporter.getResourceConsumptionManagerStatus().isDiskViolation() ? "yes" : "no");
+		result.put("cpuviolation", StatusReporter.getResourceConsumptionManagerStatus().isCpuViolation() ? "yes" : "no");
+		result.put("elementstatus", StatusReporter.getProcessManagerStatus().getJsonElementsStatus());
+		result.put("repositorycount", StatusReporter.getProcessManagerStatus().getRegistriesCount());
+		result.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
+		result.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
+		result.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
+		result.put("ipaddress", StatusReporter.getLocalApiStatus().getCurrentIpAddress());
+		result.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
+		result.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
+		result.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
+		result.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
 
-		lastGetChangesList = result.getJsonNumber("timestamp").longValue();
-
-		JsonObject changes = result.getJsonObject("changes");
-		boolean changed = false;
-		if (changes.getBoolean("config") || firstTime)
-			getFabricConfig();
-		
-		if (changes.getBoolean("containerlist") || firstTime) {
-			loadElementsList(false);
-			changed = true;
-		}
-		if (changes.getBoolean("containerconfig") || firstTime) {
-			loadElementsConfig(false);
-			changed = true;
-		}
-		if (changes.getBoolean("routing") || firstTime) {
-			loadRoutes(false);
-			changed = true;
-		}
-		if (changes.getBoolean("registries") || firstTime) {
-			loadRegistries(false);
-			changed = true;
-		}
-		if (changed)
-			notifyObservers();
-		
-		firstTime = false;
-	};
-	
-	public void notifyObservers() {
-		for (Observer observer : observers)
-			observer.update();
+		return result;
 	}
 	
-	public void loadRegistries(boolean fromFile) {
+	/**
+	 * checks if IOFabric is not provisioned
+	 * 
+	 * @return	boolean
+	 */
+	private boolean notProvisioned() {
+		return StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED);
+	}
+	
+	/**
+	 * checks if IOFabric controller connection is broken
+	 * 
+	 * @return	boolean
+	 * @throws	Exception
+	 */
+	private boolean controllerNotConnected() throws Exception {
+		return !StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && !ping(); 
+	}
+	
+	/**
+	 * sends IOFabric instance status to IOFabric controller
+	 * 
+	 */
+	private final Runnable postStatus = () -> {
+		Map<String , Object> status = getFabricStatus();
+		if (Configuration.debugging) {
+			LoggingService.logInfo(MODULE_NAME, status.toString());
+		}
+		try {
+			LoggingService.logInfo(MODULE_NAME, "post status");
+			if (notProvisioned()) {
+				LoggingService.logWarning(MODULE_NAME, "not provisioned");
+				return;
+			}
+			
+			if (controllerNotConnected()) {
+				if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+					LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+				else
+					verficationFailed();
+				return;
+			}
+			
+			try {
+				JsonObject result = orchestrator.doCommand("status", null, status);
+				if (!result.getString("status").equals("ok"))
+					throw new Exception("error from fabric controller");
+			} catch (Exception e) {
+				LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
+			}
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
+		} catch (Exception e) {}
+	};
+	
+	/**
+	 * logs and sets appropriate status when controller 
+	 * certificate is not verified
+	 * 
+	 */
+	private void verficationFailed() {
+		LoggingService.logWarning(MODULE_NAME, "controller certificate verification failed");
+		if (!notProvisioned())
+			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
+		StatusReporter.setFieldAgentStatus().setControllerVerified(false);
+	}
+	
+	
+	/**
+	 * retrieves IOFabric changes list from IOFabric controller
+	 * 
+	 */
+	private final Runnable getChangesList = () -> {
+		try {
+			LoggingService.logInfo(MODULE_NAME, "get changes list");
+			if (notProvisioned()) {
+				LoggingService.logWarning(MODULE_NAME, "not provisioned");
+				return;
+			}
+			
+			if (controllerNotConnected()) {
+				if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+					LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+				else
+					verficationFailed();
+				return;
+			}
+			
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("timestamp", lastGetChangesList);
+			
+			JsonObject result = null;
+			try {
+				result = orchestrator.doCommand("changes", queryParams, null);
+				if (!result.getString("status").equals("ok"))
+					throw new Exception("error from fabric controller");
+			} catch (CertificateException|SSLHandshakeException e) {
+				verficationFailed();
+				return;
+			} catch (Exception e) {
+				LoggingService.logWarning(MODULE_NAME, "unable to get changes : " + e.getMessage());
+				return;
+			}
+	
+			lastGetChangesList = result.getJsonNumber("timestamp").longValue();
+			StatusReporter.setFieldAgentStatus().setLastCommandTime(lastGetChangesList);
+	
+			JsonObject changes = result.getJsonObject("changes");
+			if (changes.getBoolean("config") && !initialization)
+				getFabricConfig();
+			
+			if (changes.getBoolean("registries") || initialization) {
+				loadRegistries(false);
+				ProcessManager.getInstance().update();
+			}
+			if (changes.getBoolean("containerlist") || initialization) {
+				loadElementsList(false);
+				ProcessManager.getInstance().update();
+			}
+			if (changes.getBoolean("containerconfig") || initialization) {
+				loadElementsConfig(false);
+				LocalApi.getInstance().update();
+			}
+			if (changes.getBoolean("routing") || initialization) {
+				loadRoutes(false);
+				MessageBus.getInstance().update();
+			}
+			
+			initialization = false;
+		} catch (Exception e) {}
+	};
+	
+	/**
+	 * gets list of registries from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
+	public void loadRegistries(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get registries");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected() && !fromFile) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return;
 		}
 		
@@ -146,34 +276,45 @@ public class FieldAgent {
 				saveFile(registriesList, filesPath + filename);
 			}
 
-			List<Registry> registries = new ArrayList<>(); 
+			List<Registry> registries = new ArrayList<>();
 			for (int i = 0; i < registriesList.size(); i++) {
 				JsonObject registry = registriesList.getJsonObject(i);
-				Registry r = new Registry();
-				r.setUrl(registry.getString("url"));
-				r.setSecure(registry.getBoolean("secure"));
-				r.setCertificate(registry.getString("certificate"));
-				r.setRequiersCertificate(registry.getBoolean("requirescert"));
-				r.setUserName(registry.getString("username"));
-				r.setPassword(registry.getString("password"));
-				r.setUserEmail(registry.getString("useremail"));
-				registries.add(r);
+				Registry result = new Registry();
+				result.setUrl(registry.getString("url"));
+				result.setSecure(registry.getBoolean("secure"));
+				result.setCertificate(registry.getString("certificate"));
+				result.setRequiersCertificate(registry.getBoolean("requirescert"));
+				result.setUserName(registry.getString("username"));
+				result.setPassword(registry.getString("password"));
+				result.setUserEmail(registry.getString("useremail"));
+				registries.add(result);
 			}
 			elementManager.setRegistries(registries);
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get registries : " + e.getMessage());
 		}
 	}
-
-	private void loadElementsConfig(boolean fromFile) {
+	
+	/**
+	 * gets list of IOElement configurations from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
+	private void loadElementsConfig(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get elemets config");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected() && !fromFile) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return;
 		}
 		
@@ -197,24 +338,35 @@ public class FieldAgent {
 				JsonObject config = configs.getJsonObject(i);
 				String id = config.getString("id");
 				String configString = config.getString("config");
-				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
+//				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
 				cfg.put(id, configString);
 			}
 			elementManager.setConfigs(cfg);
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get elements config : " + e.getMessage());
 		}
 	}
 
-	private void loadRoutes(boolean fromFile) {
+	/**
+	 * gets list of IOElement routings from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
+	private void loadRoutes(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get routes");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected() && !fromFile) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return;
 		}
 		
@@ -249,20 +401,31 @@ public class FieldAgent {
 				r.put(container, elementRoute);
 			}
 			elementManager.setRoutes(r);
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get routing" + e.getMessage());
 		}
 	}
 
-	private void loadElementsList(boolean fromFile) {
+	/**
+	 * gets list of IOElements from file or IOFabric controller
+	 * 
+	 * @param fromFile - load from file 	
+	 * @throws Exception
+	 */
+	private void loadElementsList(boolean fromFile) throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get elements");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN) && !fromFile) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected() && !fromFile) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return;
 		}
 		
@@ -305,75 +468,62 @@ public class FieldAgent {
 				elements.add(element);
 			}
 			elementManager.setElements(elements);
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get containers list" + e.getMessage());
 		}
 	}
-
-	private final Runnable pingController = () -> {
-		LoggingService.logInfo(MODULE_NAME, "ping controller");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+	
+	/**
+	 * pings IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
+	private boolean ping() throws Exception {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
-			return;
+			return false;
 		}
 		
-		if (orchestrator.ping()) {
-			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
-			StatusReporter.setFieldAgentStatus().setControllerVerified(true);
-		} else {
+		try {
+			if (orchestrator.ping()) {
+				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
+				StatusReporter.setFieldAgentStatus().setControllerVerified(true);
+				return true;
+			}
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
+		} catch (Exception e) {
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
-			StatusReporter.setFieldAgentStatus().setControllerVerified(false);
+			LoggingService.logWarning(MODULE_NAME, e.getMessage());
 		}
-		StatusReporter.setFieldAgentStatus().setLastCommandTime(lastGetChangesList);
+		return false;
+	}
+
+	/**
+	 * pings IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
+	private final Runnable pingController = () -> {
+		try {
+			LoggingService.logInfo(MODULE_NAME, "ping controller");
+			ping();
+		} catch (Exception e) {}
 	};
 
-	private void postStatus() {
-		LoggingService.logInfo(MODULE_NAME, "post status");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
-			LoggingService.logWarning(MODULE_NAME, "not provisioned");
-			return;
-		}
-		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
-			return;
-		}
-		
-		Map<String, Object> postParams = new HashMap<>();
-
-		postParams.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
-		postParams.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
-		postParams.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
-		postParams.put("memoryusage", StatusReporter.getResourceConsumptionManagerStatus().getMemoryUsage());
-		postParams.put("diskusage", StatusReporter.getResourceConsumptionManagerStatus().getDiskUsage());
-		postParams.put("cpuusage", StatusReporter.getResourceConsumptionManagerStatus().getCpuUsage());
-		postParams.put("memoryviolation", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation() ? "yes" : "no");
-		postParams.put("diskviolation", StatusReporter.getResourceConsumptionManagerStatus().isDiskViolation() ? "yes" : "no");
-		postParams.put("cpuviolation", StatusReporter.getResourceConsumptionManagerStatus().isCpuViolation() ? "yes" : "no");
-		postParams.put("elementstatus", StatusReporter.getProcessManagerStatus().getJsonElementsStatus());
-		postParams.put("repositorycount", StatusReporter.getProcessManagerStatus().getRegistriesCount());
-		postParams.put("repositorystatus", StatusReporter.getProcessManagerStatus().getJsonRegistriesStatus());
-		postParams.put("systemtime", StatusReporter.getStatusReporterStatus().getSystemTime());
-		postParams.put("laststatustime", StatusReporter.getStatusReporterStatus().getLastUpdate());
-		postParams.put("ipaddress", StatusReporter.getResourceConsumptionManagerStatus().isMemoryViolation());
-		postParams.put("processedmessages", StatusReporter.getMessageBusStatus().getProcessedMessages());
-		postParams.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
-		postParams.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
-		postParams.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
-
-		try {
-			JsonObject result = orchestrator.doCommand("status", null, postParams);
-			if (!result.getString("status").equals("ok"))
-				throw new Exception("error from fabric controller");
-		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
-		}
-	}
-	
+	/**
+	 * computes SHA1 checksum
+	 * 
+	 * @param data - input data
+	 * @return String
+	 */
 	private String checksum(String data) {
 		try {
+			byte[] base64 = Base64.getEncoder().encode(data.getBytes(StandardCharsets.UTF_8));
 			MessageDigest md = MessageDigest.getInstance("SHA1");
-			md.update(data.getBytes());
+			md.update(base64);
 			byte[] mdbytes = md.digest();
 			StringBuffer sb = new StringBuffer("");
 			for (int i = 0; i < mdbytes.length; i++) {
@@ -385,50 +535,80 @@ public class FieldAgent {
 		}
 	}
 
+	/**
+	 * reads json data from file and compare data checksum
+	 * if checksum failed, returns null
+	 * 
+	 * @param filename - file name to read data from
+	 * @return JsonArray
+	 */
 	private JsonArray readFile(String filename) {
 		try {
 			if (!Files.exists(Paths.get(filename), LinkOption.NOFOLLOW_LINKS))
 				return null;
 			
-			JsonReader reader = Json.createReader(new FileReader(Paths.get(filename).toFile()));
+			JsonReader reader = Json.createReader(new FileReader(new File(filename)));
 			JsonObject object = reader.readObject();
 			reader.close();
 			String checksum = object.getString("checksum");
-			JsonArray result = object.getJsonArray("data");
-			if (!checksum(result.toString()).equals(checksum))
+			JsonArray data = object.getJsonArray("data");
+			if (!checksum(data.toString()).equals(checksum))
 				return null;
-			return result;
+			long timestamp = object.getJsonNumber("timestamp").longValue();
+			if (lastGetChangesList == 0)
+				lastGetChangesList = timestamp;
+			else
+				lastGetChangesList = Long.min(timestamp, lastGetChangesList);
+			return data;
 		} catch (Exception e) {
 			return null;
 		}
 	}
 	
+	/**
+	 * saves data and checksum to json file
+	 * 
+	 * @param data - data to be written into file
+	 * @param filename - file name 
+	 */
 	private void saveFile(JsonArray data, String filename) {
 		try {
 			String checksum = checksum(data.toString());
 			JsonObject object = Json.createObjectBuilder()
 					.add("checksum", checksum)
+					.add("timestamp", lastGetChangesList)
 					.add("data", data)
 					.build();
-			JsonWriter writer = Json.createWriter(new FileWriter(Paths.get(filename).toFile()));
+			JsonWriter writer = Json.createWriter(new FileWriter(new File(filename)));
 			writer.writeObject(object);
 			writer.close();
 		} catch (Exception e) {}
 	}
 	
-	private void getFabricConfig() {
+	/**
+	 * gets IOFabric instance configuration from IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
+	private void getFabricConfig() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "get fabric config");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected()) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return;
 		}
 		
-		boolean changed = false;
+		if (initialization) {
+			postFabricConfig();
+			return;
+		}
 		try {
 			JsonObject result = orchestrator.doCommand("config", null, null);
 			if (!result.getString("status").equals("ok"))
@@ -437,76 +617,70 @@ public class FieldAgent {
 			JsonObject configs = result.getJsonObject("config");
 			String networkInterface = configs.getString("networkinterface");
 			String dockerUrl = configs.getString("dockerurl");
-			float diskLimit = (float) configs.getJsonNumber("disklimit").doubleValue();
+			float diskLimit = Float.parseFloat(configs.getString("disklimit"));
 			String diskDirectory = configs.getString("diskdirectory");
-			float memoryLimit = (float) configs.getJsonNumber("memorylimit").doubleValue();
-			float cpuLimit = (float) configs.getJsonNumber("cpulimit").doubleValue();
-			float logLimit = (float) configs.getJsonNumber("loglimit").doubleValue();
+			float memoryLimit = Float.parseFloat(configs.getString("memorylimit"));
+			float cpuLimit = Float.parseFloat(configs.getString("cpulimit"));
+			float logLimit = Float.parseFloat(configs.getString("loglimit"));
 			String logDirectory = configs.getString("logdirectory");
-			int logFileCount = configs.getInt("logfilecount");
+			int logFileCount = Integer.parseInt(configs.getString("logfilecount"));
 			
-			if (!Configuration.getNetworkInterface().equals(networkInterface)) {
-				Configuration.setNetworkInterface(networkInterface);
-				changed = true;
-			}
-			if (!Configuration.getDockerUrl().equals(dockerUrl)) {
-				Configuration.setDockerUrl(dockerUrl);
-				changed = true;
-			}
-			if (Configuration.getDiskLimit() != diskLimit) {
-				Configuration.setDiskLimit(diskLimit);
-				changed = true;
-			}
+			Map<String, Object> instanceConfig = new HashMap<>();
 			
-			if (!Configuration.getDiskDirectory().equals(diskDirectory)) {
-				Configuration.setDiskDirectory(diskDirectory);
-				changed = true;
-			}
-			;
-			if (Configuration.getMemoryLimit() != memoryLimit) {
-				Configuration.setMemoryLimit(memoryLimit);
-				changed = true;
-			}
+			if (!Configuration.getNetworkInterface().equals(networkInterface))
+				instanceConfig.put("n", networkInterface);
 			
-			if (Configuration.getCpuLimit() != cpuLimit) {
-				Configuration.setCpuLimit(cpuLimit);
-				changed = true;
-			}
+			if (!Configuration.getDockerUrl().equals(dockerUrl))
+				instanceConfig.put("c", dockerUrl);
+
+			if (Configuration.getDiskLimit() != diskLimit)
+				instanceConfig.put("d", diskLimit);
 			
-			if (Configuration.getLogDiskLimit() != logLimit) {
-				Configuration.setLogDiskLimit(logLimit);
-				changed = true;
-			}
+			if (!Configuration.getDiskDirectory().equals(diskDirectory))
+				instanceConfig.put("dl", diskDirectory);
+
+			if (Configuration.getMemoryLimit() != memoryLimit)
+				instanceConfig.put("m", memoryLimit);
 			
-			if (!Configuration.getLogDiskDirectory().equals(logDirectory)) {
-				Configuration.setLogDiskDirectory(logDirectory);
-				changed = true;
-			}
+			if (Configuration.getCpuLimit() != cpuLimit)
+				instanceConfig.put("p", cpuLimit);
 			
-			if (Configuration.getLogFileCount() != logFileCount) {
-				Configuration.setLogFileCount(logFileCount);
-				changed = true;
-			}
+			if (Configuration.getLogDiskLimit() != logLimit)
+				instanceConfig.put("l", logLimit);
 			
-			if (changed) {
-				// TODO: update config file 
-				// TODO: call other modules to update their configuration
-			}
+			if (!Configuration.getLogDiskDirectory().equals(logDirectory))
+				instanceConfig.put("ld", logDirectory);
 			
+			if (Configuration.getLogFileCount() != logFileCount)
+				instanceConfig.put("lc", logFileCount);
+			
+			if (!instanceConfig.isEmpty())
+				Configuration.setConfig(instanceConfig);
+			
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get fabric config : " + e.getMessage());
 		}
 	}
 	
-	private void postFabricConfig() {
+	/**
+	 * sends IOFabric instance configuration to IOFabric controller
+	 * 
+	 * @throws Exception
+	 */
+	public void postFabricConfig() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "post fabric config");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected()) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return;
 		}
 		
@@ -525,86 +699,130 @@ public class FieldAgent {
 			JsonObject result = orchestrator.doCommand("config/changes", null, postParams);
 			if (!result.getString("status").equals("ok"))
 				throw new Exception("error from fabric controller");
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to post fabric config : " + e.getMessage());
 		}
 	}
 	
+	/**
+	 * does the provisioning.
+	 * If successfully provisioned, updates Instance ID and Access Token in 
+	 * configuration file and loads IOElement data, otherwise sets appropriate
+	 * status.  
+	 * 
+	 * @param key - provisioning key sent by command-line
+	 * @return String
+	 */
 	public String provision(String key) {
 		LoggingService.logInfo(MODULE_NAME, "provisioning");
 		try {
 			JsonObject result = orchestrator.provision(key);
-			if (!result.getString("status").equals("ok")) 
-				throw new Exception("error from fabric controller");
-
-			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
-			Configuration.setInstanceId(result.getString("id"));
-			Configuration.setAccessToken(result.getString("token"));
-			orchestrator.update();
-
-			loadElementsList(false);
-			loadElementsConfig(false);
-			loadRoutes(false);
-			loadRegistries(false);
-			notifyObservers();
-			
-			return String.format("\nSuccess - instance ID is %s", result.getString("id"));
+			if (result.getString("status").equals("ok")) { 
+	
+				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
+				Configuration.setInstanceId(result.getString("id"));
+				Configuration.setAccessToken(result.getString("token"));
+				try {
+					Configuration.saveConfigUpdates();
+				} catch (Exception e) {}
+	
+				loadRegistries(false);
+				loadElementsList(false);
+				loadElementsConfig(false);
+				loadRoutes(false);
+				notifyModules();
+				
+				return result.getString("id");
+			}
+		} catch (CertificateException|SSLHandshakeException e) {
+			verficationFailed();
 		} catch (Exception e) {
+			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
+			StatusReporter.setFieldAgentStatus().setControllerVerified(true);
 			LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
-			return "\nProvisioning failed";
 		}
+		return "";
 	}
 	
-	public String deProvision() {
+	/**
+	 * notifies other modules
+	 * 
+	 */
+	private void notifyModules() {
+		MessageBus.getInstance().update();
+		LocalApi.getInstance().update();
+		ProcessManager.getInstance().update();
+	}
+
+	/**
+	 * does de-provisioning  
+	 * 
+	 * @return String
+	 * @throws Exception
+	 */
+	public String deProvision() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "deprovisioning");
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (notProvisioned()) {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return "\nFailure - not provisioned";
 		}
 		
-		if (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.BROKEN)) {
-			LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+		if (controllerNotConnected()) {
+			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+			else
+				verficationFailed();
 			return "\nFailure - not connected to controller";
 		}
 		
 		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 		Configuration.setInstanceId("");
 		Configuration.setAccessToken("");
-		orchestrator.update();
-		elementManager.clearData();
-		notifyObservers();
+		try {
+			Configuration.saveConfigUpdates();
+		} catch (Exception e) {}
+		elementManager.clear();
+		notifyModules();
 		return "\nSuccess - tokens and identifiers and keys removed";
 	}
 	
-	public void addObserver(Observer observer) {
-		observers.add(observer);
+	/**
+	 * sends IOFabric configuration when any changes applied
+	 * 
+	 */
+	public void instanceConfigUpdated() {
+		try {
+			postFabricConfig();
+		} catch (Exception e) {}
+		orchestrator.update();
 	}
 	
-	public void start() {
-		//TODO:  TEMPORARY ***************************
-		APIServer server = new APIServer();
-		server.start();
-		// *******************************************
-		observers = new ArrayList<>();
+	/**
+	 * starts Field Agent module
+	 * 
+	 * @throws Exception
+	 */
+	public void start() throws Exception {
 		
-		if (Configuration.getInstanceId() == null || Configuration.getInstanceId().equals("")
-				|| Configuration.getAccessToken() == null || Configuration.getAccessToken().equals(""))
+		if (StringUtil.isNullOrEmpty(Configuration.getInstanceId())	|| StringUtil.isNullOrEmpty(Configuration.getAccessToken()))
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 			
 		elementManager = ElementManager.getInstance();
 		orchestrator = new Orchestrator();
 		
-		Supervisor.scheduler.scheduleAtFixedRate(pingController, 0, CHECK_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
-		try {
-			Thread.sleep(200);
-		} catch (Exception e) {}
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+		ping();
 		getFabricConfig();
-		if (!StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED)) {
+		if (!notProvisioned()) {
+			loadRegistries(true);
 			loadElementsList(true);
 			loadElementsConfig(true);
 			loadRoutes(true);
-			loadRegistries(true);
 		}
-		Supervisor.scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(pingController, 0, PING_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(postStatus, POST_STATUS_FREQ_SECONDS, POST_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
 	}
 }

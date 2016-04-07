@@ -6,21 +6,34 @@ import java.util.List;
 import org.hornetq.api.core.client.ClientConsumer;
 import org.hornetq.api.core.client.ClientMessage;
 
+import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.local_api.MessageCallback;
 
+/**
+ * receiver {@link Element}
+ * 
+ * @author saeid
+ *
+ */
 public class MessageReceiver {
 	private final String name;
 
 	private MessageListener listener;
 	private ClientConsumer consumer;
 
-	public MessageReceiver(String name) {
+	public MessageReceiver(String name, ClientConsumer consumer) {
 		this.name = name;
-		consumer = MessageBusServer.getConsumer(name);
-		listener = null;
+		this.consumer = consumer;
+		this.listener = null;
 	}
 
-	protected List<Message> getMessages() throws Exception {
+	/**
+	 * receivers list of {@link Message} sent to this {@link Element}
+	 * 
+	 * @return list of {@link Message}
+	 * @throws Exception
+	 */
+	protected synchronized List<Message> getMessages() throws Exception {
 		List<Message> result = new ArrayList<>();
 		
 		if (consumer != null || listener == null) {
@@ -33,7 +46,13 @@ public class MessageReceiver {
 		return result;
 	}
 
-	protected Message getMessage() throws Exception {
+	/**
+	 * receives only one {@link Message}
+	 * 
+	 * @return {@link Message}
+	 * @throws Exception
+	 */
+	private Message getMessage() throws Exception {
 		if (consumer == null || listener != null)
 			return null;
 
@@ -46,14 +65,14 @@ public class MessageReceiver {
 		return result;
 	}
 
-	protected void update() {
-		consumer = MessageBusServer.getConsumer(name);
-	}
-
 	protected String getName() {
 		return name;
 	}
 	
+	/**
+	 * enables real-time receiving for this {@link Element}
+	 * 
+	 */
 	protected void enableRealTimeReceiving() {
 		if (consumer == null || consumer.isClosed())
 			return;
@@ -65,6 +84,10 @@ public class MessageReceiver {
 		}
 	}
 	
+	/**
+	 * disables real-time receiving for this {@link Element}
+	 * 
+	 */
 	protected void disableRealTimeReceiving() {
 		try {
 			if (consumer == null || listener == null || consumer.getMessageHandler() == null)

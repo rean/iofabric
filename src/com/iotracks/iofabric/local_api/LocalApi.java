@@ -1,95 +1,156 @@
 package com.iotracks.iofabric.local_api;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.iotracks.iofabric.element.ElementManager;
-import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ModulesStatus;
-import com.iotracks.iofabric.utils.configuration.Configuration;
+import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-public class LocalApi {
+/**
+ * Local api point of start using iofabric. 
+ * Get and update the configuration for local api module.
+ * @author ashita
+ * @since 2016
+ */
+public class LocalApi implements Runnable {
 
 	private final String MODULE_NAME = "Local API";
+	private static LocalApi instance = null;
+	public boolean isSeverStarted = false; 
+	private LocalApiServer server;
 
-	public LocalApi() {
+	private LocalApi() {
 
+	} 
+
+	/**
+	 * Instantiate local api - singleton
+	 * @param None
+	 * @return LocalApi
+	 */
+	public static LocalApi getInstance(){
+		if (instance == null) {
+			synchronized (LocalApi.class) {
+				if(instance == null){
+					instance = new LocalApi();
+					LoggingService.logInfo("LOCAL API ","Local Api Instantiated");
+				}
+			}
+		}
+		return instance;
 	}
-	
-	public static void main(String[] args) throws Exception {
-		Configuration.loadConfig();
-		ElementManager.getInstance().loadFromApi();
-		
-		LoggingService.logInfo("Main", "configuration loaded.");
-		MessageBus messageBus = MessageBus.getInstance();
-		
-		LocalApi api = new LocalApi();
-		api.start();
+
+	/**
+	 * Stop local api server
+	 * @param None
+	 * @return void
+	 */
+	public void stopServer() throws Exception {
+		server.stop();
 	}
 
-	public void start() throws Exception {
+
+	/**
+	 * Start local api server
+	 * Instantiate websocket map and configuration map
+	 * @param None
+	 * @return void
+	 */
+	@Override
+	public void run() {
 		StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STARTING);
 
-		WebSocketMap socketMap = WebSocketMap.getInstance();
-		ConfigurationMap configMap = ConfigurationMap.getInstance();
-		retrieveContainerConfig();
+		WebSocketMap.getInstance();
+		ConfigurationMap.getInstance();
 
-		StatusReporter.setLocalApiStatus().setCurrentIpAddress(getCurrentIp());
+		try {
+			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
+		} catch (Exception e2) {
+			LoggingService.logWarning(MODULE_NAME, "Unable to find the IP address of the machine running ioFabric: " + e2.getMessage());
+		}
+
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 		StatusReporter.setLocalApiStatus().setOpenMessageSocketsCount(WebSocketMap.messageWebsocketMap.size());
 
-		LoggingService.logInfo(MODULE_NAME, "Local api up");
+		retrieveContainerConfig();
 
-		LocalApiServer server = new LocalApiServer();
+		server = new LocalApiServer();
 		try {
 			server.start();
+			isSeverStarted = true;
+			
 		} catch (Exception e) {
 			try {
-				server.stop();
+				stopServer();
+				isSeverStarted = false;
 			} catch (Exception e1) {
-				LoggingService.logWarning(MODULE_NAME, "unable to start local api server\n" + e1.getMessage());
+				LoggingService.logWarning(MODULE_NAME, "unable to start local api server: " + e1.getMessage());
+				StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STOPPED);
+				return;
 			}
 
-			LoggingService.logWarning(MODULE_NAME, "unable to start local api server\n" + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "unable to start local api server: " + e.getMessage());
 			StatusReporter.setSupervisorStatus().setModuleStatus(Constants.LOCAL_API, ModulesStatus.STOPPED);
 			return;
 		}
 
 	}
 
+	/**
+	 * Get the containers configuration and store it.
+	 * @param None
+	 * @return void
+	 */
 	public void retrieveContainerConfig() {
 		try {
 			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
+			LoggingService.logInfo(MODULE_NAME, "Container configuration retrieved");
 		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to retrieve containers configuration\n" + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "unable to retrieve containers configuration: " + e.getMessage());
 		}	  
 	}
 
-	public void updateContainerConfig(String containerId, String config){
+	/**
+	 * Update the containers configuration and store it.
+	 * @param None
+	 * @return void
+	 */
+	public void updateContainerConfig(){
 		try {
-			for(Map.Entry<String, String> entry : ConfigurationMap.containerConfigMap.entrySet()){
-				if(entry.getKey().equals(containerId)){
-					entry.setValue(config);
-				}
-			}
+			ConfigurationMap.containerConfigMap = ElementManager.getInstance().getConfigs();
+			LoggingService.logInfo(MODULE_NAME, "Container configuration updated");
 		} catch (Exception e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to update containers configuration\n" + e.getMessage());
+			LoggingService.logWarning(MODULE_NAME, "unable to update containers configuration: " + e.getMessage());
 		}
 	}
 
-	private InetAddress getCurrentIp(){
-		InetAddress IP = null;
+	/**
+	 * Initiate the real-time control signal when the cofiguration changes.
+	 * Called by field-agtent.
+	 * @param None
+	 * @return void
+	 */
+	public void update(){
 		try {
-			IP = InetAddress.getLocalHost();
-		} catch (UnknownHostException e) {
-			LoggingService.logWarning(MODULE_NAME, "unable to find the current IP");
+			StatusReporter.setLocalApiStatus().setCurrentIpAddress(Orchestrator.getInetAddress());
+		} catch (Exception e2) {
+			LoggingService.logWarning(MODULE_NAME, "Unable to find the IP address of the machine running ioFabric: " + e2.getMessage());
 		}
-		LoggingService.logInfo(MODULE_NAME, "IP address of the system running iofabric is := "+IP.getHostAddress());
-		return IP;
-	}
 
+		Map<String, String> oldConfigMap = new HashMap<String, String>();
+		oldConfigMap.putAll(ConfigurationMap.containerConfigMap);
+		updateContainerConfig();
+		Map<String, String> newConfigMap = new HashMap<String, String>();
+		newConfigMap.putAll(ConfigurationMap.containerConfigMap);
+		ControlWebsocketHandler handler = new ControlWebsocketHandler();
+		try {
+			handler.initiateControlSignal(oldConfigMap, newConfigMap);
+		} catch (Exception e) {
+			LoggingService.logWarning(MODULE_NAME, "Unable to complete the control signal sending " + e.getMessage());
+		}
+	}
 }

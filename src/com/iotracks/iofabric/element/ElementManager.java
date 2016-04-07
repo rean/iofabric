@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-
-import com.iotracks.iofabric.utils.JSON;
-import com.iotracks.iofabric.utils.configuration.Configuration;
-
+/**
+ * IOElements common repository
+ * 
+ * @author saeid
+ *
+ */
 public class ElementManager {
 
 	private List<Element> elements;
@@ -36,16 +36,6 @@ public class ElementManager {
 		return instance;
 	}
 	
-	public void loadFromApi() {
-		synchronized (ElementManager.class) {
-			while (!elements.isEmpty())
-				elements.remove(0);
-			loadElementsList();
-			loadElementsConfig();
-			loadRoutes();
-		}
-	}
-
 	public List<Element> getElements() {
 		synchronized (ElementManager.class) {
 			return elements;
@@ -78,111 +68,6 @@ public class ElementManager {
 		return null;
 	}
 	
-	public void loadRegistries() {
-		try {
-			JsonObject registriesObjs =  
-					JSON.getJSON(
-					"https://iotracks.com/api/v1/instance/registries/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JsonArray registriesList = registriesObjs.getJsonArray("registries"); 
-
-			for (int i = 0; i < registriesList.size(); i++) {
-				JsonObject registry = registriesList.getJsonObject(i);
-				Registry r = new Registry();
-				r.setUrl(registry.getString("url"));
-				r.setSecure(registry.getString("secure").equals("true"));
-				r.setCertificate(registry.getString("certificate"));
-				r.setRequiersCertificate(registry.getString("requierscert").equals("true"));
-				r.setUserName(registry.getString("username"));
-				r.setPassword(registry.getString("password"));
-				r.setUserEmail(registry.getString("useremail"));
-				this.registries.add(r);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void loadElementsConfig() {
-		try {
-			JsonObject configObjs = JSON.getJSON(
-					"https://iotracks.com/api/v1/instance/containerconfig/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JsonArray configs = configObjs.getJsonArray("containerconfig");
-			for (int i = 0; i < configs.size(); i++) {
-				JsonObject config = configs.getJsonObject(i);
-				String id = config.getString("id");
-				String configString = config.getString("config");
-				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
-				this.configs.put(id, configString);
-				for (Element element : elements)
-					if (element.getElementId().equals(id)) {
-						element.setLastUpdated(lastUpdated);
-						break;
-					}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void loadRoutes() {
-		try {
-			JsonObject routeObjs = JSON
-					.getJSON("https://iotracks.com/api/v1/instance/routing/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JsonArray routes = routeObjs.getJsonArray("routing");
-			for (int i = 0; i < routes.size(); i++) {
-				JsonObject route = routes.getJsonObject(i);
-				Route elementRoute = new Route();
-				String container = route.getString("container");
-
-				JsonObject receiversObj = route.getJsonObject("receivers");
-				JsonArray receivers = receiversObj.getJsonArray("internal");
-				if (receivers.size() == 0)
-					continue;
-				for (int j = 0; j < receivers.size(); j++) {
-					String receiver = receivers.getString(j);
-					elementRoute.getReceivers().add(receiver);
-				}
-				this.routes.put(container, elementRoute);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	public void loadElementsList() {
-		try {
-			JsonObject containerObjects = JSON
-					.getJSON("https://iotracks.com/api/v1/instance/containerlist/id/" + Configuration.getInstanceId() + "/token/" + Configuration.getAccessToken());
-			JsonArray containers = containerObjects.getJsonArray("containerlist");
-			if (containers.size() > 0)
-				elements = new ArrayList<>();
-			for (int i = 0; i < containers.size(); i++) {
-				JsonObject container = containers.getJsonObject(i);
-
-				Element element = new Element(container.getString("id"), container.getString("imageid"));
-
-				element.setLastModified(container.getJsonNumber("lastmodified").longValue());
-
-				JsonArray portMappingObjs = container.getJsonArray("portmappings");
-				List<PortMapping> pms = null;
-				if (portMappingObjs.size() > 0) {
-					pms = new ArrayList<>();
-					for (int j = 0; j < portMappingObjs.size(); j++) {
-						JsonObject portMapping = portMappingObjs.getJsonObject(j);
-						PortMapping pm = new PortMapping(portMapping.getString("outsidecontainer"),
-								portMapping.getString("insidecontainer"));
-						pms.add(pm);
-					}
-				}
-				element.setPortMappings(pms);
-				elements.add(element);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
 	public void setRegistries(List<Registry> registries) {
 		synchronized (ElementManager.class) {
 			this.registries = registries;
@@ -215,7 +100,7 @@ public class ElementManager {
 		return false;
 	}
 
-	public void clearData() {
+	public void clear() {
 		synchronized (ElementManager.class) {
 			elements.clear();
 			routes.clear();

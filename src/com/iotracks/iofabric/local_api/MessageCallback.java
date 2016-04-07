@@ -2,6 +2,11 @@ package com.iotracks.iofabric.local_api;
 
 import com.iotracks.iofabric.message_bus.Message;
 
+/**
+ * Interface for the message bus to send real-time messages 
+ * @author ashita
+ * @since 2016
+ */
 public class MessageCallback {
 	private final String name;
 	
@@ -9,14 +14,13 @@ public class MessageCallback {
 		this.name = name;
 	}
 	
+	/**
+	 * Method called from message bus to send real-time messages to the containers
+	 * @param Message
+	 * @return void
+	 */
 	public void sendRealtimeMessage(Message message) {
 		MessageWebsocketHandler handler = new MessageWebsocketHandler();
 		handler.sendRealTimeMessage(name, message);
-	}
-	
-	public static void main(String[] args) {
-		Message message = new Message();
-		MessageCallback callback = new MessageCallback("viewer");
-		callback.sendRealtimeMessage(message);
 	}
 }

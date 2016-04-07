@@ -3,51 +3,123 @@ package com.iotracks.iofabric.resource_consumption_manager;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.iotracks.iofabric.Start;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * Resource Consumption Manager module
+ * 
+ * @author saeid
+ *
+ */
 public class ResourceConsumptionManager {
 	private final long GET_USAGE_DATA_FREQ_SECONDS = 5;
 	private String MODULE_NAME = "Resource Consumption Manager";
 	private float diskLimit, cpuLimit, memoryLimit;
-
-	private Runnable getUsageData = () -> {
-		LoggingService.logInfo(MODULE_NAME, "get usage data");
-
-		updateConfig();
-
-		float memoryUsage = getMemoryUsage();
-		float cpuUsage = getCpuUsage();
-		float diskUsage = getDiskUsage();
-		StatusReporter.setResourceConsumptionManagerStatus()
-				.setMemoryUsage(memoryUsage)
-				.setCpuUsage(cpuUsage)
-				.setDiskUsage(diskUsage)
-				.setMemoryViolation(memoryUsage > memoryLimit)
-				.setDiskViolation(diskUsage > diskLimit)
-				.setCpuViolation(cpuUsage > cpuLimit);
-
-	};
-
-	public void updateConfig() {
-		diskLimit = Configuration.getDiskLimit();
-		cpuLimit = Configuration.getCpuLimit();
-		memoryLimit = Configuration.getMemoryLimit();
+	private static ResourceConsumptionManager instance;
+	
+	private ResourceConsumptionManager() {}
+	
+	public static ResourceConsumptionManager getInstance() {
+		if (instance == null) {
+			synchronized (ResourceConsumptionManager.class) {
+				if (instance == null)
+					instance = new ResourceConsumptionManager();
+			}
+		}
+		return instance;
 	}
 
+	/**
+	 * computes IOFabric resource usage data
+	 * and sets the {@link ResourceConsumptionManagerStatus}
+	 * removes old archives if disk usage goes more than limit 
+	 * 
+	 */
+	private Runnable getUsageData = () -> {
+		try {
+			LoggingService.logInfo(MODULE_NAME, "get usage data");
+	
+			float memoryUsage = getMemoryUsage();
+			float cpuUsage = getCpuUsage();
+			float diskUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
+			
+			StatusReporter.setResourceConsumptionManagerStatus()
+					.setMemoryUsage(memoryUsage / 1_000_000)
+					.setCpuUsage(cpuUsage)
+					.setDiskUsage(diskUsage / 1_000_000_000)
+					.setMemoryViolation(memoryUsage > memoryLimit)
+					.setDiskViolation(diskUsage > diskLimit)
+					.setCpuViolation(cpuUsage > cpuLimit);
+			
+			if (diskUsage > diskLimit) {
+				float amount = diskUsage - (diskLimit * 0.75f);
+				removeArchives(amount);
+			}
+		} catch (Exception e) {}
+	};
+
+	/**
+	 * remove old archives
+	 * 
+	 * @param amount - disk space to be freed in bytes
+	 */
+	private void removeArchives(float amount) {
+		String archivesDirectory = Configuration.getDiskDirectory() + "messages/archive/";
+		
+		final File workingDirectory = new File(archivesDirectory);
+		File[] filesList = workingDirectory.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String fileName) {
+				return fileName.substring(fileName.indexOf(".")).equals(".idx");
+			}
+		});
+		
+		Arrays.sort(filesList, new Comparator<File>() {
+			public int compare(File o1, File o2) {
+				String t1 = o1.getName().substring(o1.getName().indexOf('_') + 1, o1.getName().indexOf("."));
+				String t2 = o2.getName().substring(o2.getName().indexOf('_') + 1, o2.getName().indexOf("."));
+				return t1.compareTo(t2);
+			}
+		});
+		
+		for (File indexFile : filesList) {
+			File dataFile = new File(archivesDirectory + indexFile.getName().substring(0, indexFile.getName().indexOf('.')) + ".iomsg");
+			amount -= indexFile.length();
+			indexFile.delete();
+			amount -= dataFile.length();
+			dataFile.delete();
+			if (amount < 0)
+				break;
+		}
+	}
+	
+	/**
+	 * gets memory usage of IOFabric instance
+	 * 
+	 * @return memory usage in bytes
+	 */
 	private float getMemoryUsage() {
 		Runtime runtime = Runtime.getRuntime();
 		long allocatedMemory = runtime.totalMemory();
 		long freeMemory = runtime.freeMemory();
-		return (allocatedMemory - freeMemory) / 1024f / 1024f;
+		return (allocatedMemory - freeMemory);
 	}
 
+	/**
+	 * computes cpu usage of IOFabric instance
+	 * 
+	 * @return float number between 0-100
+	 */
 	private float getCpuUsage() {
 		String processName = ManagementFactory.getRuntimeMXBean().getName();
 		String processId = processName.split("@")[0];
@@ -96,12 +168,18 @@ public class ResourceConsumptionManager {
 			br.close();
 
 			usage = 100f * (utimeAfter - utimeBefore) / (totalAfter - totalBefore);
-		} catch (Exception e) {
-		}
+		} catch (Exception e) {}
 		return usage;
 	}
 
-	private long directorySize(File directory) {
+	/**
+	 * computes a directory size
+	 * 
+	 * @param name - name of the directory
+	 * @return size in bytes
+	 */
+	private long directorySize(String name) {
+		File directory = new File(name);
 		if (!directory.exists())
 			return 0;
 		if (directory.isFile()) 
@@ -111,32 +189,32 @@ public class ResourceConsumptionManager {
 			if (file.isFile())
 				length += file.length();
 			else if (file.isDirectory())
-				length += directorySize(file);
+				length += directorySize(file.getPath());
 		}
 		return length;
 	}
 
-	private float getDiskUsage() {
-		long length = 0;
-
-		length += directorySize(new File(Configuration.getLogDiskDirectory()));
-		length += directorySize(new File("/var/run/iofabric"));
-		length += directorySize(new File("/var/lib/iofabric"));
-		length += directorySize(new File("/etc/iofabric"));
-		length += directorySize(new File("/usr/bin/iofabric"));
-		length += directorySize(new File("/etc/init.d/iofabric"));
-
-		File self = new File(Start.class.getProtectionDomain().getCodeSource().getLocation().toString().substring(5));
-		length += directorySize(self);
-
-		return length / 1024f / 1024f / 1024f;
+	/**
+	 * updates limits when changes applied to {@link Configuration}
+	 * 
+	 */
+	public void instanceConfigUpdated() {
+		diskLimit = Configuration.getDiskLimit() * 1_000_000_000;
+		cpuLimit = Configuration.getCpuLimit();
+		memoryLimit = Configuration.getMemoryLimit() * 1_000_000;
 	}
 	
+	/**
+	 * starts Resource Consumption Manager module
+	 * 
+	 */
 	public void start() {
-		Supervisor.scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
+		instanceConfigUpdated();
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
 				TimeUnit.SECONDS);
 
 		LoggingService.logInfo(MODULE_NAME, "started");
 	}
-	
+
 }

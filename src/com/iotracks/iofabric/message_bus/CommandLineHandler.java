@@ -6,6 +6,12 @@ import org.hornetq.api.core.client.MessageHandler;
 
 import com.iotracks.iofabric.command_line.CommandLineParser;
 
+/**
+ * listener for command-line communications
+ * 
+ * @author saeid
+ *
+ */
 public class CommandLineHandler implements MessageHandler {
 
 	@Override
@@ -21,7 +27,7 @@ public class CommandLineHandler implements MessageHandler {
 		response.putObjectProperty("receiver", "iofabric.commandline.response");
 		
 		try {
-			MessageBusServer.getProducer().send(response);
+			MessageBusServer.getCommandlineProducer().send(response);
 		} catch (Exception e) {
 		}
 	}

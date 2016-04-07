@@ -3,12 +3,25 @@ package com.iotracks.iofabric.message_bus;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.iotracks.iofabric.supervisor.Supervisor;
-
+/**
+ * class to generate unique id for {@link Message}
+ * 
+ * @author saeid
+ *
+ */
 public class MessageIdGenerator {
 	private final char[] ALPHABETS_ARRAY = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789".toCharArray();
+
+	/**
+	 * converts base 10 to base 58
+	 * 
+	 * @param number - number to be converted
+	 * @return base 58 presentation of number
+	 */
 	private String toBase58(long number) {
 		StringBuilder result = new StringBuilder();
 		while (number >= 58) {
@@ -20,10 +33,14 @@ public class MessageIdGenerator {
 	}
 
 	
-	// timestamp-sequence
 	private final int MAX_SEQUENCE = 100000000;
 	private volatile long lastTime = 0;
 	private volatile int sequence = MAX_SEQUENCE;
+	/**
+	 * generates unique id based on time and sequence  
+	 * 
+	 * @param time - timestamp in milliseconds
+	 */
 	public synchronized String generate(long time) {
 		if (lastTime == time) {
 			sequence--;
@@ -36,20 +53,39 @@ public class MessageIdGenerator {
 
 	
 	// uuid
-	private final int PRE_GENERATED_IDS_COUNT = 100000;
+	private final int PRE_GENERATED_IDS_COUNT = 100_000;
+	private boolean isRefilling = false;
 	Queue<String> generatedIds = new LinkedList<>();
+	/**
+	 * generates unique id based on UUID
+	 * 
+	 */
 	private final Runnable refill = () -> {
+		if (isRefilling)
+			return;
+		isRefilling = true;
 		while (generatedIds.size() < PRE_GENERATED_IDS_COUNT)
-			generatedIds.offer(UUID.randomUUID().toString().replaceAll("-", ""));
+			synchronized (generatedIds) {
+				generatedIds.offer(UUID.randomUUID().toString().replaceAll("-", ""));
+			}
+		isRefilling = false;
 	};
 	
-	public synchronized String getNextId() {
+	/**
+	 * returns next generated id from list
+	 * 
+	 * @return id
+	 */
+	public String getNextId() {
 		while (generatedIds.size() == 0);
-		return generatedIds.poll();
+		synchronized (generatedIds) {
+			return generatedIds.poll();
+		}
 	}
 	
 	public MessageIdGenerator() {
-		Supervisor.scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(refill, 0, 5, TimeUnit.SECONDS);
 	}
 	
 //			 			 1         2         3         4         5         6         7         8         9         0         1         2         3         4         5         6         7         

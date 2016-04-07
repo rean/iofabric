@@ -13,12 +13,9 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.core.client.ClientConsumer;
@@ -31,7 +28,6 @@ import org.hornetq.api.core.client.ServerLocator;
 import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
 
 import com.iotracks.iofabric.command_line.CommandLineParser;
-import com.iotracks.iofabric.message_bus.MessageBusServer;
 import com.iotracks.iofabric.supervisor.Supervisor;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -40,31 +36,40 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 
 public class Start {
 
-	private static void sendCommand(String... args) {
+	private static ClientSessionFactory sf = null;
+	
+	/**
+	* check if another instance of ioFabric is running
+	*
+	* @return boolean
+	*/
+	private static boolean isAnotherInstanceRunning() {
 		Map<String, Object> connectionParams = new HashMap<>();
 		connectionParams.put("port", 55555);
 		connectionParams.put("host", "localhost");
 
         ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(
         		new TransportConfiguration(NettyConnectorFactory.class.getName(), connectionParams));
-        ClientSessionFactory sf = null;
         try {
             sf = serverLocator.createSessionFactory();
         } catch (Exception e) {
-        	return;
+        	return false;
         }
         
-		if (args.length > 0 && args[0].equals("start")) {
-			System.out.println("iofabric is already running.");
-			sf.close();
-			System.exit(1);
-		}
+        return true;
+	}
+	
+	/**
+	* send command-line parameters to ioFabric daemon
+	* 
+	* @param args - parameters
+	*
+	*/
+	private static void sendCommandlineParameters(String... args) {
 		String command = "";
 		for (String str : args)
 			command += str + " ";
 
-		if (command.trim().equals(""))
-			command = "help";
 		if (command.trim().startsWith("stop")) {
 			System.out.println("Stopping iofabric service...");
 			System.out.flush();
@@ -73,18 +78,24 @@ public class Start {
 		ClientSession session = null;
 		try {
 			session = sf.createSession();
-			ClientConsumer consumer = session.createConsumer(MessageBusServer.address,
-					String.format("receiver = '%s'", "iofabric.commandline.response"));
-			ClientProducer producer = session.createProducer(MessageBusServer.address);
+			ClientConsumer consumer = session.createConsumer(Constants.commandlineAddress,
+					"receiver = 'iofabric.commandline.response'");
+			ClientProducer producer = session.createProducer(Constants.commandlineAddress);
 			session.start();
 
+			ClientMessage received = consumer.receiveImmediate();
+			while (received != null) {
+				received.acknowledge();
+				received = consumer.receiveImmediate();
+			}
+			
 			ClientMessage message = session.createMessage(false);
 			message.putStringProperty("command", command);
 			message.putObjectProperty("receiver", "iofabric.commandline.command");
 			producer.send(message);
 			if (args[0].equals("stop"))
 				System.exit(0);
-			ClientMessage received = consumer.receive();
+			received = consumer.receive();
 			received.acknowledge();
 			String response = received.getStringProperty("response");
 			System.out.println(response);
@@ -101,6 +112,9 @@ public class Start {
 		System.exit(0);
 	}
 
+	/**
+	* creates and grants permission to daemon files directory
+	*/
 	private static void setupEnvironment() {
 		final File daemonFilePath = new File("/var/run/iofabric");
 		if (!daemonFilePath.exists()) {
@@ -119,7 +133,10 @@ public class Start {
 
 	}
 	
-	public static void main(String[] args) throws ParseException {
+	/**
+	* loads config.xml
+	*/
+	private static void loadConfiguration() {
 		try {
 			Configuration.loadConfig();
 		} catch (ConfigurationItemException e) {
@@ -130,24 +147,12 @@ public class Start {
 			System.out.println("error accessing /etc/iofabric/config.xml");
 			System.exit(1);
 		}
-
-		setupEnvironment();
-		
-		sendCommand(args);
-
-		if (args.length > 0) {
-			if (args[0].equals("help") || args[0].equals("--help") || args[0].equals("-h") || args[0].equals("-?") || 
-					args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
-				System.out.println(CommandLineParser.parse(args[0]));
-				System.out.flush();
-				System.exit(0);
-			} else if (!args[0].equals("start")) {
-				System.out.println("iofabric is not running.");
-				System.out.flush();
-				System.exit(1);
-			}
-		}
-
+	}
+	
+	/**
+	* starts logging service
+	*/
+	private static void startLoggingService() {
 		try {
 			LoggingService.setupLogger();
 		} catch (IOException e) {
@@ -156,7 +161,12 @@ public class Start {
 		}
 		LoggingService.logInfo("Main", "configuration loaded.");
 
-		// port System.out to null
+	}
+	
+	/**
+	* ports standard output to null
+	*/
+	private static void outToNull() {
 		Constants.systemOut = System.out;
 		if (!Configuration.debugging) {
 			System.setOut(new PrintStream(new OutputStream() {
@@ -173,13 +183,47 @@ public class Start {
 				}
 			}));
 		}
+	}
+	
+	public static void main(String[] args) throws ParseException {
+		loadConfiguration();
 		
+		setupEnvironment();
+
+		if (args == null || args.length == 0)
+			args = new String[] { "help" };
+		
+		if (isAnotherInstanceRunning()) {
+			if (args[0].equals("start")) {
+				System.out.println("iofabric is already running.");
+				sf.close();
+				System.exit(1);
+			}
+
+			sendCommandlineParameters(args);
+		}
+		
+		if (args[0].equals("help") || args[0].equals("--help") || args[0].equals("-h") || args[0].equals("-?")
+				|| args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
+			System.out.println(CommandLineParser.parse(args[0]));
+			System.out.flush();
+			System.exit(0);
+		} else if (!args[0].equals("start")) {
+			System.out.println("iofabric is not running.");
+			System.out.flush();
+			System.exit(1);
+		}
+
+		startLoggingService();
+
+		outToNull();
 		
 		LoggingService.logInfo("Main", "starting supervisor");
 		Supervisor supervisor = new Supervisor();
-		supervisor.start();
+		try {
+			supervisor.start();
+		} catch (Exception e) {}
 
-		// port System.out to standard
 		System.setOut(Constants.systemOut);
 	}
 

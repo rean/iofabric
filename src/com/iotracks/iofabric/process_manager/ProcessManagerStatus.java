@@ -7,16 +7,23 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
+import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.utils.Constants.DockerStatus;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 
+/**
+ * represents Process Manager status
+ * 
+ * @author saeid
+ *
+ */
 public class ProcessManagerStatus {
 	private int runningElementsCount;
 	private DockerStatus dockerStatus;
 	private Map<String, ElementStatus> elementsStatus;
-	private int registriesCount;
 	private Map<Registry, LinkStatus> registriesStatus;
 
 	public ProcessManagerStatus() {
@@ -24,9 +31,13 @@ public class ProcessManagerStatus {
 		registriesStatus = new HashMap<>();
 		runningElementsCount = 0;
 		dockerStatus = DockerStatus.RUNNING;
-		registriesCount = 0;
 	}
 	
+	/**
+	 * returns {@link Element} status in json format
+	 * 
+	 * @return string in json format
+	 */
 	public String getJsonElementsStatus() {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		elementsStatus.entrySet().forEach(entry -> {
@@ -35,12 +46,19 @@ public class ProcessManagerStatus {
 					.add("id", entry.getKey())
 					.add("status", status.getStatus().toString())
 					.add("starttime", status.getStartTime())
-					.add("operatingduration", status.getOperatingDuration());
+					.add("operatingduration", status.getOperatingDuration())
+					.add("cpuusage", String.format("%.2f", status.getCpuUsage()))
+					.add("memoryusage", String.format("%d", status.getMemoryUsage()));
 			arrayBuilder.add(objectBuilder);
 		});
-		return arrayBuilder.toString();
+		return arrayBuilder.build().toString();
 	}
 
+	/**
+	 * returns {@link Registry} status in json format
+	 * 
+	 * @return string in json format
+	 */
 	public String getJsonRegistriesStatus() {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		registriesStatus.entrySet().forEach(entry -> {
@@ -50,20 +68,15 @@ public class ProcessManagerStatus {
 			arrayBuilder.add(objectBuilder);
 					
 		});
-		return arrayBuilder.toString();
+		return arrayBuilder.build().toString();
 	}
 
 	public int getRunningElementsCount() {
 		return runningElementsCount;
 	}
 
-	public ProcessManagerStatus increaseRunningElementsCount() {
-		this.runningElementsCount++;
-		return this;
-	}
-
-	public ProcessManagerStatus decreaseRunningElementsCount() {
-		this.runningElementsCount--;
+	public ProcessManagerStatus setRunningElementsCount(int count) {
+		this.runningElementsCount = count;
 		return this;
 	}
 
@@ -90,7 +103,7 @@ public class ProcessManagerStatus {
 		}
 		return elementsStatus.get(elementId);
 	}
-
+	
 	public void removeElementStatus(String elementId) {
 		synchronized (elementsStatus) {
 			elementsStatus.keySet().forEach(element -> {
@@ -101,21 +114,15 @@ public class ProcessManagerStatus {
 	}
 
 	public int getRegistriesCount() {
-		return registriesCount;
-	}
-
-	public ProcessManagerStatus increaseRegistriesCount() {
-		this.registriesCount++;
-		return this;
-	}
-
-	public ProcessManagerStatus decreaseRegistriesCount() {
-		this.registriesCount--;
-		return this;
+		return ElementManager.getInstance().getRegistries().size();
 	}
 
 	public LinkStatus getRegistriesStatus(Registry registry) {
 		return registriesStatus.get(registry);
+	}
+
+	public Map<Registry, LinkStatus> getRegistriesStatus() {
+		return registriesStatus;
 	}
 
 	public ProcessManagerStatus setRegistriesStatus(Registry registry, LinkStatus status) {

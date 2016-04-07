@@ -1,4 +1,4 @@
-package com.iotracks.iofabric.local_api;
+package com.iotracks.iofabric.local_api.test;
 
 import java.net.URI;
 
@@ -19,9 +19,9 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
-public class WebSocketClient {
+public class WebSocketClientControl {
 
-	static final String URL = System.getProperty("url", "ws://127.0.0.1:54322/v2/message/socket/id/viewer");
+	static final String URL = System.getProperty("url", "ws://127.0.0.1:54321/v2/control/socket/id/viewer");
 
 	public static void main(String[] args) throws Exception {
 		URI uri = new URI(URL);
@@ -55,9 +55,8 @@ public class WebSocketClient {
 		}
 
 		EventLoopGroup group = new NioEventLoopGroup();
-		//		try {
-		final WebSocketClientHandler handler =
-				new WebSocketClientHandler(
+		final WebSocketClientHandlerControl handler =
+				new WebSocketClientHandlerControl(
 						WebSocketClientHandshakerFactory.newHandshaker(
 								uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
 
@@ -81,10 +80,6 @@ public class WebSocketClient {
 		Channel ch = b.connect(uri.getHost(), port).sync().channel();
 		handler.handshakeFuture().sync();
 
-
-		//		} finally {
-		//			group.shutdownGracefully();
-		//		}
 	}
 }
 

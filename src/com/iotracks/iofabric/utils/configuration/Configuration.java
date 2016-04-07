@@ -1,11 +1,6 @@
 package com.iotracks.iofabric.utils.configuration;
 
 import java.io.File;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -20,6 +15,19 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.iotracks.iofabric.field_agent.FieldAgent;
+import com.iotracks.iofabric.message_bus.MessageBus;
+import com.iotracks.iofabric.process_manager.ProcessManager;
+import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManager;
+import com.iotracks.iofabric.utils.Orchestrator;
+import com.iotracks.iofabric.utils.logging.LoggingService;
+
+/**
+ * holds IOFabric instance configuration
+ * 
+ * @author saeid
+ *
+ */
 public final class Configuration {
 
 	private static Element configElement;
@@ -39,9 +47,15 @@ public final class Configuration {
 	private static String logDiskDirectory;
 	private static int logFileCount;
 	
-	public static boolean configChanged;
 	public static boolean debugging = true;
 
+	/**
+	 * return XML node value
+	 * 
+	 * @param name - node name
+	 * @return node value
+	 * @throws ConfigurationItemException
+	 */
 	private static String getNode(String name) throws ConfigurationItemException {
 		NodeList nodes = configElement.getElementsByTagName(name);
 		if (nodes.getLength() != 1)
@@ -50,6 +64,13 @@ public final class Configuration {
 		return nodes.item(0).getTextContent();
 	}
 
+	/**
+	 * sets XML node value
+	 * 
+	 * @param name - node name
+	 * @param content - node value
+	 * @throws ConfigurationItemException
+	 */
 	private static void setNode(String name, String content) throws ConfigurationItemException {
 
 		NodeList nodes = configFile.getElementsByTagName(name);
@@ -61,7 +82,19 @@ public final class Configuration {
 
 	}
 	
-	private static void saveConfigUpdates() throws Exception {
+	/**
+	 * saves configuration data to config.xml
+	 * and informs other modules
+	 * 
+	 * @throws Exception
+	 */
+	public static void saveConfigUpdates() throws Exception {
+		FieldAgent.getInstance().instanceConfigUpdated();
+		ProcessManager.getInstance().instanceConfigUpdated();
+		ResourceConsumptionManager.getInstance().instanceConfigUpdated();
+		LoggingService.instanceConfigUpdated();
+		MessageBus.getInstance().instanceConfigUpdated();
+		
 		Transformer transformer = TransformerFactory.newInstance().newTransformer();
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		StreamResult result = new StreamResult(new File("/etc/iofabric/config.xml"));
@@ -69,12 +102,16 @@ public final class Configuration {
 		transformer.transform(source, result);
 	}
 
-	public static void setConfig(Map<String, String> commandLineMap) throws Exception {
-		String option = null, value = null;
-
-		for (Map.Entry<String, String> command : commandLineMap.entrySet()) {
-			option = command.getKey();
-			value = command.getValue();
+	/**
+	 * sets configuration base on commandline parameters
+	 * 
+	 * @param commandLineMap - map of config parameters
+	 * @throws Exception
+	 */
+	public static void setConfig(Map<String, Object> commandLineMap) throws Exception {
+		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
+			String option = command.getKey();
+			String value = command.getValue().toString();
 			
 			if(option == null || value == null || value.trim() == "" || option.trim() == ""){
 				throw new ConfigurationItemException("Command or value is invalid");
@@ -87,6 +124,7 @@ public final class Configuration {
 				setDiskLimit(Float.parseFloat(value));
 				break;
 			case "dl":
+				value = addSeparator(value);
 				setNode("disk_directory", value);
 				setDiskDirectory(value);
 				break;
@@ -122,6 +160,7 @@ public final class Configuration {
 				setLogDiskLimit(Float.parseFloat(value));
 				break;
 			case "ld":
+				value = addSeparator(value);
 				setNode("log_disk_directory", value);
 				setLogDiskDirectory(value);
 				break;
@@ -137,9 +176,29 @@ public final class Configuration {
 		}
 		
 		saveConfigUpdates();
-		configChanged = true;
 	}
 
+	/**
+	 * adds file separator to end of directory names, if not exists 
+	 * 
+	 * @param value - name of directory
+	 * @return directory containing file separator at the end 
+	 */
+	private static String addSeparator(String value) {
+		if (value.charAt(value.length() - 1) == File.separatorChar)
+			return value;
+		else
+			return value + File.separatorChar;
+	}
+
+	/**
+	 * validates value
+	 * 
+	 * @param option - config parameter
+	 * @param value - value to be validated
+	 * @param typeOfValidation - type of validation
+	 * @throws ConfigurationItemException
+	 */
 	private static void validateValue(String option, String value, String typeOfValidation) throws ConfigurationItemException {
 		if(typeOfValidation == "isPositiveFloat"){
 			if (!value.matches("[0-9]*.?[0-9]*"))
@@ -150,9 +209,13 @@ public final class Configuration {
 		}
 	}
 	
+	/**
+	 * loads configuration from config.xml file
+	 * 
+	 * @throws Exception
+	 */
 	public static void loadConfig() throws Exception {
 		// TODO: load configuration XML file here
-		configChanged = false;
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
 
@@ -241,10 +304,16 @@ public final class Configuration {
 	}
 
 	public static void setAccessToken(String accessToken) {
+		try {
+			setNode("access_token", accessToken);
+		} catch (Exception e){}
 		Configuration.accessToken = accessToken;
 	}
 
 	public static void setInstanceId(String instanceId) {
+		try {
+			setNode("instance_id", instanceId);
+		} catch (Exception e){}
 		Configuration.instanceId = instanceId;
 	}
 
@@ -290,30 +359,19 @@ public final class Configuration {
 		Configuration.logFileCount = logFileCount;
 	}
 
+	/**
+	 * returns report for "info" commandline parameter
+	 * 
+	 * @return info report
+	 */
 	public static String getConfigReport() {
-		String ipAddress = "";
+		String ipAddress;
 		try {
-			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-		    while (networkInterfaces.hasMoreElements()) {
-		        NetworkInterface networkInterface = networkInterfaces.nextElement();
-		        if (networkInterface.getName().equals(Configuration.networkInterface)) {
-		        	Enumeration<InetAddress> ipAddresses = networkInterface.getInetAddresses();
-		        	while (ipAddresses.hasMoreElements()) {
-		        		InetAddress address = ipAddresses.nextElement();
-		        		if (address instanceof Inet4Address) {
-		        			ipAddress = address.toString().substring(1);
-		        			break;
-		        		}	
-		        	}
-		        	if (!ipAddress.equals(""))
-		        		break;
-		        }
-		    }
-		} catch (SocketException e) {}
-		
-		if (ipAddress.equals(""))
+			ipAddress = Orchestrator.getInetAddress().getHostAddress();
+		} catch (Exception e) {
 			ipAddress = "unable to retrieve ip address";
-
+		}
+		
 	    StringBuilder result = new StringBuilder();
 		result.append(
 				"Instance ID               : " + ((instanceId != null && !instanceId.equals("")) ? instanceId : "not provisioned") + "\n" + 

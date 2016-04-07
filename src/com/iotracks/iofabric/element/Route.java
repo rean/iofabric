@@ -3,6 +3,12 @@ package com.iotracks.iofabric.element;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * represents IOElements routings
+ * 
+ * @author saeid
+ *
+ */
 public class Route {
 	private List<String> receivers;
 	

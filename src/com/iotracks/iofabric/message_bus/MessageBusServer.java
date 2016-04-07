@@ -4,10 +4,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.SimpleString;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.core.client.ClientConsumer;
+import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientProducer;
 import org.hornetq.api.core.client.ClientSession;
 import org.hornetq.api.core.client.ClientSession.QueueQuery;
@@ -15,35 +20,45 @@ import org.hornetq.api.core.client.ClientSessionFactory;
 import org.hornetq.api.core.client.HornetQClient;
 import org.hornetq.api.core.client.ServerLocator;
 import org.hornetq.core.config.impl.ConfigurationImpl;
+import org.hornetq.core.remoting.impl.invm.InVMAcceptorFactory;
+import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
-import org.hornetq.core.remoting.impl.netty.NettyConnectorFactory;
 import org.hornetq.core.server.HornetQServer;
 import org.hornetq.core.server.HornetQServers;
 import org.hornetq.core.server.JournalType;
 import org.hornetq.core.settings.impl.AddressFullMessagePolicy;
 import org.hornetq.core.settings.impl.AddressSettings;
 
+import com.iotracks.iofabric.element.Element;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
-
+/**
+ * HornetQ server
+ * 
+ * @author saeid
+ *
+ */
 public class MessageBusServer {
 	
 	private final String MODULE_NAME = "Message Bus Server";
-	public static final String address = "iofabric.message_bus";
 	private ClientSessionFactory sf;
 	private HornetQServer server;
 	private static ClientSession messageBusSession;
 	private ClientConsumer commandlineConsumer;
-	private static ClientProducer producer;
-	private static Map<String, ClientConsumer> consumers;
+	private static ClientProducer commandlineProducer;
+	private Map<String, ClientConsumer> consumers;
+	private Map<String, ClientProducer> producers;
+	private ServerLocator serverLocator;
 	
 	protected boolean isServerActive() {
 		return server.isActive();
 	}
 	
-	protected boolean isProducerClosed() {
-		return producer.isClosed();
+	protected boolean isProducerClosed(String name) {
+		ClientProducer producer = producers.get(name);
+		return producer == null || producer.isClosed();
 	}
 	
 	protected boolean isConsumerClosed(String name) {
@@ -51,111 +66,217 @@ public class MessageBusServer {
 		return consumer == null || consumer.isClosed();
 	}
 	
+	/**
+	 * starts HornetQ server 
+	 * 
+	 * @throws Exception
+	 */
 	protected void startServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "starting...");
 		AddressSettings addressSettings = new AddressSettings();
-		addressSettings.setMaxSizeBytes((long) (Configuration.getMemoryLimit() * 1024 * 1024));
-		addressSettings.setPageSizeBytes((long) (Configuration.getMemoryLimit() * 512 * 1024));
-		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.PAGE);
+		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
+		addressSettings.setMaxSizeBytes(memoryLimit);
+		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
 		String workingDirectory = Configuration.getDiskDirectory();
 
         org.hornetq.core.config.Configuration configuration = new ConfigurationImpl();
         configuration.setJournalDirectory(workingDirectory + "messages/journal");
         configuration.setCreateJournalDir(true);
 		configuration.setJournalType(JournalType.NIO);
-		configuration.setBindingsDirectory(workingDirectory + "messages/binding");
+        configuration.setBindingsDirectory(workingDirectory + "messages/binding");
 		configuration.setCreateBindingsDir(true);
-        configuration.setPersistenceEnabled(false);
+		configuration.setPersistenceEnabled(false);
         configuration.setSecurityEnabled(false);
         configuration.setPagingDirectory(workingDirectory + "messages/paging");
-        configuration.getAddressesSettings().put(address, addressSettings);
-//        configuration.setThreadPoolMaxSize(1);
-//        configuration.setScheduledThreadPoolMaxSize(1);
-
+        configuration.getAddressesSettings().put(Constants.address, addressSettings);
+        
 		Map<String, Object> connectionParams = new HashMap<>();
 		connectionParams.put("port", 55555);
 		connectionParams.put("host", "localhost");
-//		connectionParams.put("nio-remoting-threads", 3);
 		TransportConfiguration nettyConfig = new TransportConfiguration(NettyAcceptorFactory.class.getName(), connectionParams);
 
         HashSet<TransportConfiguration> transportConfig = new HashSet<>();
 		transportConfig.add(nettyConfig);
-//        transportConfig.add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
+        transportConfig.add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
         
 		configuration.setAcceptorConfigurations(transportConfig);
-		HornetQServer server = HornetQServers.newHornetQServer(configuration);
+		server = HornetQServers.newHornetQServer(configuration);
 		server.start();
 
-        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(
-        		new TransportConfiguration(NettyConnectorFactory.class.getName(), connectionParams));
-//        ServerLocator serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
+        serverLocator = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
 
+        serverLocator.setUseGlobalPools(false);
+        serverLocator.setScheduledThreadPoolMaxSize(10);
+        serverLocator.setThreadPoolMaxSize(10);
         sf = serverLocator.createSessionFactory();
-		LoggingService.logInfo(MODULE_NAME, "started");
-		
-		Runtime.getRuntime().addShutdownHook(new Thread(shutdownHook));
 	}
 	
-	private final Runnable shutdownHook = () -> {
-		try {
-			stopServer();
-		} catch (Exception e) {}
-	};
-	
+	/**
+	 * creates IOFabric message queues, {@link ClientMessage} producer
+	 * and {@link ClientSession}
+	 * 
+	 * @throws Exception
+	 */
 	protected void initialize() throws Exception {
-		messageBusSession = sf.createSession(false, true, true);
-		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(address)); 
-		if (!queueQuery.isExists())
-			messageBusSession.createQueue(address, address, false);
-		messageBusSession.close();
+		messageBusSession = sf.createSession(true, true, 0);
+		QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.address));
+		if (queueQuery.isExists())
+			messageBusSession.deleteQueue(Constants.address);
+		queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.commandlineAddress));
+		if (queueQuery.isExists())
+			messageBusSession.deleteQueue(Constants.commandlineAddress);
+		messageBusSession.createQueue(Constants.address, Constants.address, false);
+		messageBusSession.createQueue(Constants.commandlineAddress, Constants.commandlineAddress, false);
+
+		commandlineProducer = messageBusSession.createProducer(Constants.commandlineAddress);
 		
-		messageBusSession = sf.createSession();
-		producer = messageBusSession.createProducer(address);
-		commandlineConsumer = messageBusSession.createConsumer(address, String.format("receiver = '%s'", "iofabric.commandline.command"));
+		commandlineConsumer = messageBusSession.createConsumer(Constants.commandlineAddress, String.format("receiver = '%s'", "iofabric.commandline.command"));
 		commandlineConsumer.setMessageHandler(new CommandLineHandler());
 		messageBusSession.start();
+
+		Runnable countMessages = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.address));
+					LoggingService.logInfo(MODULE_NAME, String.valueOf(queueQuery.getMessageCount()));
+				} catch (HornetQException e) {
+				}
+			}
+		};
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+		scheduler.scheduleAtFixedRate(countMessages, 10, 10, TimeUnit.SECONDS);
 	}
 	
+	/**
+	 * creates a new {@link ClientConsumer} for receiver {@link Element}
+	 * 
+	 * @param name - ID of {@link Element}
+	 * @throws Exception
+	 */
 	protected void createCosumer(String name) throws Exception {
 		if (consumers == null)
 			consumers = new ConcurrentHashMap<>();
 
-		ClientConsumer consumer = messageBusSession.createConsumer(address, String.format("receiver = '%s'", name));
+		ClientConsumer consumer = messageBusSession.createConsumer(Constants.address, String.format("receiver = '%s'", name));
 		consumers.put(name, consumer);
+	}
+	
+	/**
+	 * returns {@link ClientConsumer} of a receiver {@link Element}
+	 * 
+	 * @param receiver - ID of {@link Element}
+	 * @return {@link ClientConsumer}
+	 */
+	protected ClientConsumer getConsumer(String receiver) {
+		if (consumers == null || !consumers.containsKey(receiver))
+			try {
+				createCosumer(receiver);
+			} catch (Exception e) {
+				return null;
+			}
+		return consumers.get(receiver);
+	}
+	
+	/**
+	 * removes {@link ClientConsumer} when a receiver {@link Element} has been removed
+	 * 
+	 * @param name - ID of {@link Element}
+	 */
+	protected void removeConsumer(String name) {
+		if (consumers == null)
+			return;
+		consumers.remove(name);
+	}
+	
+	/**
+	 * creates a new {@link ClientProducer} for publisher {@link Element}
+	 * 
+	 * @param name - ID of {@link Element}
+	 * @throws Exception
+	 */
+	protected void createProducer(String name) throws Exception {
+		if (producers == null)
+			producers = new ConcurrentHashMap<>();
+		ClientProducer producer = messageBusSession.createProducer(Constants.address);
+		producers.put(name, producer);
+	}
+	
+	/**
+	 * returns {@link ClientProducer} of a publisher {@link Element} 
+	 * 
+	 * @param publisher - ID of {@link Element}
+	 * @return {@link ClientProducer}
+	 */
+	protected ClientProducer getProducer(String publisher) {
+		if (producers == null || !producers.containsKey(publisher))
+			try {
+				createProducer(publisher);
+			} catch (Exception e) {
+				return null;
+			}
+		return producers.get(publisher);
+	}
+	
+	/**
+	 * removes {@link ClientConsumer} when a receiver {@link Element} has been removed
+	 * 
+	 * @param name - ID of {@link Element}
+	 */
+	protected void removeProducer(String name) {
+		if (producers == null)
+			return;
+		producers.remove(name);
 	}
 	
 	protected static ClientSession getSession() {
 		return messageBusSession;
 	}
 	
-	protected static ClientProducer getProducer() {
-		return producer;
+	public static ClientProducer getCommandlineProducer() {
+		return commandlineProducer;
 	}
-	
-	protected static ClientConsumer getConsumer(String receiver) {
-		if (consumers == null)
-			return null;
-		return consumers.get(receiver);
-	}
-	
+
+	/**
+	 * stops all consumers, producers and HornetQ server
+	 * 
+	 * @throws Exception
+	 */
 	protected void stopServer() throws Exception {
 		LoggingService.logInfo(MODULE_NAME, "stopping...");
-		if (producer != null)
-			producer.close();
 		if (consumers != null)
 			consumers.entrySet().forEach(entry -> {
 				try {
 					entry.getValue().close();
 				} catch (Exception e) {	}
 			});
+		if (commandlineConsumer != null)
+			commandlineConsumer.close();
+		if (producers != null)
+			producers.entrySet().forEach(entry -> {
+				try {
+					entry.getValue().close();
+				} catch (Exception e) {	}
+			});
+		if (serverLocator != null)
+			serverLocator.close();
 		if (sf != null)
 			sf.close();
 		if (server != null)
 			server.stop();
-		LoggingService.logInfo(MODULE_NAME, "starting...");
+		LoggingService.logInfo(MODULE_NAME, "stopped");
 	}
 
-	protected void openProducer() throws Exception {
-		producer = messageBusSession.createProducer(address);
+	/**
+	 * sets memory usage limit of HornetQ server
+	 * 
+	 */
+	public void setMemoryLimit() {
+		AddressSettings addressSettings = new AddressSettings();
+		long memoryLimit = (long) (Configuration.getMemoryLimit() * 1_000_000);
+		addressSettings.setMaxSizeBytes(memoryLimit);
+		addressSettings.setAddressFullMessagePolicy(AddressFullMessagePolicy.DROP);
+
+		server.getAddressSettingsRepository().addMatch(Constants.address, addressSettings);
 	}
 }

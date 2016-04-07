@@ -5,6 +5,12 @@ import org.hornetq.api.core.client.MessageHandler;
 
 import com.iotracks.iofabric.local_api.MessageCallback;
 
+/**
+ * listener for real-time receiving
+ * 
+ * @author saeid
+ *
+ */
 public class MessageListener implements MessageHandler{
 	private final MessageCallback callback;
 	

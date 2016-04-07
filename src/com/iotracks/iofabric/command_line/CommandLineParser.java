@@ -10,7 +10,21 @@ import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * to parse command-line parameters 
+ * 
+ * @author saeid
+ *
+ */
 public class CommandLineParser {
+
+	/**
+	* parse command-line parameters 
+	* 
+	* @param command - command-line parameters
+	* 
+	* @return String
+	*/
 	public static String parse(String command) {
 		String[] args = command.split(" ");
 		StringBuilder result = new StringBuilder();
@@ -46,7 +60,9 @@ public class CommandLineParser {
 
 		if (args[0].equals("deprovision")) {
 			result.append("Deprovisioning from controller...");
-			result.append(FieldAgent.getInstance().deProvision());
+			try {
+				result.append(FieldAgent.getInstance().deProvision());
+			} catch (Exception e) {}
 
 			return result.toString();
 		}
@@ -63,7 +79,11 @@ public class CommandLineParser {
 			}
 			String provisionKey = args[1];
 			result.append("Provisioning with key \"" + provisionKey + "\"...");
-			result.append(FieldAgent.getInstance().provision(provisionKey));
+			String instanceId = FieldAgent.getInstance().provision(provisionKey); 
+			if (instanceId.equals(""))
+				result.append("\nProvisioning failed");
+			else
+				result.append(String.format("\nSuccess - instance ID is %s", instanceId));
 
 			return result.toString();
 		}
@@ -72,7 +92,7 @@ public class CommandLineParser {
 			if (args.length < 3)
 				return showHelp();
 
-			Map<String, String> config = new HashMap<>();
+			Map<String, Object> config = new HashMap<>();
 			int i = 1;
 			while (i < args.length) {
 				if (args.length - i < 2)
@@ -90,9 +110,9 @@ public class CommandLineParser {
 			
 			try {
 				Configuration.setConfig(config);
-				result.append("\nNew configuration");
-				for (Entry<String, String> e : config.entrySet())
-					result.append("\n\tOption : -" + e.getKey() + "\tValue : " + e.getValue());
+				result.append("Change(s) accepted");
+				for (Entry<String, Object> e : config.entrySet())
+					result.append("\n\tParameter : -").append(e.getKey()).append("\tValue : ").append(e.getValue().toString());
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config : " + e.getMessage());
@@ -104,6 +124,11 @@ public class CommandLineParser {
 		return showHelp();
 	}
 
+	/**
+	* returns help 
+	* 
+	* @return String
+	*/
 	private static String showHelp() {
 		StringBuilder help = new StringBuilder();
 		help.append("Usage: iofabric [OPTIONS] COMMAND [arg...]\n" + 

@@ -1,12 +1,18 @@
 package com.iotracks.iofabric.resource_consumption_manager;
 
+/**
+ * represents Resource Consumption Manager status 
+ * 
+ * @author saeid
+ *
+ */
 public class ResourceConsumptionManagerStatus {
-	private float memoryUsage;				// FC
-	private float diskUsage;				// FC
-	private float cpuUsage;					// FC
-	private boolean memoryViolation;		// FC
-	private boolean diskViolation;			// FC
-	private boolean cpuViolation;			// FC
+	private float memoryUsage;
+	private float diskUsage;
+	private float cpuUsage;
+	private boolean memoryViolation;
+	private boolean diskViolation;
+	private boolean cpuViolation;
 	
 	public ResourceConsumptionManagerStatus() {
 	}

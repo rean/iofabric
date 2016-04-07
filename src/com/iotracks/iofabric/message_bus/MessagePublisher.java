@@ -6,25 +6,41 @@ import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientProducer;
 import org.hornetq.api.core.client.ClientSession;
 
+import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.Route;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * publisher {@link Element}
+ * 
+ * @author saeid
+ *
+ */
 public class MessagePublisher {
 	private final MessageArchive archive;
-	
 	private final String name;
 	private ClientProducer producer;
 	private ClientSession session;
 	private Route route;
 	
-	public MessagePublisher(String name, Route route) {
+	public MessagePublisher(String name, Route route, ClientProducer producer) {
 		this.archive = new MessageArchive(name);
 		this.route = route;
 		this.name = name;
-		producer = MessageBusServer.getProducer();
-		session = MessageBusServer.getSession();
+		this.producer = producer;
+		this.session = MessageBusServer.getSession();
 	}
 	
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * publishes a {@link Message}
+	 * 
+	 * @param message - {@link Message} to be published
+	 * @throws Exception
+	 */
 	protected synchronized void publish(Message message) throws Exception {
 		byte[] bytes = message.getBytes();
 
@@ -41,9 +57,9 @@ public class MessagePublisher {
 		}
 	}
 	
-	protected void update() {
-		session = MessageBusServer.getSession();
-		producer = MessageBusServer.getProducer();
+	protected void update(ClientProducer producer, ClientSession session) {
+		this.session = session;
+		this.producer = producer;
 	}
 	
 	protected void updateRoute(Route route) {
@@ -56,7 +72,16 @@ public class MessagePublisher {
 		} catch (Exception e) {}
 	}
 
-	public List<Message> messageQuery(long from, long to) {
+	/**
+	 * retrieves list of {@link Message} published by this {@link Element} 
+	 * within a time frame
+	 * 
+	 * @param from - beginning of time frame
+	 * @param to - end of time frame
+	 * @return list of {@link Message}
+	 */
+	public synchronized List<Message> messageQuery(long from, long to) {
 		return archive.messageQuery(from, to);
 	}
+	
 }

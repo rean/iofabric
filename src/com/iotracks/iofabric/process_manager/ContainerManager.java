@@ -1,13 +1,21 @@
 package com.iotracks.iofabric.process_manager;
 
 import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.Image;
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
-import com.iotracks.iofabric.utils.Constants.ElementStatus;
+import com.iotracks.iofabric.utils.Orchestrator;
+import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
+/**
+ * provides methods to manage Docker containers
+ * 
+ * @author saeid
+ *
+ */
 public class ContainerManager {
 
 	private DockerUtil docker;
@@ -16,12 +24,16 @@ public class ContainerManager {
 	private ElementManager elementManager;
 
 	private final String MODULE_NAME = "Container Manager";
-	private final String IOFABRIC_HOST = "iofabric:127.0.0.1";
 
 	public ContainerManager() {
 		elementManager = ElementManager.getInstance();
 	}
 	
+	/**
+	 * pulls {@link Image} from {@link Registry} and creates a new {@link Container}
+	 * 
+	 * @throws Exception
+	 */
 	private void addElement() throws Exception {
 		Element element = (Element) task.data;
 
@@ -37,7 +49,7 @@ public class ContainerManager {
 			throw e;
 		}
 
-		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.BUILDING);
+		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.BUILDING);
 		LoggingService.logInfo(MODULE_NAME, "building \"" + element.getImageName() + "\"");
 		
 		
@@ -63,33 +75,42 @@ public class ContainerManager {
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" pulled", element.getImageName()));
 
 			LoggingService.logInfo(MODULE_NAME, "creating container");
-			String id = docker.createContainer(element, IOFABRIC_HOST);
+			String hostName = "iofabric:" + Orchestrator.getInetAddress().getHostAddress();
+			String id = docker.createContainer(element, hostName);
 			element.setContainerId(id);
 			element.setContainerIpAddress(docker.getContainerIpAddress(id));
 			element.setRebuild(false);
 			LoggingService.logInfo(MODULE_NAME, "created");
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME, ex.getMessage());
-			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.FAILED_VERIFICATION);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.FAILED_VERIFICATION);
 			throw ex;
 		}
 	}
 
+	/**
+	 * starts a {@link Container} and sets appropriate status
+	 * 
+	 */
 	private void startElement() {
 		Element element = (Element) task.data;
-		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STARTING);
+		StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.STARTING);
 		LoggingService.logInfo(MODULE_NAME, String.format("starting container \"%s\"", element.getImageName()));
 		try {
 			docker.startContainer(element.getContainerId());
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" started", element.getImageName()));
-			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.RUNNING);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.RUNNING);
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME,
 					String.format("container \"%s\" not found - %s", element.getImageName(), ex.getMessage()));
-			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementStatus.STOPPED);
+			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.STOPPED);
 		}
 	}
 	
+	/**
+	 * stops a {@link Container}
+	 * 
+	 */
 	private void stopContainer() {
 		LoggingService.logInfo(MODULE_NAME, String.format("stopping container \"%s\"", containerId));
 		try {
@@ -100,6 +121,11 @@ public class ContainerManager {
 		}
 	}
 
+	/**
+	 * removes a {@link Container}
+	 * 
+	 * @throws Exception
+	 */
 	private void removeContainer() throws Exception {
 		if (!docker.hasContainer(containerId))
 			return;
@@ -113,6 +139,11 @@ public class ContainerManager {
 		}
 	}
 
+	/**
+	 * removes an existing {@link Container} and creates a new one
+	 * 
+	 * @throws Exception
+	 */
 	private void updateContainer() throws Exception {
 		stopContainer();
 		removeContainer();
@@ -120,6 +151,12 @@ public class ContainerManager {
 		startElement();
 	}
 
+	/**
+	 * executes assigned task
+	 * 
+	 * @param task - taks to be executed
+	 * @return result
+	 */
 	public boolean execute(ContainerTask task) {
 		docker = DockerUtil.getInstance();
 		if (!docker.isConnected()) {
