@@ -46,26 +46,30 @@ public class ResourceConsumptionManager {
 	 * 
 	 */
 	private Runnable getUsageData = () -> {
-		try {
-			LoggingService.logInfo(MODULE_NAME, "get usage data");
-	
-			float memoryUsage = getMemoryUsage();
-			float cpuUsage = getCpuUsage();
-			float diskUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
-			
-			StatusReporter.setResourceConsumptionManagerStatus()
-					.setMemoryUsage(memoryUsage / 1_000_000)
-					.setCpuUsage(cpuUsage)
-					.setDiskUsage(diskUsage / 1_000_000_000)
-					.setMemoryViolation(memoryUsage > memoryLimit)
-					.setDiskViolation(diskUsage > diskLimit)
-					.setCpuViolation(cpuUsage > cpuLimit);
-			
-			if (diskUsage > diskLimit) {
-				float amount = diskUsage - (diskLimit * 0.75f);
-				removeArchives(amount);
-			}
-		} catch (Exception e) {}
+		while (true) {
+			try {
+				Thread.sleep(GET_USAGE_DATA_FREQ_SECONDS * 1000);
+
+				LoggingService.logInfo(MODULE_NAME, "get usage data");
+
+				float memoryUsage = getMemoryUsage();
+				float cpuUsage = getCpuUsage();
+				float diskUsage = directorySize(Configuration.getDiskDirectory() + "messages/archive/");
+
+				StatusReporter.setResourceConsumptionManagerStatus()
+						.setMemoryUsage(memoryUsage / 1_000_000)
+						.setCpuUsage(cpuUsage)
+						.setDiskUsage(diskUsage / 1_000_000_000)
+						.setMemoryViolation(memoryUsage > memoryLimit)
+						.setDiskViolation(diskUsage > diskLimit)
+						.setCpuViolation(cpuUsage > cpuLimit);
+
+				if (diskUsage > diskLimit) {
+					float amount = diskUsage - (diskLimit * 0.75f);
+					removeArchives(amount);
+				}
+			} catch (Exception e) {}
+		}
 	};
 
 	/**
@@ -210,9 +214,8 @@ public class ResourceConsumptionManager {
 	 */
 	public void start() {
 		instanceConfigUpdated();
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(getUsageData, GET_USAGE_DATA_FREQ_SECONDS, GET_USAGE_DATA_FREQ_SECONDS,
-				TimeUnit.SECONDS);
+
+		new Thread(getUsageData, "ResourceConsumptionManager : GetUsageData").start();
 
 		LoggingService.logInfo(MODULE_NAME, "started");
 	}
