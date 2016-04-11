@@ -86,6 +86,8 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 		String receiverId = jsonObject.getString("id");
 		long timeframeStart = Long.parseLong(jsonObject.get("timeframestart").toString());
 		long timeframeEnd = Long.parseLong(jsonObject.get("timeframeend").toString());
+		long actualTimeframeEnd = timeframeEnd;
+		
 		JsonArray publishersArray = jsonObject.getJsonArray("publishers");
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
@@ -106,11 +108,15 @@ public class QueryMessageReceiverHandler implements Callable<Object> {
 					messagesArray.add(msgJson);
 					msgCount++;
 				}
+				
+				actualTimeframeEnd = messageList.get(messageList.size()-1).getTimestamp();
 			}
 		}
 
 		builder.add("status", "okay");
 		builder.add("count", msgCount);
+		builder.add("timeframestart", timeframeStart);
+		builder.add("timeframeend", actualTimeframeEnd);
 		builder.add("messages", messagesArray);
 
 		String result = builder.build().toString();
