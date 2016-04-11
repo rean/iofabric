@@ -49,7 +49,7 @@ The Stream Viewer stores output files with timestamps as the names. They are sto
 
 * When a "new config" control message is received, immediately make a request on the ioFabric REST API to retrieve the updated container configuration
 
-* Build this system container with the Node.js Container SDK
+* Build this system container with the Java Container SDK
 
 * Use TLS secure socket connections to the ComSat, which will not open successfully if the identity of the ComSat cannot be verified
 

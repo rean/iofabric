@@ -13,6 +13,8 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide methods for performing all of the functionality listed in the Local API Specification document
 * Publish the SDK so it can be included in any developer's build without manual installation
 * Provide convenience functions for changing base64 encoded data to raw bytes
+* Decode (from base64 to raw bytes) the ContextData and ContentData fields of messages arriving via the REST API
+* Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
 ####Node.js
@@ -22,6 +24,8 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide methods for performing all of the functionality listed in the Local API Specification document
 * Publish the SDK with NPM so it can be included in any developer's build without manual installation
 * Provide convenience functions for changing base64 encoded data to raw bytes
+* Decode (from base64 to raw bytes) the ContextData and ContentData fields of messages arriving via the REST API
+* Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
 ####Python
@@ -31,6 +35,8 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide methods for performing all of the functionality listed in the Local API Specification document
 * Publish the SDK with the Python foundation so it can be included (using pip) in any developer's build without manual installation
 * Provide convenience functions for changing base64 encoded data to raw bytes
+* Decode (from base64 to raw bytes) the ContextData and ContentData fields of messages arriving via the REST API
+* Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
 ####C
@@ -40,6 +46,8 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide function pointer openings or direct socket access for developers to receive incoming real-time control and message communication
 * Provide functions for performing all of the functionality listed in the Local API Specification document
 * Provide convenience functions for changing base64 encoded data to raw bytes
+* Decode (from base64 to raw bytes) the ContextData and ContentData fields of messages arriving via the REST API
+* Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
 ####C++
@@ -49,6 +57,8 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide a standard observer pattern implementation for developers to receive incoming real-time control and message communication
 * Provide methods for performing all of the functionality listed in the Local API Specification document
 * Provide convenience functions for changing base64 encoded data to raw bytes
+* Decode (from base64 to raw bytes) the ContextData and ContentData fields of messages arriving via the REST API
+* Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
 ####C&#35;
@@ -57,4 +67,6 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Provide a standard observer pattern implementation for developers to receive incoming real-time control and message communication
 * Provide methods for performing all of the functionality listed in the Local API Specification document
 * Provide convenience functions for changing base64 encoded data to raw bytes
+* Decode (from base64 to raw bytes) the ContextData and ContentData fields of messages arriving via the REST API
+* Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
