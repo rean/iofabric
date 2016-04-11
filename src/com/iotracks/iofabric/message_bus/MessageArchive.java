@@ -10,6 +10,7 @@ import java.util.Stack;
 
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.utils.BytesUtil;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -158,6 +159,16 @@ public class MessageArchive {
 	}
 
 	/**
+	 *
+	 *
+	 * @return
+     */
+	private long freeMemory() {
+		Runtime runtime = Runtime.getRuntime();
+		return runtime.maxMemory() - ((runtime.totalMemory() - runtime.freeMemory()));
+	}
+
+	/**
 	 * retrieves list of {@link Message} sent by this {@link Element} within the time frame 
 	 * 
 	 * @param from - beginning of time frame in milliseconds
@@ -165,6 +176,7 @@ public class MessageArchive {
 	 * @return list of {@link Message}
 	 */
 	public List<Message> messageQuery(long from, long to) {
+		boolean outOfMemory = false;
 		List<Message> result = new ArrayList<>();
 		
 		File workingDirectory = new File(diskDirectory);
@@ -193,7 +205,7 @@ public class MessageArchive {
 			resultSet.push(listOfFiles[i]);
 		
 		byte[] header = new byte[HEADER_SIZE];
-		while (!resultSet.isEmpty()) {
+		while (!resultSet.isEmpty() && !outOfMemory) {
 			File file = resultSet.pop();
 			String fileName = file.getName();
 			try {
@@ -201,6 +213,11 @@ public class MessageArchive {
 				RandomAccessFile dataFile = new RandomAccessFile(new File(diskDirectory + fileName.substring(0, fileName.indexOf(".")) + ".iomsg"), "r");
 				long dataFileLength = dataFile.length();
 				while (indexFile.getFilePointer() < indexFile.length()) {
+					if (freeMemory() < 32 * Constants.MiB) {
+						outOfMemory = true;
+						break;
+					}
+
 					indexFile.read(header, 0, HEADER_SIZE);
 					if (((header[0] * 256) + header[1]) != 4)
 						throw new Exception("invalid index file format");
