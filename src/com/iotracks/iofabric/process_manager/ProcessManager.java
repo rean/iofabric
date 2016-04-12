@@ -110,7 +110,7 @@ public class ProcessManager {
 						docker.connect();
 					} catch (Exception e) {
 						LoggingService.logWarning(MODULE_NAME, "unable to connect to docker daemon");
-						return;
+						continue;
 					}
 				}
 

@@ -143,7 +143,7 @@ public class FieldAgent {
 				LoggingService.logInfo(MODULE_NAME, "post status");
 				if (notProvisioned()) {
 					LoggingService.logWarning(MODULE_NAME, "not provisioned");
-					return;
+					continue;
 				}
 
 				if (controllerNotConnected()) {
@@ -151,7 +151,7 @@ public class FieldAgent {
 						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 					else
 						verficationFailed();
-					return;
+					continue;
 				}
 
 				try {
@@ -193,7 +193,7 @@ public class FieldAgent {
 				LoggingService.logInfo(MODULE_NAME, "get changes list");
 				if (notProvisioned()) {
 					LoggingService.logWarning(MODULE_NAME, "not provisioned");
-					return;
+					continue;
 				}
 
 				if (controllerNotConnected()) {
@@ -201,7 +201,7 @@ public class FieldAgent {
 						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 					else
 						verficationFailed();
-					return;
+					continue;
 				}
 
 				Map<String, Object> queryParams = new HashMap<>();
@@ -214,10 +214,10 @@ public class FieldAgent {
 						throw new Exception("error from fabric controller");
 				} catch (CertificateException|SSLHandshakeException e) {
 					verficationFailed();
-					return;
+					continue;
 				} catch (Exception e) {
 					LoggingService.logWarning(MODULE_NAME, "unable to get changes : " + e.getMessage());
-					return;
+					continue;
 				}
 
 				lastGetChangesList = result.getJsonNumber("timestamp").longValue();

@@ -47,7 +47,7 @@ public final class Configuration {
 	private static String logDiskDirectory;
 	private static int logFileCount;
 	
-	public static boolean debugging = false;
+	public static boolean debugging = true;
 
 	/**
 	 * return XML node value
