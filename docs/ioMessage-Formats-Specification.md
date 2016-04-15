@@ -58,3 +58,33 @@ Based on the standard MIME type, this is just a regular JPEG image file. Whether
 </pre>
 
 
+###OpenWeatherMap Container Message
+
+#####InfoType
+<pre>
+	weather/mixed/open-weather-map
+</pre>
+
+#####InfoFormat
+<pre>
+	text/json
+</pre>
+
+#####ContentData(raw)
+<pre>
+	{"coord":{"lon":-122.45,"lat":37.77},"weather":[{"id":721,"main":"Haze","description":"haze","icon":"50d"}],"base":"cmc stations","main":{"temp":281.48,"pressure":1021,"humidity":83,"temp_min":276.15,"temp_max":289.15},"wind":{"speed":5.1,"deg":120,"gust":8.2},"clouds":{"all":1},"dt":1460727300,"sys":{"type":1,"id":226,"message":0.0045,"country":"US","sunrise":1460727181,"sunset":1460774797},"id":5391997,"name":"San Francisco County","cod":200}
+</pre>
+
+#####Publisher
+<pre>
+	OpenWeatherMapContainer
+</pre>
+
+#####Tag
+<pre>
+	open-weather-map
+</pre>
+
+
+
+
