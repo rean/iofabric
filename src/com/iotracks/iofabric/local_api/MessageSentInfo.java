@@ -7,13 +7,25 @@ import com.iotracks.iofabric.message_bus.Message;
  * @author ashita
  * @since 2016
  */
-public class MessageSendContextCount {
+public class MessageSentInfo {
 	Message message;
 	int sendTryCount = 0;
+	long timeMillis;
 	
-	MessageSendContextCount(Message message, int count){
+	
+
+	MessageSentInfo(Message message, int count, long timeMillis){
 		this.message = message;
 		this.sendTryCount = count;
+		this.timeMillis = timeMillis;
+	}
+	
+	public long getTimeMillis() {
+		return timeMillis;
+	}
+
+	public void setTimeMillis(long timeMillis) {
+		this.timeMillis = timeMillis;
 	}
 	
 	/**
