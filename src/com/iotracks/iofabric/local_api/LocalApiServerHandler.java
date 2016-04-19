@@ -138,8 +138,10 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			}
 		}
 		
-		found = true;
-
+		if(getLocalIp().equals(remoteIpAddress)) {
+		 found = true;
+		}
+		
 		if(!found){
 			String errorMsg = "IP address " + remoteIpAddress + " not found as registered";
 			LoggingService.logWarning(MODULE_NAME, errorMsg);

@@ -40,6 +40,7 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.util.internal.StringUtil;
+import io.netty.util.internal.ThreadLocalRandom;
 
 
 /**
@@ -131,35 +132,40 @@ public class FieldAgent {
 	 * 
 	 */
 	private final Runnable postStatus = () -> {
-		Map<String , Object> status = getFabricStatus();
-		if (Configuration.debugging) {
-			LoggingService.logInfo(MODULE_NAME, status.toString());
-		}
-		try {
-			LoggingService.logInfo(MODULE_NAME, "post status");
-			if (notProvisioned()) {
-				LoggingService.logWarning(MODULE_NAME, "not provisioned");
-				return;
+		while (true) {
+			Map<String, Object> status = getFabricStatus();
+			if (Configuration.debugging) {
+				LoggingService.logInfo(MODULE_NAME, status.toString());
 			}
-			
-			if (controllerNotConnected()) {
-				if (StatusReporter.getFieldAgentStatus().isControllerVerified())
-					LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
-				else
-					verficationFailed();
-				return;
-			}
-			
 			try {
-				JsonObject result = orchestrator.doCommand("status", null, status);
-				if (!result.getString("status").equals("ok"))
-					throw new Exception("error from fabric controller");
+				Thread.sleep(POST_STATUS_FREQ_SECONDS * 1000);
+
+				LoggingService.logInfo(MODULE_NAME, "post status");
+				if (notProvisioned()) {
+					LoggingService.logWarning(MODULE_NAME, "not provisioned");
+					continue;
+				}
+
+				if (controllerNotConnected()) {
+					if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+					else
+						verficationFailed();
+					continue;
+				}
+
+				try {
+					JsonObject result = orchestrator.doCommand("status", null, status);
+					if (!result.getString("status").equals("ok"))
+						throw new Exception("error from fabric controller");
+				} catch (Exception e) {
+					LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
+				}
+			} catch (CertificateException | SSLHandshakeException e) {
+				verficationFailed();
 			} catch (Exception e) {
-				LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
 			}
-		} catch (CertificateException|SSLHandshakeException e) {
-			verficationFailed();
-		} catch (Exception e) {}
+		}
 	};
 	
 	/**
@@ -180,63 +186,67 @@ public class FieldAgent {
 	 * 
 	 */
 	private final Runnable getChangesList = () -> {
-		try {
-			LoggingService.logInfo(MODULE_NAME, "get changes list");
-			if (notProvisioned()) {
-				LoggingService.logWarning(MODULE_NAME, "not provisioned");
-				return;
-			}
-			
-			if (controllerNotConnected()) {
-				if (StatusReporter.getFieldAgentStatus().isControllerVerified())
-					LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
-				else
-					verficationFailed();
-				return;
-			}
-			
-			Map<String, Object> queryParams = new HashMap<>();
-			queryParams.put("timestamp", lastGetChangesList);
-			
-			JsonObject result = null;
+		while (true) {
 			try {
-				result = orchestrator.doCommand("changes", queryParams, null);
-				if (!result.getString("status").equals("ok"))
-					throw new Exception("error from fabric controller");
-			} catch (CertificateException|SSLHandshakeException e) {
-				verficationFailed();
-				return;
-			} catch (Exception e) {
-				LoggingService.logWarning(MODULE_NAME, "unable to get changes : " + e.getMessage());
-				return;
-			}
-	
-			lastGetChangesList = result.getJsonNumber("timestamp").longValue();
-			StatusReporter.setFieldAgentStatus().setLastCommandTime(lastGetChangesList);
-	
-			JsonObject changes = result.getJsonObject("changes");
-			if (changes.getBoolean("config") && !initialization)
-				getFabricConfig();
-			
-			if (changes.getBoolean("registries") || initialization) {
-				loadRegistries(false);
-				ProcessManager.getInstance().update();
-			}
-			if (changes.getBoolean("containerlist") || initialization) {
-				loadElementsList(false);
-				ProcessManager.getInstance().update();
-			}
-			if (changes.getBoolean("containerconfig") || initialization) {
-				loadElementsConfig(false);
-				LocalApi.getInstance().update();
-			}
-			if (changes.getBoolean("routing") || initialization) {
-				loadRoutes(false);
-				MessageBus.getInstance().update();
-			}
-			
-			initialization = false;
-		} catch (Exception e) {}
+				Thread.sleep(GET_CHANGES_LIST_FREQ_SECONDS * 1000);
+
+				LoggingService.logInfo(MODULE_NAME, "get changes list");
+				if (notProvisioned()) {
+					LoggingService.logWarning(MODULE_NAME, "not provisioned");
+					continue;
+				}
+
+				if (controllerNotConnected()) {
+					if (StatusReporter.getFieldAgentStatus().isControllerVerified())
+						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
+					else
+						verficationFailed();
+					continue;
+				}
+
+				Map<String, Object> queryParams = new HashMap<>();
+				queryParams.put("timestamp", lastGetChangesList);
+
+				JsonObject result = null;
+				try {
+					result = orchestrator.doCommand("changes", queryParams, null);
+					if (!result.getString("status").equals("ok"))
+						throw new Exception("error from fabric controller");
+				} catch (CertificateException|SSLHandshakeException e) {
+					verficationFailed();
+					continue;
+				} catch (Exception e) {
+					LoggingService.logWarning(MODULE_NAME, "unable to get changes : " + e.getMessage());
+					continue;
+				}
+
+				lastGetChangesList = result.getJsonNumber("timestamp").longValue();
+				StatusReporter.setFieldAgentStatus().setLastCommandTime(lastGetChangesList);
+
+				JsonObject changes = result.getJsonObject("changes");
+				if (changes.getBoolean("config") && !initialization)
+					getFabricConfig();
+
+				if (changes.getBoolean("registries") || initialization) {
+					loadRegistries(false);
+					ProcessManager.getInstance().update();
+				}
+				if (changes.getBoolean("containerlist") || initialization) {
+					loadElementsList(false);
+					ProcessManager.getInstance().update();
+				}
+				if (changes.getBoolean("containerconfig") || initialization) {
+					loadElementsConfig(false);
+					LocalApi.getInstance().update();
+				}
+				if (changes.getBoolean("routing") || initialization) {
+					loadRoutes(false);
+					MessageBus.getInstance().update();
+				}
+
+				initialization = false;
+			} catch (Exception e) {}
+		}
 	};
 	
 	/**
@@ -265,8 +275,10 @@ public class FieldAgent {
 			JsonArray registriesList = null;
 			if (fromFile) {
 				registriesList = readFile(filesPath + filename);
-				if (registriesList == null)
-					throw new Exception("cannot read from file");
+				if (registriesList == null) {
+					loadRegistries(false);
+					return;
+				}
 			} else {
 				JsonObject result = orchestrator.doCommand("registries", null, null);
 				if (!result.getString("status").equals("ok"))				
@@ -323,8 +335,10 @@ public class FieldAgent {
 			JsonArray configs = null;
 			if (fromFile) {
 				configs = readFile(filesPath + filename);
-				if (configs == null)
-					throw new Exception("cannot read from file");
+				if (configs == null) {
+					loadElementsConfig(false);
+					return;
+				}
 			} else {
 				JsonObject result = orchestrator.doCommand("containerconfig", null, null);
 				if (!result.getString("status").equals("ok"))
@@ -375,8 +389,10 @@ public class FieldAgent {
 			JsonArray routes = null;
 			if (fromFile) {
 				routes = readFile(filesPath + filename);
-				if (routes == null)
-					throw new Exception("cannot read from file");
+				if (routes == null) {
+					loadRoutes(false);
+					return;
+				}
 			} else {
 				JsonObject result = orchestrator.doCommand("routing", null, null);
 				if (!result.getString("status").equals("ok"))
@@ -434,8 +450,10 @@ public class FieldAgent {
 			JsonArray containers = null;
 			if (fromFile) {
 				containers = readFile(filesPath + filename);
-				if (containers == null)
-					throw new Exception("cannot read from file");
+				if (containers == null) {
+					loadElementsList(false);
+					return;
+				}
 			} else {
 				JsonObject result = orchestrator.doCommand("containerlist", null, null);
 				if (!result.getString("status").equals("ok"))
@@ -507,10 +525,13 @@ public class FieldAgent {
 	 * @throws Exception
 	 */
 	private final Runnable pingController = () -> {
-		try {
-			LoggingService.logInfo(MODULE_NAME, "ping controller");
-			ping();
-		} catch (Exception e) {}
+		while (true) {
+			try {
+				Thread.sleep(PING_CONTROLLER_FREQ_SECONDS * 1000);
+				LoggingService.logInfo(MODULE_NAME, "ping controller");
+				ping();
+			} catch (Exception e) {}
+		}
 	};
 
 	/**
@@ -812,7 +833,6 @@ public class FieldAgent {
 		elementManager = ElementManager.getInstance();
 		orchestrator = new Orchestrator();
 		
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 		ping();
 		getFabricConfig();
 		if (!notProvisioned()) {
@@ -821,8 +841,9 @@ public class FieldAgent {
 			loadElementsConfig(true);
 			loadRoutes(true);
 		}
-		scheduler.scheduleAtFixedRate(pingController, 0, PING_CONTROLLER_FREQ_SECONDS, TimeUnit.SECONDS);
-		scheduler.scheduleAtFixedRate(getChangesList, 0, GET_CHANGES_LIST_FREQ_SECONDS, TimeUnit.SECONDS);
-		scheduler.scheduleAtFixedRate(postStatus, POST_STATUS_FREQ_SECONDS, POST_STATUS_FREQ_SECONDS, TimeUnit.SECONDS);
+
+		new Thread(pingController, "FieldAgent : Ping").start();
+		new Thread(getChangesList, "FieldAgent : GetChangesList").start();
+		new Thread(postStatus, "FieldAgent : PostStaus").start();
 	}
 }

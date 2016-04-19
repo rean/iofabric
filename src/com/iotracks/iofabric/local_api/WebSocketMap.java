@@ -14,8 +14,8 @@ public class WebSocketMap {
 	static Hashtable<String, ChannelHandlerContext> controlWebsocketMap;
 	static Hashtable<String, ChannelHandlerContext> messageWebsocketMap;
 	
-	static Hashtable<ChannelHandlerContext, MessageSendContextCount> unackMessageSendingMap;
-	static Hashtable<ChannelHandlerContext, Integer> unackControlSignalsMap;
+	static Hashtable<ChannelHandlerContext, MessageSentInfo> unackMessageSendingMap;
+	static Hashtable<ChannelHandlerContext, ControlSignalSentInfo> unackControlSignalsMap;
 
 	private static WebSocketMap instance = null;
 
@@ -36,8 +36,8 @@ public class WebSocketMap {
 					instance = new WebSocketMap();
 					controlWebsocketMap = new Hashtable<String, ChannelHandlerContext>();
 					messageWebsocketMap = new Hashtable<String, ChannelHandlerContext>();
-					unackMessageSendingMap = new Hashtable<ChannelHandlerContext, MessageSendContextCount>();
-					unackControlSignalsMap = new Hashtable<ChannelHandlerContext, Integer>();
+					unackMessageSendingMap = new Hashtable<ChannelHandlerContext, MessageSentInfo>();
+					unackControlSignalsMap = new Hashtable<ChannelHandlerContext, ControlSignalSentInfo>();
 				}
 			}
 		}

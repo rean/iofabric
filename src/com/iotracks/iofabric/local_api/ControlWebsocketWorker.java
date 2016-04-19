@@ -18,7 +18,7 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 public class ControlWebsocketWorker  implements Runnable{
 	private final String MODULE_NAME = "Local API";
 	private static final Byte OPCODE_CONTROL_SIGNAL = 0xC;
-	
+
 	/**
 	 * Initiating control signals for unacknowledged signals
 	 * If tried for 10 times, then disable real-time service for the channel
@@ -28,31 +28,39 @@ public class ControlWebsocketWorker  implements Runnable{
 	@Override
 	public void run() {
 		LoggingService.logInfo(MODULE_NAME,"Initiating control signals for unacknowledged signals");
-		
-		for(Map.Entry<ChannelHandlerContext, Integer> contextEntry : WebSocketMap.unackControlSignalsMap.entrySet()){
+
+		for(Map.Entry<ChannelHandlerContext, ControlSignalSentInfo> contextEntry : WebSocketMap.unackControlSignalsMap.entrySet()){
 			ChannelHandlerContext ctx = contextEntry.getKey();
-			int tryCount = contextEntry.getValue();
-			if(tryCount < 10){
-				try {
-					initiateControlSignal(ctx);
-				} catch (Exception e) {
-					e.printStackTrace();
+			ControlSignalSentInfo controlSignalSentInfo = contextEntry.getValue();
+			int tryCount = controlSignalSentInfo.getSendTryCount();
+
+			long lastSendTime = WebSocketMap.unackControlSignalsMap.get(ctx).getTimeMillis();
+			long timeEllapsed = (System.currentTimeMillis() - lastSendTime)/1000;
+
+			if(timeEllapsed > 20){
+
+				if(tryCount < 10){
+					try {
+						initiateControlSignal(ctx);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}else{
+					LoggingService.logInfo(MODULE_NAME," Initiating control signal expires");
+					try {
+						WebSocketMap.unackControlSignalsMap.remove(ctx);
+						WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.controlWebsocketMap);
+						StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					return;
 				}
-			}else{
-				LoggingService.logInfo(MODULE_NAME," Initiating control signal expires");
-				try {
-					WebSocketMap.unackControlSignalsMap.remove(ctx);
-					WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.controlWebsocketMap);
-					StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				return;
 			}
 		}
 		return;
 	}
-	
+
 	/**
 	 * Helper method to initiate control sinals
 	 * @param ChannelHandlerContext
@@ -60,9 +68,9 @@ public class ControlWebsocketWorker  implements Runnable{
 	 */
 	private void initiateControlSignal(ChannelHandlerContext ctx) throws Exception{
 
-		int tryCount = WebSocketMap.unackControlSignalsMap.get(ctx);
-		tryCount = tryCount+1;
-		WebSocketMap.unackControlSignalsMap.put(ctx, tryCount);
+		ControlSignalSentInfo controlSignalSentInfo = WebSocketMap.unackControlSignalsMap.get(ctx);
+		int tryCount = controlSignalSentInfo.getSendTryCount() + 1;
+		WebSocketMap.unackControlSignalsMap.put(ctx, new ControlSignalSentInfo(tryCount, System.currentTimeMillis()));
 
 		ByteBuf buffer1 = ctx.alloc().buffer();
 		buffer1.writeByte(OPCODE_CONTROL_SIGNAL);

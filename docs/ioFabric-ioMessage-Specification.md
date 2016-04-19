@@ -174,6 +174,9 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 
 
 ###JSON Embodiment of an ioMessage
+
+The ContextData and ContentData fields of an ioMessage, when embodied in JSON, will always be base64 encoded. This is because these fields contain raw bytes and there is no other way to represent raw bytes in the utf-8 structure that JSON uses. Upon receiving a JSON ioMessage, you must base64 decode those two fields. Before sending a JSON ioMessage, you must base64 encode those two fields.
+
 <pre>
 	{
 		"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
@@ -193,7 +196,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 		"nonce":"",
 		"difficultytarget":0.0,
 		"infotype":"image/jpeg",
-		"infoformat":"base64",
+		"infoformat":"file/.jpg",
 		"contextdata":"",
 		"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
 	}
@@ -201,6 +204,9 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 
 
 ###XML Embodiment of an ioMessage
+
+The ContextData and ContentData fields of an ioMessage, when embodied in XML, will always be base64 encoded. This is because these fields contain raw bytes and there is no other way to represent raw bytes in the text formats that XML uses. Upon receiving an XML ioMessage, you must base64 decode those two fields. Before sending an XML ioMessage, you must base64 encode those two fields.
+
 <pre>
 	&lt;iomessage&gt;
 		&lt;id&gt;sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf&lt;/id&gt;
@@ -220,7 +226,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 		&lt;nonce&gt;&lt;/nonce&gt;
 		&lt;difficultytarget&gt;0.0&lt;/difficultytarget&gt;
 		&lt;infotype&gt;image/jpeg&lt;/infotype&gt;
-		&lt;infoformat&gt;base64&lt;/infoformat&gt;
+		&lt;infoformat&gt;file/.jpg&lt;/infoformat&gt;
 		&lt;contextdata&gt;&lt;/contextdata&gt;
 		&lt;contentdata&gt;sDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufha&lt;/contentdata&gt;
 	&lt;/iomessage&gt;

@@ -33,19 +33,24 @@ public class MessageWebsocketWorker implements Runnable{
 	public void run() {
 		LoggingService.logInfo(MODULE_NAME,"Initiating message sending for the unacknowledged messages");
 
-		for(Map.Entry<ChannelHandlerContext, MessageSendContextCount> contextEntry : WebSocketMap.unackMessageSendingMap.entrySet()){
+		for(Map.Entry<ChannelHandlerContext, MessageSentInfo> contextEntry : WebSocketMap.unackMessageSendingMap.entrySet()){
 
 			LoggingService.logInfo(MODULE_NAME,"Sending messages - unacknowledged messages");
 			ChannelHandlerContext ctx = contextEntry.getKey();
 			int tryCount = WebSocketMap.unackMessageSendingMap.get(ctx).getSendTryCount();
-			if(tryCount < 10){
-				sendRealTimeMessage(ctx);
-			}else{
-				WebSocketMap.unackMessageSendingMap.remove(ctx);
-				MessageBus.getInstance().disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
-				WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);	
-				StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
-				return;
+			long lastSendTime = WebSocketMap.unackMessageSendingMap.get(ctx).getTimeMillis();
+			long timeEllapsed = (System.currentTimeMillis() - lastSendTime)/1000;
+			
+			if(timeEllapsed > 20){
+				if(tryCount < 10){
+					sendRealTimeMessage(ctx);
+				}else{
+					WebSocketMap.unackMessageSendingMap.remove(ctx);
+					MessageBus.getInstance().disableRealTimeReceiving(WebsocketUtil.getIdForWebsocket(ctx, WebSocketMap.messageWebsocketMap));
+					WebsocketUtil.removeWebsocketContextFromMap(ctx, WebSocketMap.messageWebsocketMap);	
+					StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.messageWebsocketMap.size());
+					return;
+				}
 			}
 		}
 		return;
@@ -58,11 +63,11 @@ public class MessageWebsocketWorker implements Runnable{
 	 */
 	private void sendRealTimeMessage(ChannelHandlerContext ctx){
 		count++;
-		MessageSendContextCount messageContextAndCount = WebSocketMap.unackMessageSendingMap.get(ctx);
+		MessageSentInfo messageContextAndCount = WebSocketMap.unackMessageSendingMap.get(ctx);
 		int tryCount = messageContextAndCount.getSendTryCount();
 		Message message = messageContextAndCount.getMessage();
 		tryCount = tryCount + 1;
-		WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSendContextCount(message, tryCount));
+		WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSentInfo(message, tryCount, System.currentTimeMillis()));
 		ByteBuf buffer1 = ctx.alloc().buffer();
 
 		//Send Opcode

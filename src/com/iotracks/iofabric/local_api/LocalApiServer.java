@@ -54,8 +54,8 @@ public final class LocalApiServer {
 			LoggingService.logInfo(MODULE_NAME, "Local api server started at port: " + PORT + "\n");
 			
 			ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-			scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
-			scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 5, 5, TimeUnit.SECONDS);
+			scheduler.scheduleAtFixedRate(new ControlWebsocketWorker(), 10, 10, TimeUnit.SECONDS);
+			scheduler.scheduleAtFixedRate(new MessageWebsocketWorker(), 10, 10, TimeUnit.SECONDS);
 			ch.closeFuture().sync();
 		}finally{
 			bossGroup.shutdownGracefully();

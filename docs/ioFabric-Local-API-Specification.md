@@ -10,6 +10,9 @@ This means that we will offer the standard closure codes, op codes, etc.
 
 All messages passing through the Local API must be in the standard ioMessage format, which can be found in the ioMessage Specification document.
 
+Note that the ContextData and ContentData fields of all messages must be base64 encoded when sending messages in a JSON response. All incoming messages will also have these fields base64 encoded and will need to be decoded upon arrival. No other fields should be encoded, because all other fields are capable of being transmitted directly as JSON. This allows containers to quickly examine an incoming message InfoType and InfoFormat to see if performing the base64 decoding is worthwhile.
+
+If a message InfoFormat is actually base64, then it will be encoded again during transmission as JSON. While this is not very efficient, it is sustainable as a practice. Neither the ioFabric Local API nor the containers need to examine messages to determine the type of encoding. They both simply decode arriving messages and encode messages before sending (just the ContextData and ContentData fields).
 
 ####Get Container Configuration
 
@@ -83,7 +86,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 					"infotype":"text",
 					"infoformat":"utf-8",
 					"contextdata":"",
-					"contentdata":"A New Message!"
+					"contentdata":"8943asefSDhdkljsafhasldkjhfdlk==wehj23"
 				},
 				{
 					"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
@@ -103,7 +106,7 @@ This endpoint returns a JSON array containing all of the unread messages for thi
 					"nonce":"",
 					"difficultytarget":0.0,
 					"infotype":"image/jpeg",
-					"infoformat":"base64",
+					"infoformat":"file/.jpg",
 					"contextdata":"",
 					"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
 				}
@@ -173,7 +176,7 @@ This endpoing allows a container to post a message to the system. The message ID
 		"infotype":"text",
 		"infoformat":"utf-8",
 		"contextdata":"",
-		"contentdata":"A New Message!"
+		"contentdata":"42h3isuhsdlukhfsd==w3efakhsfdkljhafs"
 	}
 
 	Note: The POST value is JSON and must be sent with HTTP header set as “Content-Type:application/json”
@@ -183,6 +186,8 @@ This endpoing allows a container to post a message to the system. The message ID
 ####Get Messages From Publishers Within Timeframe
 
 This endpoint allows a container to query for messages from any number of publishers within any timeframe. The messages will only be provided for publishers that the container is allowed to access. In other words, if a container doesn't normally receive messages from a particular publisher, then the container can try to query for messages from that publisher but it won't receive any. The message retrieval and security controls are all performed by the Message Bus module and the allowed messages are passed to the Local API to send out.
+
+Beause of memory limitations, the Local API may only send a portion of the requested messages. The Local API will decide how many messages are appropriate to send and will return the adjusted starting and ending timeframe as illustrated in the sample response output below. The Local API will always use the starting timeframe and will adjust the ending timeframe to reflect the timestamp of the actual last message in the list.
 
 #####Endpoint
 
@@ -196,6 +201,8 @@ This endpoint allows a container to query for messages from any number of publis
 	{
 		"status":"okay",
 		"count":2,
+		"timeframestart":1234567890123,
+		"timeframeend":9876543210123,
 		"messages":
 			[
 				{
@@ -218,7 +225,7 @@ This endpoint allows a container to query for messages from any number of publis
 					"infotype":"text",
 					"infoformat":"utf-8",
 					"contextdata":"",
-					"contentdata":"A New Message!"
+					"contentdata":"wei8y43ipouwhefdskhufdslkjahsdf"
 				},
 				{
 					"id":"sd098wytfskduhdsfDSKfhjw4o8ytwesdoiuhsdf",
@@ -238,7 +245,7 @@ This endpoint allows a container to query for messages from any number of publis
 					"nonce":"",
 					"difficultytarget":0.0,
 					"infotype":"image/jpeg",
-					"infoformat":"base64",
+					"infoformat":"file/.jpg",
 					"contextdata":"",
 					"contentdata":"sdkjhwrtiy8wrtgSDFOiuhsrgowh4touwsdhsDFDSKJhsdkljasjklweklfjwhefiauhw98p328946982weiusfhsdkufhaskldjfslkjdhfalsjdf=serg4towhr"
 				}

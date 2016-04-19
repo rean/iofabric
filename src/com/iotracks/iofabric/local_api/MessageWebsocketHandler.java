@@ -195,7 +195,7 @@ public class MessageWebsocketHandler {
 
 		if (messageSocketMap != null && messageSocketMap.containsKey(receiverId)) {
 			ctx = messageSocketMap.get(receiverId);
-			WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSendContextCount(message, 1));
+			WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSentInfo(message, 1, System.currentTimeMillis()));
 			ByteBuf buffer1 = ctx.alloc().buffer();
 
 			// Send Opcode

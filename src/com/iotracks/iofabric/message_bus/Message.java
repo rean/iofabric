@@ -59,7 +59,7 @@ public class Message {
 		contentData = null;
 		contextData = null;		
 	}
-	
+
 	public Message(String publisher) {
 		super();
 		this.publisher = publisher;
@@ -101,12 +101,16 @@ public class Message {
 			setInfoType(json.getString("infotype"));
 		if (json.containsKey("infoformat"))
 			setInfoFormat(json.getString("infoformat"));
-		if (json.containsKey("contextdata"))
-			setContextData(json.getString("contextdata").getBytes());
-		if (json.containsKey("contentdata"))
-			setContentData(json.getString("contentdata").getBytes());
+		if (json.containsKey("contextdata")){
+			String contextData = json.getString("contextdata");
+			setContextData(Base64.getDecoder().decode(contextData.getBytes()));
+		}
+		if (json.containsKey("contentdata")){
+			String contentData = json.getString("contentdata");
+			setContentData(Base64.getDecoder().decode(contentData.getBytes()));
+		}
 	}
-	
+
 	public Message(byte[] rawBytes) {
 		super();
 
@@ -638,7 +642,7 @@ public class Message {
 	public String toString() {
 		return toJson().toString();
 	}
-	
+
 	public void decodeBase64(byte[] bytes) {
 		Message result = null;
 		try {
@@ -665,7 +669,7 @@ public class Message {
 			contentData = result.contentData;
 		} catch (Exception e) {	}
 	}
-	
+
 	public JsonObject toJson() {
 		return Json.createObjectBuilder()
 				.add("id", id == null ? "" : id)
@@ -686,11 +690,11 @@ public class Message {
 				.add("difficultytarget", difficultyTarget)
 				.add("infotype", infoType == null ? "" : infoType)
 				.add("infoformat", infoFormat == null ? "" : infoFormat)
-				.add("contextdata", contextData == null ? "" : new String(contextData))
-				.add("contentdata", contentData == null ? "" : new String(contentData))
+				.add("contextdata", contextData == null ? "" : new String(Base64.getEncoder().encode(contextData)))
+				.add("contentdata", contentData == null ? "" : new String(Base64.getEncoder().encode(contentData)))
 				.build();
 	}
-	
+
 	public byte[] encodeBase64() {
 		try {
 			return Base64.getEncoder().encode(this.getBytes());

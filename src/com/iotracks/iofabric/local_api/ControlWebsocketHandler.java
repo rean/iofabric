@@ -156,11 +156,11 @@ public class ControlWebsocketHandler {
 		for (String changedConfigElmtId : changedConfigElmtsList) {
 			if (controlMap.containsKey(changedConfigElmtId)) {
 				ctx = controlMap.get(changedConfigElmtId);
-				WebSocketMap.unackControlSignalsMap.put(ctx, 1);
+				WebSocketMap.unackControlSignalsMap.put(ctx, new ControlSignalSentInfo(1, System.currentTimeMillis()));
 
 				ByteBuf buffer1 = ctx.alloc().buffer();
 				buffer1.writeByte(OPCODE_CONTROL_SIGNAL);
-				ctx.channel().write(new BinaryWebSocketFrame(buffer1));
+				ctx.channel().writeAndFlush(new BinaryWebSocketFrame(buffer1));
 			}
 		}
 

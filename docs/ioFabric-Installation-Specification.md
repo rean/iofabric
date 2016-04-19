@@ -15,6 +15,8 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 * Ubuntu 12.04
 * Ubuntu 14.04
 * Ubuntu 15.10
+* Fedora 22
+* Fedora 23
 
 ####Package Installation Requirements
 
@@ -23,6 +25,7 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 	* For Debian - define the service as /etc/init.d/iofabric and register it using update-rc.d
 	* For CentOS - define the service as /etc/init.d/iofabric and register it using chkconfig
 	* For RHEL - define the service as /etc/init.d/iofabric and register it using chkconfig
+	* For Fedora - define the service as /etc/init.d/iofabric and register it using chkconfig
 
 * Place all program files in the standard locations for each Linux version
 	* For all Linux versions the directory for the executable file is /usr/bin/
@@ -53,14 +56,16 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 	* For Debian - provide iofabric as a Debian package (deb) so it can be installed using "apt-get"
 	* For CentOS - provide iofabric as an RPM package (rpm) so it can be installed using "yum"
 	* For RHEL - provide iofabric as an RPM package (rpm) so it can be installed using "yum"
+	* For Fedora - provide iofabric as an RPM package (rpm) so it can be installed using "dnf"
 	* For all Linux versions - host a repository on the iotracks.com Web server
 	* For all Linux versions - host instructions for installation on the iotracks.com Web server
 	* In the instructions, show how to add our repository to the list, add our verification keys, etc.
-	* Follow Docker's instruction styles for the different Linux versions:
+	* In the instructions, link to Docker's installation guides for the different Linux versions:
 		* [Docker CentOS installation](https://docs.docker.com/engine/installation/linux/centos/)
 		* [Docker RHEL installation](https://docs.docker.com/engine/installation/linux/rhel/)
 		* [Docker Ubuntu installation](https://docs.docker.com/engine/installation/linux/ubuntulinux/)
 		* [Docker Debian installation](https://docs.docker.com/engine/installation/linux/debian/)
+		* [Docker Fedora installation](https://docs.docker.com/engine/installation/linux/fedora/)
 
 * Register the ioFabric command line utility for auto-complete functionality
 	* For all Linux versions - make sure there is an auto-complete script copied into the /etc/bash_completion.d/ directory
