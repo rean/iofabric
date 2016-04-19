@@ -1,0 +1,9 @@
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\ContainerSdk.XML
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\ContainerSdk.dll
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\ContainerSdk.pdb
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\ContainerSdk.dll.CodeAnalysisLog.xml
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\ContainerSdk.dll.lastcodeanalysissucceeded
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\Newtonsoft.Json.dll
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\Newtonsoft.Json.xml
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\obj\Debug\ContainerSdk.dll
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\obj\Debug\ContainerSdk.pdb

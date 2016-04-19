@@ -1,0 +1,5 @@
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\Utils\bin\Debug\Utils.dll.config
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\Utils\bin\Debug\Utils.dll
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\Utils\bin\Debug\Utils.pdb
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\Utils\obj\Debug\Utils.dll
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\Utils\obj\Debug\Utils.pdb
