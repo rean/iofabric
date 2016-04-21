@@ -294,6 +294,8 @@ This endpoint lists the current changes for the ioFabric instance. Much of the t
 
 This endpoint provides the current list of containers that should be running on the ioFabric instance. Containers should be added, removed, and restarted based upon this list. A change in port mappings should result in a restart because containers can only have their port mappings updated when they are being started. When the "rebuild" flag is set to true, the Docker daemon should be asked to build the container again. If there is an updated image in the registry, Docker will see the change and flush its cache and build the container from the updated image. Triggering container updates is the purpose of this "rebuild" flag.
 
+When the "roothostaccess" flag is set to true, the container should have its network mapped directly to the host network, which is done in Docker by the command "--net=host". Custom port mappings are not possible in this configuration, so any port mappings that are specified for that container should be ignored.
+
 The container IDs provided by this endpoint are 128-bit random IDs formatted in base58. We use base58 for compactness, readability, portability, and transmission safety between systems.
 
 #####Endpoint
@@ -315,6 +317,7 @@ The container IDs provided by this endpoint are 128-bit random IDs formatted in 
                     “imageid”:”iotracks/catalog:linksys_ip_camera_v1_7_7”,
                     "registryurl":"hub.docker.com",
                     “lastmodified”:1234567890123,
+                    "roothostaccess":false,
                     "rebuild":false,
                     “portmappings”:
                         [
@@ -333,6 +336,7 @@ The container IDs provided by this endpoint are 128-bit random IDs formatted in 
                     “imageid”:”iotracks/catalog:debug_console_v1_2_0”,
                     "registryurl":"24.158.9.17",
 					“lastmodified”:1234567890123,
+                    "roothostaccess":true,
 					"rebuild":true,
                     “portmappings”:
                         [
