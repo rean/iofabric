@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
+import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.buffer.ByteBuf;
@@ -49,7 +50,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 	private final String MODULE_NAME = "Local API";
-	
+
 	private HttpRequest request;
 	private ByteArrayOutputStream baos;
 	private byte[] content;
@@ -60,7 +61,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		super(false);
 		this.executor = executor;
 	}
-	
+
 	/**
 	 * Method to be called on channel initializing
 	 * Can take requests as HttpRequest or Websocket frame
@@ -137,11 +138,11 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 				break;
 			}
 		}
-		
+
 		if(getLocalIp().equals(remoteIpAddress)) {
-		 found = true;
+			found = true;
 		}
-		
+
 		if(!found){
 			String errorMsg = "IP address " + remoteIpAddress + " not found as registered";
 			LoggingService.logWarning(MODULE_NAME, errorMsg);
@@ -178,20 +179,21 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		String uri = request.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
-		String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
+		if(tokens.length >= 3){
+			String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
 
-		if (url.equals("/v2/control/socket")) {
-			ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
-			controlSocket.handle(ctx, request);
-			return;
+			if (url.equals("/v2/control/socket")) {
+				ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
+				controlSocket.handle(ctx, request);
+				return;
+			}
+
+			if (url.equals("/v2/message/socket")) {
+				MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
+				messageSocket.handle(ctx, request);
+				return;
+			}
 		}
-
-		if (url.equals("/v2/message/socket")) {
-			MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
-			messageSocket.handle(ctx, request);
-			return;
-		}
-
 		LoggingService.logWarning(MODULE_NAME, "Error: Request not found");
 		ByteBuf	errorMsgBytes = ctx.alloc().buffer();
 		String errorMsg = " Request not found ";
@@ -224,7 +226,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		return mapName;
 	}
-	
+
 	/**
 	 * Method to be called on channel complete 
 	 * @param ChannelHandlerContext
@@ -281,10 +283,10 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	 */
 	private String getRemoteIP(ChannelHandlerContext ctx) {
 		InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-	    InetAddress inetaddress = socketAddress.getAddress();
-	    return inetaddress.getHostAddress();
+		InetAddress inetaddress = socketAddress.getAddress();
+		return inetaddress.getHostAddress();
 	}
-	
+
 	/**
 	 * Return the local host IP address 
 	 * @param none
@@ -296,7 +298,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
 			while (networkInterfaces.hasMoreElements()) {
 				NetworkInterface networkInterface = networkInterfaces.nextElement();
-				if (networkInterface.getName().equals("lo")) {
+				if (networkInterface.getName().equals(Configuration.getNetworkInterface())) {
 					Enumeration<InetAddress> ipAddresses = networkInterface.getInetAddresses();
 					while (ipAddresses.hasMoreElements()) {
 						address = ipAddresses.nextElement();
