@@ -12,6 +12,7 @@ import com.iotracks.iofabric.message_bus.MessageBusStatus;
 import com.iotracks.iofabric.process_manager.ProcessManagerStatus;
 import com.iotracks.iofabric.resource_consumption_manager.ResourceConsumptionManagerStatus;
 import com.iotracks.iofabric.supervisor.SupervisorStatus;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -23,7 +24,6 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
  */
 public final class StatusReporter {
 	
-	private static int SET_SYSTEM_TIME_FREQ_SECONDS = 60;
 	private static SupervisorStatus supervisorStatus = new SupervisorStatus();
 	private static ResourceConsumptionManagerStatus resourceConsumptionManagerStatus = new ResourceConsumptionManagerStatus();
 	private static FieldAgentStatus fieldAgentStatus = new FieldAgentStatus();
@@ -144,7 +144,7 @@ public final class StatusReporter {
 	 */
 	public static void start() {
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.scheduleAtFixedRate(setStatusReporterSystemTime, 0, SET_SYSTEM_TIME_FREQ_SECONDS, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(setStatusReporterSystemTime, Constants.SET_SYSTEM_TIME_FREQ_SECONDS, Constants.SET_SYSTEM_TIME_FREQ_SECONDS, TimeUnit.SECONDS);
 		LoggingService.logInfo(MODULE_NAME, "started");
 	}
 

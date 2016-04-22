@@ -27,8 +27,7 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 public class MessageBus {
 	
 	private final String MODULE_NAME = "Message Bus";
-	private final int SPEED_CALCULATION_FREQ_MINUTES = 1;
-	
+
 	private MessageBusServer messageBusServer;
 	private Map<String, Route> routes;
 	private Map<String, MessagePublisher> publishers;
@@ -134,7 +133,7 @@ public class MessageBus {
 	private final Runnable calculateSpeed = () -> {
 		while (true) {
 			try {
-				Thread.sleep(SPEED_CALCULATION_FREQ_MINUTES * 60 * 1000);
+				Thread.sleep(Constants.SPEED_CALCULATION_FREQ_MINUTES * 60 * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "calculating message processing speed");
 

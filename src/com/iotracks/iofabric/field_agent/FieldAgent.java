@@ -34,6 +34,7 @@ import com.iotracks.iofabric.local_api.LocalApi;
 import com.iotracks.iofabric.message_bus.MessageBus;
 import com.iotracks.iofabric.process_manager.ProcessManager;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ControllerStatus;
 import com.iotracks.iofabric.utils.Orchestrator;
 import com.iotracks.iofabric.utils.configuration.Configuration;
@@ -51,9 +52,6 @@ import io.netty.util.internal.ThreadLocalRandom;
  */
 public class FieldAgent {
 	private final String MODULE_NAME = "Field Agent";
-	private final int GET_CHANGES_LIST_FREQ_SECONDS = 30;
-	private final int PING_CONTROLLER_FREQ_SECONDS = 60;
-	private final int POST_STATUS_FREQ_SECONDS = 5;
 	private final String filesPath = "/etc/iofabric/";
 
 	private Orchestrator orchestrator;
@@ -133,18 +131,20 @@ public class FieldAgent {
 	 */
 	private final Runnable postStatus = () -> {
 		while (true) {
+			LoggingService.logInfo(MODULE_NAME, "start posting");
 			Map<String, Object> status = getFabricStatus();
 			if (Configuration.debugging) {
 				LoggingService.logInfo(MODULE_NAME, status.toString());
 			}
 			try {
-				Thread.sleep(POST_STATUS_FREQ_SECONDS * 1000);
+				Thread.sleep(Constants.POST_STATUS_FREQ_SECONDS * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "post status");
 				if (notProvisioned()) {
 					LoggingService.logWarning(MODULE_NAME, "not provisioned");
 					continue;
 				}
+				LoggingService.logInfo(MODULE_NAME, "provisioned");
 
 				if (controllerNotConnected()) {
 					if (StatusReporter.getFieldAgentStatus().isControllerVerified())
@@ -153,8 +153,10 @@ public class FieldAgent {
 						verficationFailed();
 					continue;
 				}
+				LoggingService.logInfo(MODULE_NAME, "verified");
 
 				try {
+					LoggingService.logInfo(MODULE_NAME, "sending...");
 					JsonObject result = orchestrator.doCommand("status", null, status);
 					if (!result.getString("status").equals("ok"))
 						throw new Exception("error from fabric controller");
@@ -188,7 +190,7 @@ public class FieldAgent {
 	private final Runnable getChangesList = () -> {
 		while (true) {
 			try {
-				Thread.sleep(GET_CHANGES_LIST_FREQ_SECONDS * 1000);
+				Thread.sleep(Constants.GET_CHANGES_LIST_FREQ_SECONDS * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "get changes list");
 				if (notProvisioned()) {
@@ -468,6 +470,7 @@ public class FieldAgent {
 
 				Element element = new Element(container.getString("id"), container.getString("imageid"));
 				element.setRebuild(container.getBoolean("rebuild"));
+				element.setRootHostAccess(container.getBoolean("roothostaccess"));
 				element.setRegistry(container.getString("registryurl"));
 				element.setLastModified(container.getJsonNumber("lastmodified").longValue());
 
@@ -527,7 +530,7 @@ public class FieldAgent {
 	private final Runnable pingController = () -> {
 		while (true) {
 			try {
-				Thread.sleep(PING_CONTROLLER_FREQ_SECONDS * 1000);
+				Thread.sleep(Constants.PING_CONTROLLER_FREQ_SECONDS * 1000);
 				LoggingService.logInfo(MODULE_NAME, "ping controller");
 				ping();
 			} catch (Exception e) {}
@@ -833,13 +836,13 @@ public class FieldAgent {
 		elementManager = ElementManager.getInstance();
 		orchestrator = new Orchestrator();
 		
-		ping();
+		boolean isConnected = ping();
 		getFabricConfig();
 		if (!notProvisioned()) {
-			loadRegistries(true);
-			loadElementsList(true);
-			loadElementsConfig(true);
-			loadRoutes(true);
+			loadRegistries(!isConnected);
+			loadElementsList(!isConnected);
+			loadElementsConfig(!isConnected);
+			loadRoutes(!isConnected);
 		}
 
 		new Thread(pingController, "FieldAgent : Ping").start();

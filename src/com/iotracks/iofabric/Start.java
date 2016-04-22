@@ -217,7 +217,7 @@ public class Start {
 		startLoggingService();
 
 		outToNull();
-		
+
 		LoggingService.logInfo("Main", "starting supervisor");
 		Supervisor supervisor = new Supervisor();
 		try {

@@ -134,18 +134,18 @@ public class MessageBusServer {
 		commandlineConsumer.setMessageHandler(new CommandLineHandler());
 		messageBusSession.start();
 
-		Runnable countMessages = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.address));
-					LoggingService.logInfo(MODULE_NAME, String.valueOf(queueQuery.getMessageCount()));
-				} catch (HornetQException e) {
-				}
-			}
-		};
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
-		scheduler.scheduleAtFixedRate(countMessages, 10, 10, TimeUnit.SECONDS);
+//		Runnable countMessages = new Runnable() {
+//			@Override
+//			public void run() {
+//				try {
+//					QueueQuery queueQuery = messageBusSession.queueQuery(new SimpleString(Constants.address));
+//					LoggingService.logInfo(MODULE_NAME, String.valueOf(queueQuery.getMessageCount()));
+//				} catch (HornetQException e) {
+//				}
+//			}
+//		};
+//		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+//		scheduler.scheduleAtFixedRate(countMessages, 10, 10, TimeUnit.SECONDS);
 	}
 	
 	/**

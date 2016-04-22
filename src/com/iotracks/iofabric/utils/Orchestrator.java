@@ -25,6 +25,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import com.iotracks.iofabric.utils.logging.LoggingService;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -246,7 +247,7 @@ public class Orchestrator {
 			HttpPost post = new HttpPost(uri.toString());
 			post.setConfig(config);
 			post.setEntity(new UrlEncodedFormEntity(postData));
-			
+
 			CloseableHttpResponse response = client.execute(post);
 			
 			BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));

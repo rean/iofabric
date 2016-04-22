@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
@@ -22,7 +23,6 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
  *
  */
 public class ResourceConsumptionManager {
-	private final long GET_USAGE_DATA_FREQ_SECONDS = 5;
 	private String MODULE_NAME = "Resource Consumption Manager";
 	private float diskLimit, cpuLimit, memoryLimit;
 	private static ResourceConsumptionManager instance;
@@ -48,7 +48,7 @@ public class ResourceConsumptionManager {
 	private Runnable getUsageData = () -> {
 		while (true) {
 			try {
-				Thread.sleep(GET_USAGE_DATA_FREQ_SECONDS * 1000);
+				Thread.sleep(Constants.GET_USAGE_DATA_FREQ_SECONDS * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "get usage data");
 
