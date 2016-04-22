@@ -75,7 +75,9 @@ public class ContainerManager {
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" pulled", element.getImageName()));
 
 			LoggingService.logInfo(MODULE_NAME, "creating container");
-			String hostName = "iofabric:" + Orchestrator.getInetAddress().getHostAddress();
+			String hostName = "";
+			if (!element.isRootHostAccess())
+				hostName = "iofabric:" + Orchestrator.getInetAddress().getHostAddress();
 			String id = docker.createContainer(element, hostName);
 			element.setContainerId(id);
 			element.setContainerIpAddress(docker.getContainerIpAddress(id));
@@ -99,6 +101,7 @@ public class ContainerManager {
 		try {
 			docker.startContainer(element.getContainerId());
 			LoggingService.logInfo(MODULE_NAME, String.format("\"%s\" started", element.getImageName()));
+			element.setContainerIpAddress(docker.getContainerIpAddress(element.getContainerId()));
 			StatusReporter.setProcessManagerStatus().getElementStatus(element.getElementId()).setStatus(ElementState.RUNNING);
 		} catch (Exception ex) {
 			LoggingService.logWarning(MODULE_NAME,

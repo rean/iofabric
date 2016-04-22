@@ -31,8 +31,6 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 public class ProcessManager {
 	
 	private final String MODULE_NAME = "Process Manager";
-	private final int MONITOR_CONTAINERS_STATUS_FREQ_SECONDS = 10;
-	private final int MONITOR_REGISTRIES_STATUS_FREQ_SECONDS = 30;
 	private ElementManager elementManager;
 	private Queue<ContainerTask> tasks;
 	public static Boolean updated = true;
@@ -81,6 +79,11 @@ public class ProcessManager {
 			Container container =  docker.getContainer(element.getElementId());
 			if (container != null && !element.isRebuild()) {
 				element.setContainerId(container.getId());
+				try {
+					element.setContainerIpAddress(docker.getContainerIpAddress(container.getId()));
+				} catch (Exception e) {
+					element.setContainerIpAddress("0.0.0.0");
+				}
 				long elementLastModified = element.getLastModified();
 				long containerCreated = container.getCreated();
 				if (elementLastModified > containerCreated || !docker.comprarePorts(element))
@@ -101,7 +104,7 @@ public class ProcessManager {
 	private final Runnable containersMonitor = () -> {
 		while (true) {
 			try {
-				Thread.sleep(MONITOR_CONTAINERS_STATUS_FREQ_SECONDS * 1000);
+				Thread.sleep(Constants.MONITOR_CONTAINERS_STATUS_FREQ_SECONDS * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "monitoring containers");
 
@@ -168,8 +171,11 @@ public class ProcessManager {
 	 */
 	private void addTask(ContainerTask task) {
 		synchronized (tasks) {
-			if (!tasks.contains(task))
-				tasks.add(task);
+			if (!tasks.contains(task)) {
+                LoggingService.logInfo(MODULE_NAME, "NEW TASK ADDED");
+                tasks.add(task);
+                tasks.notifyAll();
+            }
 		}
 	}
 	
@@ -180,37 +186,38 @@ public class ProcessManager {
 	private final Runnable checkTasks = () -> {
 		while (true) {
 			try {
-				Thread.sleep(1000);
+				ContainerTask newTask = null;
 
-				synchronized (checkTasksLock) {
-					ContainerTask newTask = null;
-					synchronized (tasks) {
-						newTask = tasks.poll();
-					}
-					if (newTask != null) {
-						boolean taskResult = containerManager.execute(newTask);
-						if (!taskResult && (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) || newTask.action.equals(Tasks.REMOVE))) {
-							if (newTask.retries < 5) {
-								newTask.retries++;
-								addTask(newTask);
-							} else {
-								String msg = "";
-								switch (newTask.action) {
-									case REMOVE:
-										msg = String.format("\"%s\" removing container failed after 5 attemps", newTask.data.toString());
-										break;
-									case UPDATE:
-										msg = String.format("\"%s\" updating container failed after 5 attemps", ((Element) newTask.data).getElementId());
-										break;
-									case ADD:
-										msg = String.format("\"%s\" creating container failed after 5 attemps", ((Element) newTask.data).getElementId());
-										break;
-								}
-								LoggingService.logWarning(MODULE_NAME, msg);
-							}
-						}
-					}
+				synchronized (tasks) {
+					newTask = tasks.poll();
+                    if (newTask == null) {
+                        LoggingService.logInfo(MODULE_NAME, "WAITING FOR NEW TASK");
+                        tasks.wait();
+                        LoggingService.logInfo(MODULE_NAME, "NEW TASK RECEIVED");
+                        newTask = tasks.poll();
+                    }
 				}
+                boolean taskResult = containerManager.execute(newTask);
+                if (!taskResult && (StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) || newTask.action.equals(Tasks.REMOVE))) {
+                    if (newTask.retries < 5) {
+                        newTask.retries++;
+                        addTask(newTask);
+                    } else {
+                        String msg = "";
+                        switch (newTask.action) {
+                            case REMOVE:
+                                msg = String.format("\"%s\" removing container failed after 5 attemps", newTask.data.toString());
+                                break;
+                            case UPDATE:
+                                msg = String.format("\"%s\" updating container failed after 5 attemps", ((Element) newTask.data).getElementId());
+                                break;
+                            case ADD:
+                                msg = String.format("\"%s\" creating container failed after 5 attemps", ((Element) newTask.data).getElementId());
+                                break;
+                        }
+                        LoggingService.logWarning(MODULE_NAME, msg);
+                    }
+                }
 			} catch (Exception e) {
 			}
 		}
@@ -223,7 +230,7 @@ public class ProcessManager {
 	private Runnable registriesMonitor = () -> {
 		while (true) {
 			try {
-				Thread.sleep(MONITOR_REGISTRIES_STATUS_FREQ_SECONDS * 1000);
+				Thread.sleep(Constants.MONITOR_REGISTRIES_STATUS_FREQ_SECONDS * 1000);
 
 				for (Registry registry : elementManager.getRegistries()) {
 					try {

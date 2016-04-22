@@ -15,6 +15,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
@@ -40,6 +41,7 @@ import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
+import io.netty.util.internal.StringUtil;
 
 /**
  * provides methods for Docker commands
@@ -80,7 +82,7 @@ public class DockerUtil {
 		dockerClient.statsCmd().withContainerId(containerId).exec(statsCallback);
 		while (!statsCallback.gotStats()) {
 			try {
-				Thread.sleep(2);
+				Thread.sleep(50);
 			} catch (InterruptedException e) {}
 		}
 		Map<String, Object> memoryUsage = statsCallback.getStats().getMemoryStats();
@@ -157,7 +159,7 @@ public class DockerUtil {
 			Info info = dockerClient.infoCmd().exec();
 			LoggingService.logInfo(MODULE_NAME, "connected to docker daemon: " + info.getName());
 		} catch (Exception e) {
-			LoggingService.logInfo(MODULE_NAME, "connecting to docker failed: " + e.getMessage());
+			LoggingService.logInfo(MODULE_NAME, "connecting to docker failed: " + e.getClass().getName() + " - " + e.getMessage());
 			throw e;
 		}
 	}
@@ -204,12 +206,12 @@ public class DockerUtil {
 					.withServerAddress(registry.getUrl())
 					.build();
 
-			AuthConfig authConfig = new AuthConfig();
-			authConfig.setUsername(registry.getUserName());
-			authConfig.setPassword(registry.getPassword());
-			authConfig.setEmail(registry.getUserEmail());
-			authConfig.setAuth(getAuth(registry));
-			authConfig.setServerAddress(registry.getUrl());
+//			AuthConfig authConfig = new AuthConfig();
+//			authConfig.setUsername(registry.getUserName());
+//			authConfig.setPassword(registry.getPassword());
+//			authConfig.setEmail(registry.getUserEmail());
+//			authConfig.setAuth(getAuth(registry));
+//			authConfig.setServerAddress(registry.getUrl());
 
 			dockerClient = DockerClientBuilder.getInstance(config).build();
 			dockerClient.authCmd().exec();
@@ -438,16 +440,18 @@ public class DockerUtil {
 				exposedPorts.add(internal);
 			});
 		String[] extraHosts = { host };
-		CreateContainerResponse resp = dockerClient.createContainerCmd(element.getImageName())
-//				.withDevices(new Device("permission", "pathInContainer", "pathOnHost"))
+		CreateContainerCmd cmd = dockerClient.createContainerCmd(element.getImageName())
 				.withCpuset("0")
-				.withExtraHosts(extraHosts)
 				.withExposedPorts(exposedPorts.toArray(new ExposedPort[0]))
 				.withPortBindings(portBindings)
 				.withEnv("SELFNAME=" + element.getElementId())
 				.withName(element.getElementId())
-				.withRestartPolicy(restartPolicy)
-				.exec();
+				.withRestartPolicy(restartPolicy);
+		if (StringUtil.isNullOrEmpty(host))
+			cmd = cmd.withNetworkMode("host");
+		else
+			cmd = cmd.withExtraHosts(extraHosts);
+		CreateContainerResponse resp = cmd.exec();
 		return resp.getId();
 	}
 

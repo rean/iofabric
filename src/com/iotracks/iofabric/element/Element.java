@@ -1,5 +1,8 @@
 package com.iotracks.iofabric.element;
 
+import com.iotracks.iofabric.utils.Constants;
+import com.iotracks.iofabric.utils.configuration.Configuration;
+
 import java.util.List;
 
 /**
@@ -18,7 +21,17 @@ public class Element {
 	private String registry;
 	private String containerIpAddress;
 	private boolean rebuild;
-	
+	private boolean rootHostAccess;
+
+	public Element(String elementId, String imageName) {
+		this.elementId = elementId;
+		if (Constants.osArch.equalsIgnoreCase("arm"))
+			this.imageName = imageName + "-arm";
+		else
+			this.imageName = imageName;
+		containerId = "";
+	}
+
 	public boolean isRebuild() {
 		return rebuild;
 	}
@@ -49,12 +62,6 @@ public class Element {
 
 	public void setContainerId(String containerId) {
 		this.containerId = containerId;
-	}
-
-	public Element(String elementId, String imageName) {
-		this.elementId = elementId;
-		this.imageName = imageName;
-		containerId = "";
 	}
 
 	public List<PortMapping> getPortMappings() {
@@ -96,5 +103,13 @@ public class Element {
 		Element element = (Element) e;
 		return this.elementId.equals(element.getElementId());
 	}
-	
+
+	public boolean isRootHostAccess() {
+		return rootHostAccess;
+	}
+
+	public void setRootHostAccess(boolean rootHostAccess) {
+		this.rootHostAccess = rootHostAccess;
+	}
+
 }
