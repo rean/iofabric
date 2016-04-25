@@ -50,7 +50,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 	private final String MODULE_NAME = "Local API";
-	
+
 	private HttpRequest request;
 	private ByteArrayOutputStream baos;
 	private byte[] content;
@@ -61,7 +61,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		super(false);
 		this.executor = executor;
 	}
-	
+
 	/**
 	 * Method to be called on channel initializing
 	 * Can take requests as HttpRequest or Websocket frame
@@ -138,11 +138,11 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 				break;
 			}
 		}
-		
+
 		if(getLocalIp().equals(remoteIpAddress) || remoteIpAddress.equals("127.0.0.1") || remoteIpAddress.equals("0.0.0.0")) {
 			found = true;
 		}
-		
+
 		if(!found){
 			String errorMsg = "IP address " + remoteIpAddress + " not found as registered\n";
 			LoggingService.logWarning(MODULE_NAME, errorMsg);
@@ -178,18 +178,20 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		String uri = request.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
-		String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
+		if(tokens.length >= 3){
+			String url = "/"+tokens[0]+"/"+tokens[1]+"/"+tokens[2];
 
-		if (url.equals("/v2/control/socket")) {
-			ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
-			controlSocket.handle(ctx, request);
-			return;
-		}
+			if (url.equals("/v2/control/socket")) {
+				ControlWebsocketHandler controlSocket = new ControlWebsocketHandler();
+				controlSocket.handle(ctx, request);
+				return;
+			}
 
-		if (url.equals("/v2/message/socket")) {
-			MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
-			messageSocket.handle(ctx, request);
-			return;
+			if (url.equals("/v2/message/socket")) {
+				MessageWebsocketHandler messageSocket = new MessageWebsocketHandler();
+				messageSocket.handle(ctx, request);
+				return;
+			}
 		}
 
 		LoggingService.logWarning(MODULE_NAME, "Error: Request not found");
@@ -224,7 +226,7 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 
 		return mapName;
 	}
-	
+
 	/**
 	 * Method to be called on channel complete 
 	 * @param ChannelHandlerContext
@@ -281,10 +283,10 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	 */
 	private String getRemoteIP(ChannelHandlerContext ctx) {
 		InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-	    InetAddress inetaddress = socketAddress.getAddress();
-	    return inetaddress.getHostAddress();
+		InetAddress inetaddress = socketAddress.getAddress();
+		return inetaddress.getHostAddress();
 	}
-	
+
 	/**
 	 * Return the local host IP address 
 	 * @param none
@@ -309,6 +311,6 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, " Problem retrieving local ip " + e.getMessage());
 		}
-		throw new Exception("unable to get local ip address");
+		return "127.0.0.1";
 	}
 }

@@ -79,7 +79,15 @@ public class MessageSenderHandler implements Callable<Object> {
 		}
 
 		MessageBusUtil bus = new MessageBusUtil();
-		Message message = new Message(jsonObject);
+		Message message;
+		try {
+			message = new Message(jsonObject);
+		} catch (Exception e) {
+			String errorMsg = " Message Pasring Error, " + e.getMessage();
+			LoggingService.logWarning(MODULE_NAME, errorMsg);
+			outputBuffer.writeBytes(errorMsg.getBytes());
+			return new DefaultFullHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST, outputBuffer);
+		}
 		bus.publishMessage(message);
 
 		JsonBuilderFactory factory = Json.createBuilderFactory(null);
