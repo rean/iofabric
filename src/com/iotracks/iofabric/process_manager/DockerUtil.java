@@ -206,19 +206,10 @@ public class DockerUtil {
 					.withServerAddress(registry.getUrl())
 					.build();
 
-//			AuthConfig authConfig = new AuthConfig();
-//			authConfig.setUsername(registry.getUserName());
-//			authConfig.setPassword(registry.getPassword());
-//			authConfig.setEmail(registry.getUserEmail());
-//			authConfig.setAuth(getAuth(registry));
-//			authConfig.setServerAddress(registry.getUrl());
-
 			dockerClient = DockerClientBuilder.getInstance(config).build();
 			dockerClient.authCmd().exec();
-			StatusReporter.setProcessManagerStatus().setRegistriesStatus(registry, LinkStatus.CONNECTED);
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "login failed - " + e.getMessage());
-			StatusReporter.setProcessManagerStatus().setRegistriesStatus(registry, LinkStatus.FAILED_LOGIN);
 			throw e;
 		}
 	}

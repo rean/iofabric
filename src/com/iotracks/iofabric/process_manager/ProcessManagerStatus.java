@@ -24,7 +24,7 @@ public class ProcessManagerStatus {
 	private int runningElementsCount;
 	private DockerStatus dockerStatus;
 	private Map<String, ElementStatus> elementsStatus;
-	private Map<Registry, LinkStatus> registriesStatus;
+	private Map<String, LinkStatus> registriesStatus;
 
 	public ProcessManagerStatus() {
 		elementsStatus = new HashMap<>();
@@ -63,7 +63,7 @@ public class ProcessManagerStatus {
 		JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 		registriesStatus.entrySet().forEach(entry -> {
 			JsonObjectBuilder objectBuilder = Json.createObjectBuilder()
-					.add("url", entry.getKey().getUrl())
+					.add("url", entry.getKey())
 					.add("linkstatus", entry.getValue().toString());
 			arrayBuilder.add(objectBuilder);
 					
@@ -121,11 +121,11 @@ public class ProcessManagerStatus {
 		return registriesStatus.get(registry);
 	}
 
-	public Map<Registry, LinkStatus> getRegistriesStatus() {
+	public Map<String, LinkStatus> getRegistriesStatus() {
 		return registriesStatus;
 	}
 
-	public ProcessManagerStatus setRegistriesStatus(Registry registry, LinkStatus status) {
+	public ProcessManagerStatus setRegistriesStatus(String registry, LinkStatus status) {
 		this.registriesStatus.put(registry, status);
 		return this;
 	}

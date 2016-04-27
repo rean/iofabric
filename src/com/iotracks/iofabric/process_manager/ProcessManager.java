@@ -59,13 +59,8 @@ public class ProcessManager {
 	 */
 	public void update() {
 		StatusReporter.getProcessManagerStatus().getRegistriesStatus().entrySet()
-				.removeIf(entry -> (elementManager.getRegistry(entry.getKey().getUrl()) == null));
-		elementManager.getRegistries().forEach(r -> {
-			if (!StatusReporter.getProcessManagerStatus().getRegistriesStatus().containsKey(r))
-				StatusReporter.getProcessManagerStatus().getRegistriesStatus().put(r, LinkStatus.FAILED_LOGIN);
-		});
-		
-		if (!docker.isConnected()) { 
+				.removeIf(entry -> (elementManager.getRegistry(entry.getKey()) == null));
+		if (!docker.isConnected()) {
 			try {
 				docker.connect();
 			} catch (Exception e) {
@@ -230,16 +225,19 @@ public class ProcessManager {
 	private Runnable registriesMonitor = () -> {
 		while (true) {
 			try {
-				Thread.sleep(Constants.MONITOR_REGISTRIES_STATUS_FREQ_SECONDS * 1000);
-
 				for (Registry registry : elementManager.getRegistries()) {
 					try {
+						LoggingService.logInfo(MODULE_NAME, "monitoring registry: " + registry.getUrl());
 						docker.login(registry);
-						StatusReporter.setProcessManagerStatus().setRegistriesStatus(registry, LinkStatus.CONNECTED);
+						StatusReporter.setProcessManagerStatus().setRegistriesStatus(registry.getUrl(), LinkStatus.CONNECTED);
+						LoggingService.logInfo(MODULE_NAME, "registry login successful: " + registry.getUrl());
 					} catch (Exception e) {
-						StatusReporter.setProcessManagerStatus().setRegistriesStatus(registry, LinkStatus.FAILED_LOGIN);
+						StatusReporter.setProcessManagerStatus().setRegistriesStatus(registry.getUrl(), LinkStatus.FAILED_LOGIN);
+						LoggingService.logInfo(MODULE_NAME, "registry login failed: " + registry.getUrl());
 					}
 				}
+
+				Thread.sleep(Constants.MONITOR_REGISTRIES_STATUS_FREQ_SECONDS * 1000);
 			} catch (Exception e) {
 			}
 		}

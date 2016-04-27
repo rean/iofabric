@@ -62,7 +62,7 @@ public class ElementManager {
 	
 	public Registry getRegistry(String name) {
 		for (Registry registry : registries) {
-			if (registry.getUrl().equals(name))
+			if (registry.getUrl().equalsIgnoreCase(name))
 				return registry;
 		}
 		return null;

@@ -70,4 +70,10 @@ public class Registry {
 	public void setUserEmail(String userEmail) {
 		this.userEmail = userEmail;
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+		Registry other = ((Registry) o);
+        return this.url.equalsIgnoreCase(other.url) && this.userEmail.equalsIgnoreCase(other.userEmail);
+    }
 }
