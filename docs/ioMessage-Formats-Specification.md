@@ -81,7 +81,7 @@ Based on the standard MIME type, this is just a regular JPEG image file. Whether
 <pre>
 	decimal/kelvin
 	decimal/fahrenheit
-	decimal/fahrenheit
+	decimal/celcius
 </pre>
 
 #####ContentData(raw)
