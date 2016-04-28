@@ -77,11 +77,6 @@ Based on the standard MIME type, this is just a regular JPEG image file. Whether
 
 ###Temperature Conversion
 
-#####InfoType
-<pre>
-	weather/mixed/open-weather-map
-</pre>
-
 #####InfoFormat
 <pre>
 	decimal/kelvin
