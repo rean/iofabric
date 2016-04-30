@@ -1,7 +1,9 @@
 package com.iotracks.iofabric.utils.configuration;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -46,7 +48,7 @@ public final class Configuration {
 	private static float logDiskLimit;
 	private static String logDiskDirectory;
 	private static int logFileCount;
-	
+
 	public static boolean debugging = false;
 
 	/**
@@ -81,7 +83,55 @@ public final class Configuration {
 		nodes.item(0).setTextContent(content);
 
 	}
-	
+
+	public static HashMap<String, String> getOldNodeValuesForParameters(Set<String> parameters) throws ConfigurationItemException{
+
+		HashMap<String, String> result = new HashMap<String, String>();
+
+		for(String option : parameters){
+			switch (option) {
+			case "d":
+				result.put(option, getNode("disk_consumption_limit"));
+				break;
+			case "dl":
+				result.put(option, getNode("disk_directory"));
+				break;
+			case "m":
+				result.put(option, getNode("memory_consumption_limit"));
+				break;
+			case "p":
+				result.put(option, getNode("processor_consumption_limit"));
+				break;
+			case "a":
+				result.put(option, getNode("controller_url"));
+				break;
+			case "ac":
+				result.put(option, getNode("controller_cert"));
+				break;
+			case "c":
+				result.put(option, getNode("docker_url"));
+				break;
+			case "n":
+				result.put(option, getNode("network_interface"));
+				break;
+			case "l":
+				result.put(option, getNode("log_disk_consumption_limit"));
+				break;
+			case "ld":
+				result.put(option, getNode("log_disk_directory"));
+				break;
+			case "lc":
+				result.put(option, getNode("log_file_count"));
+				break;
+			default:
+				throw new ConfigurationItemException("Invalid parameter -" + option);
+			}
+
+		}
+
+		return result;
+	}
+
 	/**
 	 * saves configuration data to config.xml
 	 * and informs other modules
@@ -94,7 +144,7 @@ public final class Configuration {
 		ResourceConsumptionManager.getInstance().instanceConfigUpdated();
 		LoggingService.instanceConfigUpdated();
 		MessageBus.getInstance().instanceConfigUpdated();
-		
+
 		Transformer transformer = TransformerFactory.newInstance().newTransformer();
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		StreamResult result = new StreamResult(new File("/etc/iofabric/config.xml"));
@@ -112,70 +162,112 @@ public final class Configuration {
 		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
 			String option = command.getKey();
 			String value = command.getValue().toString();
-			
+
 			if(option == null || value == null || value.trim() == "" || option.trim() == ""){
 				throw new ConfigurationItemException("Command or value is invalid");
 			}
-			
+
 			switch (option) {
 			case "d":
 				validateValue(option, value, "isPositiveFloat");
-				setNode("disk_consumption_limit", value);
 				setDiskLimit(Float.parseFloat(value));
 				break;
 			case "dl":
 				value = addSeparator(value);
-				setNode("disk_directory", value);
 				setDiskDirectory(value);
 				break;
 			case "m":
 				validateValue(option, value, "isPositiveFloat");
-				setNode("memory_consumption_limit", value);
 				setMemoryLimit(Float.parseFloat(value));
 				break;
 			case "p":
 				validateValue(option, value, "isPositiveFloat");
-				setNode("processor_consumption_limit", value);
 				setCpuLimit(Float.parseFloat(value));
 				break;
 			case "a":
-				setNode("controller_url", value);
 				setControllerUrl(value);
 				break;
 			case "ac":
-				setNode("controller_cert", value);
 				setControllerCert(value);
 				break;
 			case "c":
-				setNode("docker_url", value);
 				setDockerUrl(value);
 				break;
 			case "n":
-				setNode("network_interface", value);
 				setNetworkInterface(value);
 				break;
 			case "l":
 				validateValue(option, value, "isPositiveFloat");
-				setNode("log_disk_consumption_limit", value);
 				setLogDiskLimit(Float.parseFloat(value));
 				break;
 			case "ld":
 				value = addSeparator(value);
-				setNode("log_disk_directory", value);
 				setLogDiskDirectory(value);
 				break;
 			case "lc":
 				validateValue(option, value, "isPositiveInteger");
-				setNode("log_file_count", value);
 				setLogFileCount(Integer.parseInt(value));
 				break;
 			default:
-				throw new ConfigurationItemException("-" + option + " : Command not found");
+				throw new ConfigurationItemException("Invalid parameter -" + option);
 			}
 
 		}
 		
+		setChangedNodeValues(commandLineMap);
 		saveConfigUpdates();
+	}
+
+	public static void setChangedNodeValues(Map<String, Object> commandLineMap) throws Exception {
+		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
+			String option = command.getKey();
+			String value = command.getValue().toString();
+
+			switch (option) {
+			case "d":
+				setNode("disk_consumption_limit", value);
+				break;
+			case "dl":
+				value = addSeparator(value);
+				setNode("disk_directory", value);
+				break;
+			case "m":
+				validateValue(option, value, "isPositiveFloat");
+				setNode("memory_consumption_limit", value);
+				break;
+			case "p":
+				validateValue(option, value, "isPositiveFloat");
+				setNode("processor_consumption_limit", value);
+				break;
+			case "a":
+				setNode("controller_url", value);
+				break;
+			case "ac":
+				setNode("controller_cert", value);
+				break;
+			case "c":
+				setNode("docker_url", value);
+				break;
+			case "n":
+				setNode("network_interface", value);
+				break;
+			case "l":
+				validateValue(option, value, "isPositiveFloat");
+				setNode("log_disk_consumption_limit", value);
+				break;
+			case "ld":
+				value = addSeparator(value);
+				setNode("log_disk_directory", value);
+				break;
+			case "lc":
+				validateValue(option, value, "isPositiveInteger");
+				setNode("log_file_count", value);
+				break;
+			default:
+				throw new ConfigurationItemException("Invalid parameter -" + option);
+			}
+		}
+
 	}
 
 	/**
@@ -208,7 +300,7 @@ public final class Configuration {
 				throw new ConfigurationItemException("Option -" + option + " has invalid value: " + value);
 		}
 	}
-	
+
 	/**
 	 * loads configuration from config.xml file
 	 * 
@@ -242,9 +334,9 @@ public final class Configuration {
 		setLogDiskLimit(Float.parseFloat(getNode("log_disk_consumption_limit")));
 		setLogFileCount(Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent()));
 	}
-	
+
 	private Configuration() {
-	
+
 	}
 
 	public static String getAccessToken() {
@@ -333,11 +425,13 @@ public final class Configuration {
 		Configuration.dockerUrl = dockerUrl;
 	}
 
-	public static void setDiskLimit(float diskLimit) {
+	public static void setDiskLimit(float diskLimit) throws Exception {
+		if(diskLimit < 1 || diskLimit > 1048576) throw new Exception("Disk limit range must be 1 to 1048576 GB");
 		Configuration.diskLimit = diskLimit;
 	}
 
-	public static void setMemoryLimit(float memoryLimit) {
+	public static void setMemoryLimit(float memoryLimit) throws Exception {
+		if(memoryLimit < 128 || memoryLimit > 1048576) throw new Exception("Memory limit range must be 128 to 1048576 MB");
 		Configuration.memoryLimit = memoryLimit;
 	}
 
@@ -347,15 +441,18 @@ public final class Configuration {
 		Configuration.diskDirectory = diskDirectory;
 	}
 
-	public static void setCpuLimit(float cpuLimit) {
+	public static void setCpuLimit(float cpuLimit) throws Exception {
+		if(cpuLimit < 5 || cpuLimit > 100) throw new Exception("CPU limit range must be 5% to 100%");
 		Configuration.cpuLimit = cpuLimit;
 	}
 
-	public static void setLogDiskLimit(float logDiskLimit) {
+	public static void setLogDiskLimit(float logDiskLimit) throws Exception {
+		if(logDiskLimit < 0.5 || logDiskLimit > 1024) throw new Exception("Log disk limit range must be 0.5 to 1024 GB");
 		Configuration.logDiskLimit = logDiskLimit;
 	}
 
-	public static void setLogFileCount(int logFileCount) {
+	public static void setLogFileCount(int logFileCount) throws Exception {
+		if(logFileCount < 1 || logFileCount > 100) throw new Exception("Log file count range must be 1 to 100 ");
 		Configuration.logFileCount = logFileCount;
 	}
 
@@ -371,22 +468,22 @@ public final class Configuration {
 		} catch (Exception e) {
 			ipAddress = "unable to retrieve ip address";
 		}
-		
-	    StringBuilder result = new StringBuilder();
+
+		StringBuilder result = new StringBuilder();
 		result.append(
 				"Instance ID               : " + ((instanceId != null && !instanceId.equals("")) ? instanceId : "not provisioned") + "\n" + 
-				"IP Address                : " + ipAddress + "\n" + 
-				"Network Adapter           : " + networkInterface + "\n" + 
-				"ioFabric Controller       : " + controllerUrl + "\n" + 
-				"ioFabric Certificate      : " + controllerCert + "\n" + 
-				"Docker URI                : " + dockerUrl + "\n" + 
-				String.format("Disk Limit                : %.2f GiB\n", diskLimit) + 
-				"Disk Directory            : " + diskDirectory + "\n" + 
-				String.format("Memory Limit              : %.2f MiB\n", memoryLimit) + 
-				String.format("CPU Limit                 : %.2f%%\n", cpuLimit) + 
-				String.format("Log Limit                 : %.2f GiB\n", logDiskLimit) + 
-				"Log Directory             : " + logDiskDirectory + "\n" + 
-				String.format("Log File Count            : %d", logFileCount));
+						"IP Address                : " + ipAddress + "\n" + 
+						"Network Adapter           : " + networkInterface + "\n" + 
+						"ioFabric Controller       : " + controllerUrl + "\n" + 
+						"ioFabric Certificate      : " + controllerCert + "\n" + 
+						"Docker URI                : " + dockerUrl + "\n" + 
+						String.format("Disk Limit                : %.2f GiB\n", diskLimit) + 
+						"Disk Directory            : " + diskDirectory + "\n" + 
+						String.format("Memory Limit              : %.2f MiB\n", memoryLimit) + 
+						String.format("CPU Limit                 : %.2f%%\n", cpuLimit) + 
+						String.format("Log Limit                 : %.2f GiB\n", logDiskLimit) + 
+						"Log Directory             : " + logDiskDirectory + "\n" + 
+						String.format("Log File Count            : %d", logFileCount));
 		return result.toString();
 	}
 
