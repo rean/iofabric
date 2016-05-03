@@ -50,7 +50,7 @@ public final class Configuration {
 	private static String logDiskDirectory;
 	private static int logFileCount;
 
-	public static boolean debugging = true;
+	public static boolean debugging = false;
 
 	/**
 	 * return XML node value
