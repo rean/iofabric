@@ -1,6 +1,7 @@
 package com.iotracks.iofabric.utils.configuration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +50,7 @@ public final class Configuration {
 	private static String logDiskDirectory;
 	private static int logFileCount;
 
-	public static boolean debugging = false;
+	public static boolean debugging = true;
 
 	/**
 	 * return XML node value
@@ -158,54 +159,98 @@ public final class Configuration {
 	 * @param commandLineMap - map of config parameters
 	 * @throws Exception
 	 */
-	public static void setConfig(Map<String, Object> commandLineMap) throws Exception {
+	public static HashMap<String, String> setConfig(Map<String, Object> commandLineMap) throws Exception {
+		
+		HashMap<String, String> messageMap = new HashMap<String, String>();
+				
 		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
 			String option = command.getKey();
 			String value = command.getValue().toString();
-
+			
 			if(option == null || value == null || value.trim() == "" || option.trim() == ""){
-				throw new ConfigurationItemException("Command or value is invalid");
+				messageMap.put("Parameter error", "Command or value is invalid"); break;
 			}
-
+			
 			switch (option) {
 			case "d":
-				validateValue(option, value, "isPositiveFloat");
+				String msg1 = validateValue(option, value, "isPositiveFloat");
+				if( msg1 != null){
+					messageMap.put(option, msg1); break;
+				}
+				if(Float.parseFloat(value) < 1 || Float.parseFloat(value) > 1048576){
+					messageMap.put(option, "Disk limit range must be 1 to 1048576 GB"); break;
+				} 				
 				setDiskLimit(Float.parseFloat(value));
+				setNode("disk_consumption_limit", value);
 				break;
 			case "dl":
 				value = addSeparator(value);
 				setDiskDirectory(value);
+				setNode("disk_directory", value);
 				break;
 			case "m":
-				validateValue(option, value, "isPositiveFloat");
+				String msg2 = validateValue(option, value, "isPositiveFloat");
+				if( msg2 != null){
+					messageMap.put(option, msg2); break;
+				}
+				if(Float.parseFloat(value) < 128 || Float.parseFloat(value) > 1048576){
+					messageMap.put(option, "Memory limit range must be 128 to 1048576 MB"); break;
+				} 	
 				setMemoryLimit(Float.parseFloat(value));
+				setNode("memory_consumption_limit", value);
 				break;
 			case "p":
-				validateValue(option, value, "isPositiveFloat");
+				String msg3 = validateValue(option, value, "isPositiveFloat");
+				if( msg3 != null){
+					messageMap.put(option, msg3); break;
+				}
+				if(Float.parseFloat(value) < 5 || Float.parseFloat(value) > 100){
+					messageMap.put(option, "CPU limit range must be 5% to 100%"); break;
+				} 	
 				setCpuLimit(Float.parseFloat(value));
+				setNode("processor_consumption_limit", value);
 				break;
 			case "a":
+				setNode("controller_url", value);
 				setControllerUrl(value);
 				break;
 			case "ac":
+				setNode("controller_cert", value);
 				setControllerCert(value);
 				break;
 			case "c":
+				setNode("docker_url", value);
 				setDockerUrl(value);
 				break;
 			case "n":
+				setNode("network_interface", value);
 				setNetworkInterface(value);
 				break;
 			case "l":
-				validateValue(option, value, "isPositiveFloat");
+				String msg4 = validateValue(option, value, "isPositiveFloat");
+				if( msg4 != null){
+					messageMap.put(option, msg4); break;
+				}
+				if(Float.parseFloat(value) < 0.5 || Float.parseFloat(value) > 1024){
+					messageMap.put(option, "Log disk limit range must be 0.5 to 1024 GB"); break;
+				}
+				setNode("log_disk_consumption_limit", value);
 				setLogDiskLimit(Float.parseFloat(value));
 				break;
 			case "ld":
 				value = addSeparator(value);
+				setNode("log_disk_directory", value);
 				setLogDiskDirectory(value);
 				break;
 			case "lc":
-				validateValue(option, value, "isPositiveInteger");
+				String msg5 = validateValue(option, value, "isPositiveInteger");
+				if( msg5 != null){
+					messageMap.put(option, msg5); break;
+				}
+				if(Integer.parseInt(value) < 1 || Integer.parseInt(value) > 100){
+					messageMap.put(option, "Log file count range must be 1 to 100"); break;
+				}
+				setNode("log_file_count", value);
 				setLogFileCount(Integer.parseInt(value));
 				break;
 			default:
@@ -213,61 +258,9 @@ public final class Configuration {
 			}
 
 		}
-		
-		setChangedNodeValues(commandLineMap);
 		saveConfigUpdates();
-	}
-
-	public static void setChangedNodeValues(Map<String, Object> commandLineMap) throws Exception {
-		for (Map.Entry<String, Object> command : commandLineMap.entrySet()) {
-			String option = command.getKey();
-			String value = command.getValue().toString();
-
-			switch (option) {
-			case "d":
-				setNode("disk_consumption_limit", value);
-				break;
-			case "dl":
-				value = addSeparator(value);
-				setNode("disk_directory", value);
-				break;
-			case "m":
-				validateValue(option, value, "isPositiveFloat");
-				setNode("memory_consumption_limit", value);
-				break;
-			case "p":
-				validateValue(option, value, "isPositiveFloat");
-				setNode("processor_consumption_limit", value);
-				break;
-			case "a":
-				setNode("controller_url", value);
-				break;
-			case "ac":
-				setNode("controller_cert", value);
-				break;
-			case "c":
-				setNode("docker_url", value);
-				break;
-			case "n":
-				setNode("network_interface", value);
-				break;
-			case "l":
-				validateValue(option, value, "isPositiveFloat");
-				setNode("log_disk_consumption_limit", value);
-				break;
-			case "ld":
-				value = addSeparator(value);
-				setNode("log_disk_directory", value);
-				break;
-			case "lc":
-				validateValue(option, value, "isPositiveInteger");
-				setNode("log_file_count", value);
-				break;
-			default:
-				throw new ConfigurationItemException("Invalid parameter -" + option);
-			}
-		}
-
+		
+		return messageMap;
 	}
 
 	/**
@@ -291,14 +284,16 @@ public final class Configuration {
 	 * @param typeOfValidation - type of validation
 	 * @throws ConfigurationItemException
 	 */
-	private static void validateValue(String option, String value, String typeOfValidation) throws ConfigurationItemException {
+	private static String validateValue(String option, String value, String typeOfValidation) {
 		if(typeOfValidation == "isPositiveFloat"){
 			if (!value.matches("[0-9]*.?[0-9]*"))
-				throw new ConfigurationItemException("Option -" + option + " has invalid value: " + value);
+				return "Option -" + option + " has invalid value: " + value;
 		}else if(typeOfValidation == "isPositiveInteger"){
 			if (!value.matches("[0-9]*"))
-				throw new ConfigurationItemException("Option -" + option + " has invalid value: " + value);
+				return "Option -" + option + " has invalid value: " + value;
 		}
+		
+		return null;
 	}
 
 	/**
@@ -426,12 +421,10 @@ public final class Configuration {
 	}
 
 	public static void setDiskLimit(float diskLimit) throws Exception {
-		if(diskLimit < 1 || diskLimit > 1048576) throw new Exception("Disk limit range must be 1 to 1048576 GB");
 		Configuration.diskLimit = diskLimit;
 	}
 
 	public static void setMemoryLimit(float memoryLimit) throws Exception {
-		if(memoryLimit < 128 || memoryLimit > 1048576) throw new Exception("Memory limit range must be 128 to 1048576 MB");
 		Configuration.memoryLimit = memoryLimit;
 	}
 
@@ -442,17 +435,14 @@ public final class Configuration {
 	}
 
 	public static void setCpuLimit(float cpuLimit) throws Exception {
-		if(cpuLimit < 5 || cpuLimit > 100) throw new Exception("CPU limit range must be 5% to 100%");
 		Configuration.cpuLimit = cpuLimit;
 	}
 
 	public static void setLogDiskLimit(float logDiskLimit) throws Exception {
-		if(logDiskLimit < 0.5 || logDiskLimit > 1024) throw new Exception("Log disk limit range must be 0.5 to 1024 GB");
 		Configuration.logDiskLimit = logDiskLimit;
 	}
 
 	public static void setLogFileCount(int logFileCount) throws Exception {
-		if(logFileCount < 1 || logFileCount > 100) throw new Exception("Log file count range must be 1 to 100 ");
 		Configuration.logFileCount = logFileCount;
 	}
 

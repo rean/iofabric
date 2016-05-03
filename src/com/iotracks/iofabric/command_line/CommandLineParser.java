@@ -111,11 +111,15 @@ public class CommandLineParser {
 			try {
 				
 				HashMap<String, String> oldValuesMap = Configuration.getOldNodeValuesForParameters(config.keySet());
-				Configuration.setConfig(config);
-				result.append("Change(s) accepted");
+				HashMap<String, String> errorMap = Configuration.setConfig(config);
+				
+				for (Entry<String, String> e : errorMap.entrySet())
+					result.append("\n\tError : " + e.getValue());
+				
 				for (Entry<String, Object> e : config.entrySet())
-					result.append("\n\tChange accepted for Parameter : -").append(e.getKey()).append(" Old value was :").append(oldValuesMap.get(e.getKey()))
-							.append(" New Value is : ").append(e.getValue().toString());
+					if(!errorMap.containsKey(e.getKey()))
+					result.append("\n\tChange accepted for Parameter : -").append(e.getKey()).append(", Old value was :").append(oldValuesMap.get(e.getKey()))
+							.append(", New Value is : ").append(e.getValue().toString());
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config : " + e.getMessage());

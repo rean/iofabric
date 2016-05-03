@@ -99,7 +99,7 @@ public class MessageWebsocketHandler {
 					if (WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap)) {
 						ByteBuf buffer1 = ctx.alloc().buffer();
 						buffer1.writeByte(OPCODE_PONG.intValue());
-						ctx.channel().write(new PongWebSocketFrame(buffer1));
+						ctx.channel().writeAndFlush(new PongWebSocketFrame(buffer1));
 					}
 				}
 			} else {
