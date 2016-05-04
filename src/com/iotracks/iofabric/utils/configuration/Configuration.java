@@ -168,7 +168,9 @@ public final class Configuration {
 			String value = command.getValue().toString();
 			
 			if(option == null || value == null || value.trim() == "" || option.trim() == ""){
-				messageMap.put("Parameter error", "Command or value is invalid"); break;
+				if(!option.equals("ac")){
+					messageMap.put("Parameter error", "Command or value is invalid"); break;
+				}
 			}
 			
 			switch (option) {

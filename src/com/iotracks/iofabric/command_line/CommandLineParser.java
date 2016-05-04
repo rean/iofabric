@@ -19,25 +19,25 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 public class CommandLineParser {
 
 	/**
-	* parse command-line parameters 
-	* 
-	* @param command - command-line parameters
-	* 
-	* @return String
-	*/
+	 * parse command-line parameters 
+	 * 
+	 * @param command - command-line parameters
+	 * 
+	 * @return String
+	 */
 	public static String parse(String command) {
 		String[] args = command.split(" ");
 		StringBuilder result = new StringBuilder();
-		
+
 		if (args[0].equals("stop")) {
 			System.setOut(Constants.systemOut);
 			System.exit(0);
 		}
-		
+
 		if (args[0].equals("start")) {
 			return "";
 		}
-		
+
 		if (args[0].equals("help") || args[0].equals("--help") || args[0].equals("-h") || args[0].equals("-?")) {
 			result.append(showHelp());
 			return result.toString();
@@ -89,13 +89,15 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("config")) {
-			if (args.length < 3)
-				return showHelp();
+			if (args.length < 3){
+				if(args.length != 2 || !args[1].equals("-ac")) 
+					return showHelp();
+			}
 
 			Map<String, Object> config = new HashMap<>();
 			int i = 1;
 			while (i < args.length) {
-				if (args.length - i < 2)
+				if (args.length - i < 2 && !args[i].equals("-ac"))
 					return showHelp();
 				if (!args[i].equals("-d") && !args[i].equals("-dl") && !args[i].equals("-m") && !args[i].equals("-p")
 						&& !args[i].equals("-a") && !args[i].equals("-ac") && !args[i].equals("-c")
@@ -103,28 +105,38 @@ public class CommandLineParser {
 					return showHelp();
 
 				String option = args[i].substring(1);
-				String value = args[i + 1];
+				String value = "";
+				if(option.equals("ac") && args.length == 2){
+					value = ""; i += 1; 
+				}
+				else if(option.equals("ac") && ((args[i+1].equals("-d") || args[i+1].equals("-dl") || args[i+1].equals("-m") || args[i+1].equals("-p")
+						|| args[i+1].equals("-a") || args[i+1].equals("-ac") || args[i+1].equals("-c")
+						|| args[i+1].equals("-n") || args[i+1].equals("-l") || args[i+1].equals("-ld") || args[i+1].equals("-lc")))){
+					value = ""; i += 1; 
+				}
+				else{ value = args[i + 1];
+					i += 2;
+				}
 				config.put(option, value);
-				i += 2;
 			}
-			
+
 			try {
-				
+
 				HashMap<String, String> oldValuesMap = Configuration.getOldNodeValuesForParameters(config.keySet());
 				HashMap<String, String> errorMap = Configuration.setConfig(config);
-				
+
 				for (Entry<String, String> e : errorMap.entrySet())
 					result.append("\n\tError : " + e.getValue());
-				
+
 				for (Entry<String, Object> e : config.entrySet())
 					if(!errorMap.containsKey(e.getKey()))
-					result.append("\n\tChange accepted for Parameter : -").append(e.getKey()).append(", Old value was :").append(oldValuesMap.get(e.getKey()))
-							.append(", New Value is : ").append(e.getValue().toString());
+						result.append("\n\tChange accepted for Parameter : -").append(e.getKey()).append(", Old value was :").append(oldValuesMap.get(e.getKey()))
+						.append(", New Value is : ").append(e.getValue().toString());
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config : " + e.getMessage());
 			}
-			
+
 			return result.toString();
 		}
 
@@ -132,10 +144,10 @@ public class CommandLineParser {
 	}
 
 	/**
-	* returns help 
-	* 
-	* @return String
-	*/
+	 * returns help 
+	 * 
+	 * @return String
+	 */
 	private static String showHelp() {
 		StringBuilder help = new StringBuilder();
 		help.append("Usage: iofabric [OPTIONS] COMMAND [arg...]\n" + 
@@ -197,7 +209,7 @@ public class CommandLineParser {
 				"\n" + 
 				"Report bugs to: kilton@iotracks.com\n" + 
 				"ioFabric home page: http://iotracks.com");
-		
+
 		return help.toString();
 	}
 
