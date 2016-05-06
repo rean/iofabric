@@ -69,8 +69,8 @@ public final class StatusReporter {
 		result.append("\nCPU Usage                   : about " + String.format("%.2f", resourceConsumptionManagerStatus.getCpuUsage()) + "%");
 		result.append("\nRunning Elements            : " + processManagerStatus.getRunningElementsCount());
 		result.append("\nConnection to Controller    : " + connectionStatus);
-		result.append(String.format("\nMessages Processed          : about %,d", messageBusStatus.getProcessedMessages()));  
-		result.append("\nSystem Time                 : " + df.format(statusReporterStatus.getSystemTime()));
+		result.append(String.format("\nMessages Processed          : about %,d", messageBusStatus.getProcessedMessages())); 
+		result.append("\nSystem Time                 : " + DateFormat.getDateTimeInstance().format(statusReporterStatus.getSystemTime()));
 		
 		return result.toString();
 	}
