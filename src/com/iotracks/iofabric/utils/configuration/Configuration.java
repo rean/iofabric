@@ -175,25 +175,29 @@ public final class Configuration {
 			
 			switch (option) {
 			case "d":
-				String msg1 = validateValue(option, value, "isPositiveFloat");
-				if( msg1 != null){
-					messageMap.put(option, msg1); break;
+				try{
+					Float.parseFloat(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
 				}
+				
 				if(Float.parseFloat(value) < 1 || Float.parseFloat(value) > 1048576){
 					messageMap.put(option, "Disk limit range must be 1 to 1048576 GB"); break;
 				} 				
 				setDiskLimit(Float.parseFloat(value));
 				setNode("disk_consumption_limit", value);
 				break;
+				
 			case "dl":
 				value = addSeparator(value);
 				setDiskDirectory(value);
 				setNode("disk_directory", value);
 				break;
 			case "m":
-				String msg2 = validateValue(option, value, "isPositiveFloat");
-				if( msg2 != null){
-					messageMap.put(option, msg2); break;
+				try{
+					Float.parseFloat(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
 				}
 				if(Float.parseFloat(value) < 128 || Float.parseFloat(value) > 1048576){
 					messageMap.put(option, "Memory limit range must be 128 to 1048576 MB"); break;
@@ -202,9 +206,10 @@ public final class Configuration {
 				setNode("memory_consumption_limit", value);
 				break;
 			case "p":
-				String msg3 = validateValue(option, value, "isPositiveFloat");
-				if( msg3 != null){
-					messageMap.put(option, msg3); break;
+				try{
+					Float.parseFloat(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
 				}
 				if(Float.parseFloat(value) < 5 || Float.parseFloat(value) > 100){
 					messageMap.put(option, "CPU limit range must be 5% to 100%"); break;
@@ -229,9 +234,10 @@ public final class Configuration {
 				setNetworkInterface(value);
 				break;
 			case "l":
-				String msg4 = validateValue(option, value, "isPositiveFloat");
-				if( msg4 != null){
-					messageMap.put(option, msg4); break;
+				try{
+					Float.parseFloat(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
 				}
 				if(Float.parseFloat(value) < 0.5 || Float.parseFloat(value) > 1024){
 					messageMap.put(option, "Log disk limit range must be 0.5 to 1024 GB"); break;
@@ -245,9 +251,10 @@ public final class Configuration {
 				setLogDiskDirectory(value);
 				break;
 			case "lc":
-				String msg5 = validateValue(option, value, "isPositiveInteger");
-				if( msg5 != null){
-					messageMap.put(option, msg5); break;
+				try{
+					Integer.parseInt(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
 				}
 				if(Integer.parseInt(value) < 1 || Integer.parseInt(value) > 100){
 					messageMap.put(option, "Log file count range must be 1 to 100"); break;
@@ -278,26 +285,7 @@ public final class Configuration {
 			return value + File.separatorChar;
 	}
 
-	/**
-	 * validates value
-	 * 
-	 * @param option - config parameter
-	 * @param value - value to be validated
-	 * @param typeOfValidation - type of validation
-	 * @throws ConfigurationItemException
-	 */
-	private static String validateValue(String option, String value, String typeOfValidation) {
-		if(typeOfValidation == "isPositiveFloat"){
-			if (!value.matches("[0-9]*.?[0-9]*"))
-				return "Option -" + option + " has invalid value: " + value;
-		}else if(typeOfValidation == "isPositiveInteger"){
-			if (!value.matches("[0-9]*"))
-				return "Option -" + option + " has invalid value: " + value;
-		}
-		
-		return null;
-	}
-
+	
 	/**
 	 * loads configuration from config.xml file
 	 * 
