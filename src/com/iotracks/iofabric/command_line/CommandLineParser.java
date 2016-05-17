@@ -44,7 +44,7 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
-			result.append("ioFabric 1.05");
+			result.append("ioFabric 1.06");
 			result.append("\nCopyright (C) 2016 iotracks, inc.");
 			result.append("\nLicense ######### http://iotracks.com/license");
 			result.append(
@@ -128,10 +128,14 @@ public class CommandLineParser {
 				for (Entry<String, String> e : errorMap.entrySet())
 					result.append("\n\tError : " + e.getValue());
 
-				for (Entry<String, Object> e : config.entrySet())
-					if(!errorMap.containsKey(e.getKey()))
+				for (Entry<String, Object> e : config.entrySet()){
+					if(!errorMap.containsKey(e.getKey())){
+						String newValue = e.getValue().toString();
+						if(e.getValue().toString().startsWith("+")) newValue = e.getValue().toString().substring(1);
 						result.append("\n\tChange accepted for Parameter : -").append(e.getKey()).append(", Old value was :").append(oldValuesMap.get(e.getKey()))
-						.append(", New Value is : ").append(e.getValue().toString());
+						.append(", New Value is : ").append(newValue);
+					}
+				}
 			} catch (Exception e) {
 				LoggingService.logWarning("Command-line Parser", "error updating new config.");
 				result.append("error updating new config : " + e.getMessage());
@@ -150,7 +154,9 @@ public class CommandLineParser {
 	 */
 	private static String showHelp() {
 		StringBuilder help = new StringBuilder();
-		help.append("Usage: iofabric [OPTIONS] COMMAND [arg...]\n" + 
+		help.append("Usage 1: iofabric [OPTION]\n" + 
+				"Usage 2: iofabric [COMMAND] <Argument>\n" + 
+				"Usage 3: iofabric [COMMAND] [Parameter] <Value>\n" + 
 				"\n" + 
 				"Option           GNU long option         Meaning\n" + 
 				"======           ===============         =======\n" + 
@@ -166,11 +172,6 @@ public class CommandLineParser {
 				"                                         license information\n" + 
 				"status                                   Display current status information\n" + 
 				"                                         about the software\n" + 
-				"start                                    Start the ioFabric daemon which\n" + 
-				"                                         runs in the background\n" + 
-				"stop                                     Stop the ioFabric daemon\n" + 
-				"restart                                  Stop and then start the ioFabric\n" + 
-				"                                         daemon\n" + 
 				"provision        <provisioning key>      Attach this software to the\n" + 
 				"                                         configured ioFabric controller\n" + 
 				"deprovision                              Detach this software from all\n" + 
@@ -178,7 +179,7 @@ public class CommandLineParser {
 				"info                                     Display the current configuration\n" + 
 				"                                         and other information about the\n" + 
 				"                                         software\n" + 
-				"config           [OPTION] [VALUE]        Change the software configuration\n" + 
+				"config           [Parameter] [VALUE]     Change the software configuration\n" + 
 				"                                         according to the options provided\n" + 
 				"                 -d <#GB Limit>          Set the limit, in GiB, of disk space\n" + 
 				"                                         that the software is allowed to use\n" + 

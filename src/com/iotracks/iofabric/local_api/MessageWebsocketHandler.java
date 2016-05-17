@@ -64,7 +64,7 @@ public class MessageWebsocketHandler {
 
 		// Handshake
 		WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req),
-				null, true);
+				null, true, Integer.MAX_VALUE);
 		handshaker = wsFactory.newHandshaker(req);
 		if (handshaker == null) {
 			WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
@@ -196,7 +196,7 @@ public class MessageWebsocketHandler {
 		if (messageSocketMap != null && messageSocketMap.containsKey(receiverId)) {
 			ctx = messageSocketMap.get(receiverId);
 			WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSentInfo(message, 1, System.currentTimeMillis()));
-			ByteBuf buffer1 = ctx.alloc().buffer();
+			ByteBuf buffer1 = ctx.alloc().buffer(Integer.MAX_VALUE);
 
 			// Send Opcode
 			buffer1.writeByte(OPCODE_MSG);

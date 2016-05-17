@@ -167,6 +167,8 @@ public final class Configuration {
 			String option = command.getKey();
 			String value = command.getValue().toString();
 			
+			if(value.startsWith("+")) value = value.substring(1);
+			
 			if(option == null || value == null || value.trim() == "" || option.trim() == ""){
 				if(!option.equals("ac")){
 					messageMap.put("Parameter error", "Command or value is invalid"); break;
