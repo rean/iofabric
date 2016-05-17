@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <config>
-	<access_token>0b51a84b066a049228ea3e0b14f424720842c132153b2fa7091c21a1129534d4</access_token>
+	<access_token/>
 	
-	<controller_url>https://iotracks.com/api/v1/</controller_url>
+	<controller_url>https://iotracks.com/api/v2/</controller_url>
 	
-	<instance_id>qk7PnPVpDTGmx3zWNR8zNP34</instance_id>
+	<instance_id/>
 	
-	<controller_cert>/home/user/.docker</controller_cert>
+	<controller_cert>/etc/iofabric/cert.crt</controller_cert>
 	
 	<network_interface>eth0</network_interface>
 	
-	<docker_url>http://127.0.0.1:2375</docker_url>
+	<docker_url>unix:///var/run/docker.sock</docker_url>
 	
-	<disk_consumption_limit>5.0</disk_consumption_limit>
+	<disk_consumption_limit>50</disk_consumption_limit>
 	
-	<disk_directory>/var/lib/iofabric</disk_directory>
+	<disk_directory>/var/lib/iofabric/</disk_directory>
 	
-	<memory_consumption_limit>1024.0</memory_consumption_limit>
+	<memory_consumption_limit>4096</memory_consumption_limit>
 	
-	<processor_consumption_limit>30.0</processor_consumption_limit>
+	<processor_consumption_limit>80.0</processor_consumption_limit>
 	
-	<log_disk_consumption_limit>1.0</log_disk_consumption_limit>
+	<log_disk_consumption_limit>10.0</log_disk_consumption_limit>
 	
-	<log_disk_directory>/var/log/iofabric</log_disk_directory>
+	<log_disk_directory>/var/log/iofabric/</log_disk_directory>
 
-	<log_file_count>5</log_file_count>
+	<log_file_count>10</log_file_count>
 </config>
