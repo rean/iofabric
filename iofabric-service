@@ -22,18 +22,18 @@ case $1 in
 
 	echo "Starting iofabric service..."
         cd $PATH_TO_JAR
-        sudo java -jar $JAR_FILE_NAME start &
+        sudo java -jar $JAR_FILE_NAME start S &
     ;;
     stop)
         cd $PATH_TO_JAR
-        sudo java -jar $JAR_FILE_NAME stop
+        sudo java -jar $JAR_FILE_NAME stop S
     ;;
-    restart)
-	echo "Restarting iofabric service..."
-        cd $PATH_TO_JAR
-        sudo java -jar $JAR_FILE_NAME stop
-        sudo java -jar $JAR_FILE_NAME start &
-    ;;
+ #   restart)
+ #echo "Restarting iofabric service..."
+ #   cd $PATH_TO_JAR
+ #  sudo java -jar $JAR_FILE_NAME stop R
+ # sudo java -jar $JAR_FILE_NAME start &
+ #  ;;
 esac
 
 

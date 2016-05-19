@@ -62,7 +62,7 @@ public class ControlWebsocketHandler {
 
 		// Handshake
 		WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req),
-				null, true);
+				null, true, Integer.MAX_VALUE);
 		handshaker = wsFactory.newHandshaker(req);
 		if (handshaker == null) {
 			WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());

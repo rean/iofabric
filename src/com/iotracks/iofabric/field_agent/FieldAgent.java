@@ -140,10 +140,10 @@ public class FieldAgent {
 				Thread.sleep(Constants.POST_STATUS_FREQ_SECONDS * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "post status");
-				if (notProvisioned()) {
-					LoggingService.logWarning(MODULE_NAME, "not provisioned");
-					continue;
-				}
+//				if (notProvisioned()) {
+//					LoggingService.logWarning(MODULE_NAME, "not provisioned");
+//					continue;
+//				}
 				LoggingService.logInfo(MODULE_NAME, "provisioned");
 
 				if (controllerNotConnected()) {
@@ -751,7 +751,8 @@ public class FieldAgent {
 				try {
 					Configuration.saveConfigUpdates();
 				} catch (Exception e) {}
-	
+				
+				postFabricConfig();
 				loadRegistries(false);
 				loadElementsList(false);
 				loadElementsConfig(false);

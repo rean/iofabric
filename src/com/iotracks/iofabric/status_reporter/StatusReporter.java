@@ -2,6 +2,7 @@ package com.iotracks.iofabric.status_reporter;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,8 +56,10 @@ public final class StatusReporter {
 	public static String getStatusReport() {
 		StringBuilder result = new StringBuilder();
 		
-		final DateFormat df = new SimpleDateFormat("MMM dd yyyy hh:mm:ss.SSS");
-		
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeInMillis(statusReporterStatus.getSystemTime());
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy hh:mm a");
+				
 		float diskUsage = resourceConsumptionManagerStatus.getDiskUsage();
 		String connectionStatus = fieldAgentStatus.getContollerStatus() == ControllerStatus.OK ? "ok" : 
 			(fieldAgentStatus.getContollerStatus() == ControllerStatus.BROKEN ? "broken" : "not provisioned"); 
@@ -70,7 +73,7 @@ public final class StatusReporter {
 		result.append("\nRunning Elements            : " + processManagerStatus.getRunningElementsCount());
 		result.append("\nConnection to Controller    : " + connectionStatus);
 		result.append(String.format("\nMessages Processed          : about %,d", messageBusStatus.getProcessedMessages())); 
-		result.append("\nSystem Time                 : " + DateFormat.getDateTimeInstance().format(statusReporterStatus.getSystemTime()));
+		result.append("\nSystem Time                 : " + 		dateFormat.format(cal.getTime()));
 		
 		return result.toString();
 	}
