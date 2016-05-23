@@ -1,6 +1,5 @@
 package com.iotracks.iofabric.status_reporter;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.concurrent.Executors;
