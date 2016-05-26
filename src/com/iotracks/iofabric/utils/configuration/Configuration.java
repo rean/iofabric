@@ -455,17 +455,17 @@ public final class Configuration {
 		result.append(
 				"Instance ID               : " + ((instanceId != null && !instanceId.equals("")) ? instanceId : "not provisioned") + "\n" + 
 						"IP Address                : " + ipAddress + "\n" + 
-						"Network Adapter           : " + networkInterface + "\n" + 
+						"Network Interface         : " + networkInterface + "\n" + 
 						"ioFabric Controller       : " + controllerUrl + "\n" + 
 						"ioFabric Certificate      : " + controllerCert + "\n" + 
-						"Docker URI                : " + dockerUrl + "\n" + 
-						String.format("Disk Limit                : %.2f GiB\n", diskLimit) + 
-						"Disk Directory            : " + diskDirectory + "\n" + 
-						String.format("Memory Limit              : %.2f MiB\n", memoryLimit) + 
-						String.format("CPU Limit                 : %.2f%%\n", cpuLimit) + 
-						String.format("Log Limit                 : %.2f GiB\n", logDiskLimit) + 
-						"Log Directory             : " + logDiskDirectory + "\n" + 
-						String.format("Log File Count            : %d", logFileCount));
+						"Docker URL                : " + dockerUrl + "\n" + 
+						String.format("Disk Usage Limit          : %.2f GiB\n", diskLimit) + 
+						"Message Storage Directory : " + diskDirectory + "\n" + 
+						String.format("Memory Usage Limit        : %.2f MiB\n", memoryLimit) + 
+						String.format("CPU Usage Limit           : %.2f%%\n", cpuLimit) + 
+						String.format("Log Disk Limit            : %.2f GiB\n", logDiskLimit) + 
+						"Log File Directory        : " + logDiskDirectory + "\n" + 
+						String.format("Log Rolling File Count    : %d", logFileCount));
 		return result.toString();
 	}
 
