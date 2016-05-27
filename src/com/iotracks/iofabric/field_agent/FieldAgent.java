@@ -1,5 +1,6 @@
 package com.iotracks.iofabric.field_agent;
 
+import javax.json.stream.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -14,9 +15,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -41,8 +39,6 @@ import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 
 import io.netty.util.internal.StringUtil;
-import io.netty.util.internal.ThreadLocalRandom;
-
 
 /**
  * Field Agent module
@@ -144,8 +140,6 @@ public class FieldAgent {
 //					LoggingService.logWarning(MODULE_NAME, "not provisioned");
 //					continue;
 //				}
-				LoggingService.logInfo(MODULE_NAME, "provisioned");
-
 				if (controllerNotConnected()) {
 					if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -158,7 +152,13 @@ public class FieldAgent {
 				try {
 					LoggingService.logInfo(MODULE_NAME, "sending...");
 					JsonObject result = orchestrator.doCommand("status", null, status);
-					if (!result.getString("status").equals("ok"))
+					if (!result.getString("status").equals("ok")){
+						throw new Exception("error from fabric controller");
+					}
+				} catch(JsonParsingException je){
+					if(ping()) 
+						deProvision();
+					else 
 						throw new Exception("error from fabric controller");
 				} catch (Exception e) {
 					LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
