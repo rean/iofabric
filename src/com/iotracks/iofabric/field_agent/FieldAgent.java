@@ -742,6 +742,9 @@ public class FieldAgent {
 	public String provision(String key) {
 		LoggingService.logInfo(MODULE_NAME, "provisioning");
 		try {
+			if (!notProvisioned())
+				deProvision();
+
 			JsonObject result = orchestrator.provision(key);
 			if (result.getString("status").equals("ok")) { 
 	
