@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BytesUtil.cs" />
+    <Compile Include="IOFabricLocalAPIURL.cs" />
     <Compile Include="IOFabricResponseUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

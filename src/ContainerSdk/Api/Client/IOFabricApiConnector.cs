@@ -8,5 +8,9 @@ namespace Api.Client
 {
 	public class IOFabricApiConnector
 	{
+		// logger
+
+		protected Bootstrap bootstrap;
+		protected EventLoopGroup workerGroup;
 	}
 }

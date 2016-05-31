@@ -7,9 +7,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 
-namespace IOTracks.IOFabric.Container.Sdk
+namespace IOTracks.IOFabric.ContainerSdk
 {
-    public class Message
+    public class IOMessage
     {
 		private const short VERSION = 4;
 
@@ -34,18 +34,18 @@ namespace IOTracks.IOFabric.Container.Sdk
 		public byte[] ContextData { get; set; }
 		public byte[] ContentData { get; set; }
 
-		public Message()
+		public IOMessage()
 		{
 			Version = VERSION;
 		}
 
-		public Message(string publisher)
+		public IOMessage(string publisher)
 		{
 			this.Publisher = publisher;
 		}
 
 		//from json
-		public Message(JObject json)
+		public IOMessage(JObject json)
 		{
 			JToken temp;
 
@@ -135,7 +135,7 @@ namespace IOTracks.IOFabric.Container.Sdk
 			}
 		}
 
-		public Message(byte[] rawBytes)
+		public IOMessage(byte[] rawBytes)
 		{
 			Version = BitConverter.ToInt16(rawBytes, 0); // 2 bytes long
 
@@ -315,7 +315,7 @@ namespace IOTracks.IOFabric.Container.Sdk
 			}
 		}
 
-		public Message(byte[] header, byte[] data)
+		public IOMessage(byte[] header, byte[] data)
 		{
 			Version = BitConverter.ToInt16(header, 0);
 
@@ -768,7 +768,7 @@ namespace IOTracks.IOFabric.Container.Sdk
 		{
 			string s = Encoding.ASCII.GetString(bytes);
 			byte[] rawBytes = Convert.FromBase64String(s);
-			Message result = new Message(rawBytes);
+			IOMessage result = new IOMessage(rawBytes);
 			this.AuthGroup = result.AuthGroup;
 			this.AuthIdentifier = result.AuthIdentifier;
 			this.ChainPosition = result.ChainPosition;

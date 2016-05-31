@@ -7,3 +7,4 @@ C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\Newtonsof
 C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\bin\Debug\Newtonsoft.Json.xml
 C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\obj\Debug\ContainerSdk.dll
 C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\obj\Debug\ContainerSdk.pdb
+C:\Tejas\src\iotracks\iofabric\src\ContainerSdk\ContainerSdk\obj\Debug\ContainerSdk.csprojResolveAssemblyReference.cache

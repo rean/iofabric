@@ -11,7 +11,7 @@ namespace Api
 		//logger
 		private const string ID_PARAM_NAME = "id";
 		private const string TIMEFRAME_START_PARAM_NAME = "timeframestart";
-		private const string TIMEFRAME_END_PARAM_NAME = "timeframeend";
+		private const string TIMEFRAME_END_PARAM_NAME = "timeframeends";
 		private const string PUBLISHERS_PARAM_NAME = "publishiers";
 
 		private string server;
