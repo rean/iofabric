@@ -1,6 +1,5 @@
 package com.iotracks.iofabric.field_agent;
 
-import javax.json.stream.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -21,6 +20,7 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonWriter;
+import javax.json.stream.JsonParsingException;
 import javax.net.ssl.SSLHandshakeException;
 
 import com.iotracks.iofabric.element.Element;
@@ -60,7 +60,7 @@ public class FieldAgent {
 		lastGetChangesList = 0;
 		initialization = true;
 	}
-	
+
 	public static FieldAgent getInstance() {
 		if (instance == null) {
 			synchronized (FieldAgent.class) {
@@ -70,7 +70,7 @@ public class FieldAgent {
 		}
 		return instance;
 	}
-	
+
 	/**
 	 * creates IOFabric status report
 	 * 
@@ -78,7 +78,7 @@ public class FieldAgent {
 	 */
 	private Map<String, Object> getFabricStatus() {
 		Map<String, Object> result = new HashMap<>();
-		
+
 		result.put("daemonstatus", StatusReporter.getSupervisorStatus().getDaemonStatus());
 		result.put("daemonoperatingduration", StatusReporter.getSupervisorStatus().getOperationDuration());
 		result.put("daemonlaststart", StatusReporter.getSupervisorStatus().getDaemonLastStart());
@@ -98,10 +98,11 @@ public class FieldAgent {
 		result.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
 		result.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
 		result.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
+		result.put("controllerstatus", StatusReporter.getFieldAgentStatus().getContollerStatus());
 
 		return result;
 	}
-	
+
 	/**
 	 * checks if IOFabric is not provisioned
 	 * 
@@ -110,7 +111,7 @@ public class FieldAgent {
 	private boolean notProvisioned() {
 		return StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.NOT_PROVISIONED);
 	}
-	
+
 	/**
 	 * checks if IOFabric controller connection is broken
 	 * 
@@ -120,7 +121,7 @@ public class FieldAgent {
 	private boolean controllerNotConnected() throws Exception {
 		return !StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && !ping(); 
 	}
-	
+
 	/**
 	 * sends IOFabric instance status to IOFabric controller
 	 * 
@@ -136,10 +137,10 @@ public class FieldAgent {
 				Thread.sleep(Constants.POST_STATUS_FREQ_SECONDS * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "post status");
-//				if (notProvisioned()) {
-//					LoggingService.logWarning(MODULE_NAME, "not provisioned");
-//					continue;
-//				}
+				//				if (notProvisioned()) {
+				//					LoggingService.logWarning(MODULE_NAME, "not provisioned");
+				//					continue;
+				//				}
 				if (controllerNotConnected()) {
 					if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -169,7 +170,21 @@ public class FieldAgent {
 			}
 		}
 	};
-	
+
+	/**
+	 * sends IOFabric instance status to IOFabric controller
+	 * 
+	 */
+	private void postDeprovisioningStatus() {
+		LoggingService.logInfo(MODULE_NAME, "start posting : Deprovisioning status");
+		Map<String, Object> status = getFabricStatus();
+		try {
+			JsonObject result = orchestrator.doCommand("status", null, status);
+		} catch(Exception je){
+		}
+	}
+
+
 	/**
 	 * logs and sets appropriate status when controller 
 	 * certificate is not verified
@@ -181,8 +196,8 @@ public class FieldAgent {
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
 		StatusReporter.setFieldAgentStatus().setControllerVerified(false);
 	}
-	
-	
+
+
 	/**
 	 * retrieves IOFabric changes list from IOFabric controller
 	 * 
@@ -250,7 +265,7 @@ public class FieldAgent {
 			} catch (Exception e) {}
 		}
 	};
-	
+
 	/**
 	 * gets list of registries from file or IOFabric controller
 	 * 
@@ -263,7 +278,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
-		
+
 		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -271,7 +286,7 @@ public class FieldAgent {
 				verficationFailed();
 			return;
 		}
-		
+
 		String filename = "registries.json";
 		try {
 			JsonArray registriesList = null;
@@ -310,7 +325,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "unable to get registries : " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * gets list of IOElement configurations from file or IOFabric controller
 	 * 
@@ -323,7 +338,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
-		
+
 		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -331,7 +346,7 @@ public class FieldAgent {
 				verficationFailed();
 			return;
 		}
-		
+
 		String filename = "configs.json";
 		try {
 			JsonArray configs = null;
@@ -354,7 +369,7 @@ public class FieldAgent {
 				JsonObject config = configs.getJsonObject(i);
 				String id = config.getString("id");
 				String configString = config.getString("config");
-//				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
+				//				long lastUpdated = config.getJsonNumber("lastupdatedtimestamp").longValue();
 				cfg.put(id, configString);
 			}
 			elementManager.setConfigs(cfg);
@@ -377,7 +392,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
-		
+
 		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -385,7 +400,7 @@ public class FieldAgent {
 				verficationFailed();
 			return;
 		}
-		
+
 		String filename = "routes.json";
 		try {
 			JsonArray routes = null;
@@ -438,7 +453,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
-		
+
 		if (controllerNotConnected() && !fromFile) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -446,7 +461,7 @@ public class FieldAgent {
 				verficationFailed();
 			return;
 		}
-		
+
 		String filename = "elements.json";
 		try {
 			JsonArray containers = null;
@@ -495,7 +510,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "unable to get containers list" + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * pings IOFabric controller
 	 * 
@@ -506,7 +521,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return false;
 		}
-		
+
 		try {
 			if (orchestrator.ping()) {
 				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
@@ -570,7 +585,7 @@ public class FieldAgent {
 		try {
 			if (!Files.exists(Paths.get(filename), LinkOption.NOFOLLOW_LINKS))
 				return null;
-			
+
 			JsonReader reader = Json.createReader(new FileReader(new File(filename)));
 			JsonObject object = reader.readObject();
 			reader.close();
@@ -588,7 +603,7 @@ public class FieldAgent {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * saves data and checksum to json file
 	 * 
@@ -608,7 +623,7 @@ public class FieldAgent {
 			writer.close();
 		} catch (Exception e) {}
 	}
-	
+
 	/**
 	 * gets IOFabric instance configuration from IOFabric controller
 	 * 
@@ -620,7 +635,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
-		
+
 		if (controllerNotConnected()) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -628,7 +643,7 @@ public class FieldAgent {
 				verficationFailed();
 			return;
 		}
-		
+
 		if (initialization) {
 			postFabricConfig();
 			return;
@@ -637,7 +652,7 @@ public class FieldAgent {
 			JsonObject result = orchestrator.doCommand("config", null, null);
 			if (!result.getString("status").equals("ok"))
 				throw new Exception("error from fabric controller");
-			
+
 			JsonObject configs = result.getJsonObject("config");
 			String networkInterface = configs.getString("networkinterface");
 			String dockerUrl = configs.getString("dockerurl");
@@ -648,46 +663,46 @@ public class FieldAgent {
 			float logLimit = Float.parseFloat(configs.getString("loglimit"));
 			String logDirectory = configs.getString("logdirectory");
 			int logFileCount = Integer.parseInt(configs.getString("logfilecount"));
-			
+
 			Map<String, Object> instanceConfig = new HashMap<>();
-			
+
 			if (!Configuration.getNetworkInterface().equals(networkInterface))
 				instanceConfig.put("n", networkInterface);
-			
+
 			if (!Configuration.getDockerUrl().equals(dockerUrl))
 				instanceConfig.put("c", dockerUrl);
 
 			if (Configuration.getDiskLimit() != diskLimit)
 				instanceConfig.put("d", diskLimit);
-			
+
 			if (!Configuration.getDiskDirectory().equals(diskDirectory))
 				instanceConfig.put("dl", diskDirectory);
 
 			if (Configuration.getMemoryLimit() != memoryLimit)
 				instanceConfig.put("m", memoryLimit);
-			
+
 			if (Configuration.getCpuLimit() != cpuLimit)
 				instanceConfig.put("p", cpuLimit);
-			
+
 			if (Configuration.getLogDiskLimit() != logLimit)
 				instanceConfig.put("l", logLimit);
-			
+
 			if (!Configuration.getLogDiskDirectory().equals(logDirectory))
 				instanceConfig.put("ld", logDirectory);
-			
+
 			if (Configuration.getLogFileCount() != logFileCount)
 				instanceConfig.put("lc", logFileCount);
-			
+
 			if (!instanceConfig.isEmpty())
 				Configuration.setConfig(instanceConfig);
-			
+
 		} catch (CertificateException|SSLHandshakeException e) {
 			verficationFailed();
 		} catch (Exception e) {
 			LoggingService.logWarning(MODULE_NAME, "unable to get fabric config : " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * sends IOFabric instance configuration to IOFabric controller
 	 * 
@@ -699,7 +714,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return;
 		}
-		
+
 		if (controllerNotConnected()) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -707,7 +722,7 @@ public class FieldAgent {
 				verficationFailed();
 			return;
 		}
-		
+
 		try {
 			Map<String, Object> postParams = new HashMap<>();
 			postParams.put("networkinterface", Configuration.getNetworkInterface());
@@ -719,7 +734,7 @@ public class FieldAgent {
 			postParams.put("loglimit", Configuration.getLogDiskLimit());
 			postParams.put("logdirectory", Configuration.getLogDiskDirectory());
 			postParams.put("logfilecount", Configuration.getLogFileCount());
-			
+
 			JsonObject result = orchestrator.doCommand("config/changes", null, postParams);
 			if (!result.getString("status").equals("ok"))
 				throw new Exception("error from fabric controller");
@@ -729,7 +744,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "unable to post fabric config : " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * does the provisioning.
 	 * If successfully provisioned, updates Instance ID and Access Token in 
@@ -747,21 +762,20 @@ public class FieldAgent {
 
 			JsonObject result = orchestrator.provision(key);
 			if (result.getString("status").equals("ok")) { 
-	
 				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
 				Configuration.setInstanceId(result.getString("id"));
 				Configuration.setAccessToken(result.getString("token"));
 				try {
 					Configuration.saveConfigUpdates();
 				} catch (Exception e) {}
-				
+
 				postFabricConfig();
 				loadRegistries(false);
 				loadElementsList(false);
 				loadElementsConfig(false);
 				loadRoutes(false);
 				notifyModules();
-				
+
 				return result.getString("id");
 			}
 		} catch (CertificateException|SSLHandshakeException e) {
@@ -773,7 +787,7 @@ public class FieldAgent {
 		}
 		return "";
 	}
-	
+
 	/**
 	 * notifies other modules
 	 * 
@@ -796,7 +810,7 @@ public class FieldAgent {
 			LoggingService.logWarning(MODULE_NAME, "not provisioned");
 			return "\nFailure - not provisioned";
 		}
-		
+
 		if (controllerNotConnected()) {
 			if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 				LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
@@ -804,8 +818,9 @@ public class FieldAgent {
 				verficationFailed();
 			return "\nFailure - not connected to controller";
 		}
-		
+
 		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
+		postDeprovisioningStatus();
 		Configuration.setInstanceId("");
 		Configuration.setAccessToken("");
 		try {
@@ -815,7 +830,7 @@ public class FieldAgent {
 		notifyModules();
 		return "\nSuccess - tokens and identifiers and keys removed";
 	}
-	
+
 	/**
 	 * sends IOFabric configuration when any changes applied
 	 * 
@@ -826,20 +841,20 @@ public class FieldAgent {
 		} catch (Exception e) {}
 		orchestrator.update();
 	}
-	
+
 	/**
 	 * starts Field Agent module
 	 * 
 	 * @throws Exception
 	 */
 	public void start() throws Exception {
-		
+
 		if (StringUtil.isNullOrEmpty(Configuration.getInstanceId())	|| StringUtil.isNullOrEmpty(Configuration.getAccessToken()))
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
-			
+
 		elementManager = ElementManager.getInstance();
 		orchestrator = new Orchestrator();
-		
+
 		boolean isConnected = ping();
 		getFabricConfig();
 		if (!notProvisioned()) {
