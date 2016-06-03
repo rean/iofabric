@@ -135,7 +135,7 @@ public class MessageWebsocketHandler {
 
 						int totalMsgLength = BytesUtil.bytesToInteger(BytesUtil.copyOfRange(byteArray, 1, 5));
 						try {
-							message = new Message(BytesUtil.copyOfRange(byteArray, 5, totalMsgLength));
+							message = new Message(BytesUtil.copyOfRange(byteArray, 5, totalMsgLength + 5));
 							LoggingService.logInfo(MODULE_NAME, message.toString());
 						} catch (Exception e) {
 							LoggingService.logInfo(MODULE_NAME, "wrong message format  " + e.getMessage());

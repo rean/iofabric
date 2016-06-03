@@ -142,6 +142,10 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 		if(getLocalIp().equals(remoteIpAddress) || remoteIpAddress.equals("127.0.0.1") || remoteIpAddress.equals("0.0.0.0")) {
 			found = true;
 		}
+		
+		//To be removed later
+		found = true;
+		//To be removed later
 
 		if(!found){
 			String errorMsg = "IP address " + remoteIpAddress + " not found as registered\n";
