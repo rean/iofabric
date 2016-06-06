@@ -1,5 +1,6 @@
 package com.iotracks.iofabric.process_manager;
 
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -37,10 +38,12 @@ import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.iotracks.iofabric.utils.Constants.LinkStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
+import com.sun.management.OperatingSystemMXBean;
 import io.netty.util.internal.StringUtil;
 
 /**
@@ -245,6 +248,13 @@ public class DockerUtil {
 	 * @throws Exception
 	 */
 	public void startContainer(String id) throws Exception {
+		long totalMemory = ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalPhysicalMemorySize();
+		long jvmMemory = Runtime.getRuntime().maxMemory();
+		long requiredMemory = (long) (((totalMemory * 0.25) > (256 * Constants.MiB) ? (256 * Constants.MiB) : (totalMemory * 0.25)));
+
+		if (totalMemory - jvmMemory < requiredMemory)
+			throw new Exception("Not enough memory to start the container");
+
 		dockerClient.startContainerCmd(id).exec();
 	}
 	
