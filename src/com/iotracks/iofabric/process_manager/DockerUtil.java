@@ -250,7 +250,7 @@ public class DockerUtil {
 	public void startContainer(String id) throws Exception {
 		long totalMemory = ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalPhysicalMemorySize();
 		long jvmMemory = Runtime.getRuntime().maxMemory();
-		long requiredMemory = (long) (((totalMemory * 0.25) > (256 * Constants.MiB) ? (256 * Constants.MiB) : (totalMemory * 0.25)));
+		long requiredMemory = (long) Math.min(totalMemory * 0.25, 256 * Constants.MiB);
 
 		if (totalMemory - jvmMemory < requiredMemory)
 			throw new Exception("Not enough memory to start the container");
