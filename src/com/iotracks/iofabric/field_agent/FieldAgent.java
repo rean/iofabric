@@ -98,7 +98,6 @@ public class FieldAgent {
 		result.put("elementmessagecounts", StatusReporter.getMessageBusStatus().getJsonPublishedMessagesPerElement());
 		result.put("messagespeed", StatusReporter.getMessageBusStatus().getAverageSpeed());
 		result.put("lastcommandtime", StatusReporter.getFieldAgentStatus().getLastCommandTime());
-		result.put("controllerstatus", StatusReporter.getFieldAgentStatus().getContollerStatus());
 
 		return result;
 	}
@@ -157,9 +156,9 @@ public class FieldAgent {
 						throw new Exception("error from fabric controller");
 					}
 				} catch(JsonParsingException je){
-					if(ping()) 
-						deProvision();
-					else 
+//					if(ping()) 
+//						deProvision();
+//					else 
 						throw new Exception("error from fabric controller");
 				} catch (Exception e) {
 					LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
@@ -170,20 +169,6 @@ public class FieldAgent {
 			}
 		}
 	};
-
-	/**
-	 * sends IOFabric instance status to IOFabric controller
-	 * 
-	 */
-	private void postDeprovisioningStatus() {
-		LoggingService.logInfo(MODULE_NAME, "start posting : Deprovisioning status");
-		Map<String, Object> status = getFabricStatus();
-		try {
-			JsonObject result = orchestrator.doCommand("status", null, status);
-		} catch(Exception je){
-		}
-	}
-
 
 	/**
 	 * logs and sets appropriate status when controller 
@@ -819,8 +804,7 @@ public class FieldAgent {
 			return "\nFailure - not connected to controller";
 		}
 
-		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
-		postDeprovisioningStatus();
+//		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 		Configuration.setInstanceId("");
 		Configuration.setAccessToken("");
 		try {

@@ -420,6 +420,8 @@ public final class Configuration {
 	}
 
 	public static void setDiskDirectory(String diskDirectory) {
+		if (diskDirectory.charAt(0) != File.separatorChar)
+			diskDirectory = File.separatorChar + diskDirectory; 
 		if (diskDirectory.charAt(diskDirectory.length() - 1) != File.separatorChar)
 			diskDirectory += File.separatorChar;
 		Configuration.diskDirectory = diskDirectory;
