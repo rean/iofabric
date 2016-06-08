@@ -378,6 +378,10 @@ public final class Configuration {
 	}
 
 	public static void setLogDiskDirectory(String logDiskDirectory) {
+		if (logDiskDirectory.charAt(0) != File.separatorChar)
+			logDiskDirectory = File.separatorChar + logDiskDirectory; 
+		if (logDiskDirectory.charAt(logDiskDirectory.length() - 1) != File.separatorChar)
+			logDiskDirectory += File.separatorChar;
 		Configuration.logDiskDirectory = logDiskDirectory;
 	}
 

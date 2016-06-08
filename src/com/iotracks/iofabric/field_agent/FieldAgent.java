@@ -742,10 +742,18 @@ public class FieldAgent {
 	public String provision(String key) {
 		LoggingService.logInfo(MODULE_NAME, "provisioning");
 		try {
+			
+			JsonObject result = orchestrator.provision(key);
+			
+			try{
+			if(result.getString("id").equals("")) return "";
+			}catch(Exception e){
+				return "";
+			}
+			
 			if (!notProvisioned())
 				deProvision();
 
-			JsonObject result = orchestrator.provision(key);
 			if (result.getString("status").equals("ok")) { 
 				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
 				Configuration.setInstanceId(result.getString("id"));
@@ -804,7 +812,7 @@ public class FieldAgent {
 			return "\nFailure - not connected to controller";
 		}
 
-//		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
+		StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 		Configuration.setInstanceId("");
 		Configuration.setAccessToken("");
 		try {
