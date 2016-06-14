@@ -4,7 +4,7 @@ The purpose of a message is move information along a path. No understanding of t
 
 The ioMessage versions are integers, not decimals. This is because it is harder to parse a raw binary message with decimals across different computing platforms. So... ioMessage versions will be things like 4, 5, and 12. The version can be used to determine what fields will be present in the message and perhaps how the data will be arranged in those fields.
 
-The ID for each message must be unique across the Earth for 20 years or longer. Depending on the volume of ioMessages across the globe, a 128-bit identifier may reach a 99.9%+ chance of collisions well before that timeframe ends. So a 256-bit identifier has been chosen and should suffice. 
+The ID for each message must be unique across the Earth for 20 years or longer. Depending on the volume of ioMessages across the globe, a 128-bit identifier may reach a 99.9%+ chance of collisions well before that timeframe ends. So a 256-bit identifier has been chosen and should suffice.
 
 The fields listed here do not contain any formatting information except for the ID, which is strictly standardized. Each embodiment of the ioMessage standard will make use of the best features of the embodiment method. For example, when using JSON to create ioMessages, there is no need to include length information about the different fields. And there is no need to put any particular field in any particular position. XML is similar. But when encoding an ioMessage in raw bytes, the order of the information is very crucial for packing and parsing the messages. While JSON and XML offer some advantages, they also have more overhead than raw bytes. And while raw byte formatting requires parsing by the receiver, it also has very low overhead and is excellent for real-time transmission of media such as photos or video.
 
@@ -13,163 +13,182 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 ###Fields of an ioMessage
 
 ####ID
-<pre>
-    Data Type: Text
-    Key: ID
-    Required: Yes
-    Description: A 256-bit universally unique identifier per message allows for portability and globe-wide verification of events. The ID string is formatted in base58 for readability, transmission safety between systems, and compactness.
-</pre>
+| | |
+|---|---|
+|*Data Type*|Text|
+|*Key*|ID|
+|*Required*|Yes|
+|*Description*|A 256-bit universally unique identifier per message allows for portability and globe-wide verification of events. The ID string is formatted in base58 for readability, transmission safety between systems, and compactness.|
 
 ####Tag
-<pre>
-    Data Type: Text
-    Key: Tag
-    Required: No
-    Description: This is an open field for associating a message with a particular device or any other interesting thing. It should be queryable later, making this a high-value field for some applications.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|Tag|
+|*Required*|No|
+|*Description*|This is an open field for associating a message with a particular device or any other interesting thing. It should be queryable later, making this a high-value field for some applications.|
 </pre>
 
 ####Message Group ID
-<pre>    
-    Data Type: Text
-    Key: GroupID
-    Required: No
-    Description: This is how messages can be allocated to a sequence or stream.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|GroupID|
+|*Required*|No|
+|*Description*|This is how messages can be allocated to a sequence or stream.|
 </pre>
 
 ####Sequence Number
-<pre>
-    Data Type: Integer
-    Key: SequenceNumber
-    Required: No
-    Description: What number in the sequence is this current message?
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|SequenceNumber|
+|*Required*|No|
+|*Description*|What number in the sequence is this current message?|
 </pre>
 
 ####Sequence Total
-<pre>
-    Data Type: Integer
-    Key: SequenceTotal
-    Required: No
-    Description: How many total messages are in the sequence? Absence of a total count while sequence numbers and a message group ID are present may be used to indicate a stream with indeterminate length.
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|SequenceTotal|
+|*Required*|No|
+|*Description*|How many total messages are in the sequence? Absence of a total count while sequence numbers and a message group ID are present may be used to indicate a stream with indeterminate length.|
 </pre>
 
 ####Priority
-<pre>
-    Data Type: Integer
-    Key: Priority
-    Required: No
-    Description: The lower the number, the higher the priority. This is a simple quality of service (QoS) indicator. Emergency messages or system error logs might get the highest priority. Self-contained messages (such as a button push or a temperature reading) might get very high priority. Media stream messages (such as one second of audio) might get very low priority ranking in order to allow message slowing or dropping as needed in a busy system.
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|Priority|
+|*Required*|No|
+|*Description*|The lower the number, the higher the priority. This is a simple quality of service (QoS) indicator. Emergency messages or system error logs might get the highest priority. Self-contained messages (such as a button push or a temperature reading) might get very high priority. Media stream messages (such as one second of audio) might get very low priority ranking in order to allow message slowing or dropping as needed in a busy system.|
 </pre>
 
 ####Timestamp
-<pre>
-    Data Type: Integer
-    Key: Timestamp
-    Required: Yes
-    Description: Universal timecode including milliseconds. Milliseconds can be entered as zeroes if needed.
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|Timestamp|
+|*Required*|Yes|
+|*Description*|Universal timecode including milliseconds. Milliseconds can be entered as zeroes if needed.|
 </pre>
 
 ####Publisher
-<pre>
-    Data Type: Text
-    Key: Publisher
-    Required: Yes
-    Description: This is the identifier of the element that is sending the message. It can be used to determine routing or guarantee privacy and security. Because each element is assigned a UUID during configuration, even across ioFabric instances no message should be received by an unintended entity.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|Publisher|
+|*Required*|Yes|
+|*Description*|This is the identifier of the element that is sending the message. It can be used to determine routing or guarantee privacy and security. Because each element is assigned a UUID during configuration, even across ioFabric instances no message should be received by an unintended entity.|
 </pre>
 
 ####Authentication Identifier
-<pre>
-    Data Type: Text
-    Key: AuthID
-    Required: No
-    Description: This is an open field to pass along authentication information about the particular authorized entity generating the message, such as an employee ID number or a user ID in the application.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|AuthID|
+|*Required*|No|
+|*Description*|This is an open field to pass along authentication information about the particular authorized entity generating the message, such as an employee ID number or a user ID in the application.|
 </pre>
 
 ####Authentication Group
-<pre>
-    Data Type: Text
-    Key: AuthGroup
-    Required: No
-    Description: This is an open field to pass authentication group information. This allows pieces of the application to know they are dealing with a message from an authenticated user of a particular type (such as “employee” or “system admin”) without needing to know the actual identification information.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|AuthGroup|
+|*Required*|No|
+|*Description*|This is an open field to pass authentication group information. This allows pieces of the application to know they are dealing with a message from an authenticated user of a particular type (such as “employee” or “system admin”) without needing to know the actual identification information.|
 </pre>
 
 ####ioMessage Version
-<pre>
-    Data Type: Integer
-    Key: Version
-    Required: Yes
-    Description: Which version of the ioMessage format does this particular message comply with?
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|Version|
+|*Required*|Yes|
+|*Description*|Which version of the ioMessage format does this particular message comply with?|
 </pre>
 
 ####Chain Position
-<pre>
-    Data Type: Integer
-    Key: ChainPosition
-    Required: No
-    Description: When using cryptographic message chaining, this field represents the position in the message chain that this paricular message occupies. It is similar to the "block height" value found in blockchain technology.
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|ChainPosition|
+|*Required*|No|
+|*Description*|When using cryptographic message chaining, this field represents the position in the message chain that this paricular message occupies. It is similar to the "block height" value found in blockchain technology.|
 </pre>
 
 ####Hash
-<pre>
-    Data Type: Text
-    Key: Hash
-    Required: No
-    Description: When using cryptographic message chaining, a hash of this entire message can be included here.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|Hash|
+|*Required*|No|
+|*Description*|When using cryptographic message chaining, a hash of this entire message can be included here.|
 </pre>
 
 ####Previous Message Hash
-<pre>
-    Data Type: Text
-    Key: PreviousHash
-    Required: No
-    Description: When using cryptographic message chaining, the hash value of the previous message is included here. This forms the cryptographic link from the prior message to this one.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|PreviousHash|
+|*Required*|No|
+|*Description*|When using cryptographic message chaining, the hash value of the previous message is included here. This forms the cryptographic link from the prior message to this one.|
 </pre>
 
 ####Nonce
-<pre>
-    Data Type: Text
-    Key: Nonce
-    Required: No
-    Description: When using cryptographic message chaining, an open field is needed to achieve the correct hash value. The information in this field will not be meaningful, but will be necessary to produce the final hash of the message.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|Nonce|
+|*Required*|No|
+|*Description*|When using cryptographic message chaining, an open field is needed to achieve the correct hash value. The information in this field will not be meaningful, but will be necessary to produce the final hash of the message.|
 </pre>
 
 ####Difficulty Target
-<pre>
-    Data Type: Integer
-    Key: DifficultyTarget
-    Required: No
-    Description: When using cryptographic message chaining, this field represents the hashing workload required to cryptographically seal the chain.
+|   |   |
+|---|---|
+|*Data Type*|Integer|
+|*Key*|DifficultyTarget|
+|*Required*|No|
+|*Description*|When using cryptographic message chaining, this field represents the hashing workload required to cryptographically seal the chain.|
 </pre>
 
 ####Information Type
-<pre>
-    Data Type: Text
-    Key: InfoType
-    Required: Yes
-    Description: This is like a MIME type. It describes what type of information is contained in the content data field.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|InfoType|
+|*Required*|Yes|
+|*Description*|This is like a MIME type. It describes what type of information is contained in the content data field.|
 </pre>
 
 ####Information Format
-<pre>
-    Data Type: Text
-    Key: InfoFormat
-    Required: Yes
-    Description: This is a sub-field of the Information Type. It defines the format of the data content in this message. If the information type is “Temperature”, for example, then the information format might be “Degrees Kelvin”.
+|   |   |
+|---|---|
+|*Data Type*|Text|
+|*Key*|InfoFormat|
+|*Required*|Yes|
+|*Description*|This is a sub-field of the Information Type. It defines the format of the data content in this message. If the information type is “Temperature”, for example, then the information format might be “Degrees Kelvin”.|
 </pre>
 
 ####Context Data
-<pre>
-    Data Type: Any (including binary, text, integer, etc.)
-    Key: ContextData
-    Required: No
-    Description: Context data in raw bytes. This field can be used to embed any information desired and will likely be very different from one solution to the next. It is the responsibility of the receiving element(s) to understand the context data format and the meaning of the context information.
+|   |   |
+|---|---|
+|*Data Type*|Any (including binary, text, integer, etc.)|
+|*Key*|ContextData|
+|*Required*|No|
+|*Description*|Context data in raw bytes. This field can be used to embed any information desired and will likely be very different from one solution to the next. It is the responsibility of the receiving element(s) to understand the context data format and the meaning of the context information.|
 </pre>
 
 ####Data Content
-<pre>
-    Data Type: Any (including binary, text, integer, etc.)
-    Key: ContentData
-    Required: Yes
-    Description: The actual data content of the message in its raw form. Having a raw format for this field allows for the greatest amount of flexibility in the system.
+|   |   |
+|---|---|
+|*Data Type*|Any (including binary, text, integer, etc.)|
+|*Key*|ContentData|
+|*Required*|Yes|
+|*Description*|The actual data content of the message in its raw form. Having a raw format for this field allows for the greatest amount of flexibility in the system.|
 </pre>
 
 
