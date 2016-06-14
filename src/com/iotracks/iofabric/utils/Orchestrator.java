@@ -35,6 +35,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 
+import com.github.dockerjava.api.NotFoundException;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 /**
@@ -239,7 +240,8 @@ public class Orchestrator {
 			postParams.entrySet().forEach(entry -> {
 				postData.add(new BasicNameValuePair(entry.getKey(), entry.getValue().toString()));
 			});
-
+		
+	
 		try {
 			initialize();
 			RequestConfig config = getRequestConfig();
@@ -248,6 +250,10 @@ public class Orchestrator {
 			post.setEntity(new UrlEncodedFormEntity(postData));
 
 			CloseableHttpResponse response = client.execute(post);
+			
+			if(response.getStatusLine().getStatusCode() == 403){
+				throw new javax.ws.rs.NotFoundException();
+			}
 			
 			BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
 			result = Json.createReader(in).readObject();

@@ -44,7 +44,7 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
-			result.append("ioFabric 1.12");
+			result.append("ioFabric 1.13");
 			result.append("\nCopyright (C) 2016 iotracks, inc.");
 			result.append("\nLicense ######### http://iotracks.com/license");
 			result.append(

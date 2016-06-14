@@ -20,8 +20,9 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonWriter;
-import javax.json.stream.JsonParsingException;
 import javax.net.ssl.SSLHandshakeException;
+
+import javax.ws.rs.NotFoundException;
 
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
@@ -155,11 +156,8 @@ public class FieldAgent {
 					if (!result.getString("status").equals("ok")){
 						throw new Exception("error from fabric controller");
 					}
-				} catch(JsonParsingException je){
-//					if(ping()) 
-//						deProvision();
-//					else 
-						throw new Exception("error from fabric controller");
+				} catch(NotFoundException je){
+						deProvision();
 				} catch (Exception e) {
 					LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
 				}

@@ -59,7 +59,7 @@ public class MessageWebsocketHandler {
 			LoggingService.logWarning(MODULE_NAME, " Missing ID or ID value in URL ");
 			return;
 		} else {
-			publisherId = tokens[4].trim();
+			publisherId = tokens[4].trim().split("\\?")[0];
 		}
 
 		// Handshake
@@ -196,10 +196,7 @@ public class MessageWebsocketHandler {
 		if (messageSocketMap != null && messageSocketMap.containsKey(receiverId)) {
 			ctx = messageSocketMap.get(receiverId);
 			WebSocketMap.unackMessageSendingMap.put(ctx, new MessageSentInfo(message, 1, System.currentTimeMillis()));
-			ByteBuf buffer1 = ctx.alloc().buffer(Integer.MAX_VALUE);
 
-			// Send Opcode
-			buffer1.writeByte(OPCODE_MSG);
 			int totalMsgLength = 0;
 
 			byte[] bytesMsg = null;
@@ -210,6 +207,10 @@ public class MessageWebsocketHandler {
 			}
 
 			totalMsgLength = bytesMsg.length;
+
+			ByteBuf buffer1 = ctx.alloc().buffer(totalMsgLength + 5);
+			// Send Opcode
+			buffer1.writeByte(OPCODE_MSG);
 			// Total Length
 			buffer1.writeBytes(BytesUtil.integerToBytes(totalMsgLength));
 			// Message
