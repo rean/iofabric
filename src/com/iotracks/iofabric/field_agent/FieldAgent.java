@@ -22,7 +22,7 @@ import javax.json.JsonReader;
 import javax.json.JsonWriter;
 import javax.net.ssl.SSLHandshakeException;
 
-import javax.ws.rs.NotFoundException;
+import javax.ws.rs.ForbiddenException;
 
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
@@ -156,7 +156,7 @@ public class FieldAgent {
 					if (!result.getString("status").equals("ok")){
 						throw new Exception("error from fabric controller");
 					}
-				} catch(NotFoundException je){
+				} catch(ForbiddenException je){
 						deProvision();
 				} catch (Exception e) {
 					LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());

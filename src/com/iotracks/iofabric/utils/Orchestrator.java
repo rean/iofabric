@@ -24,6 +24,7 @@ import javax.json.JsonObject;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.ForbiddenException;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
@@ -252,7 +253,7 @@ public class Orchestrator {
 			CloseableHttpResponse response = client.execute(post);
 			
 			if(response.getStatusLine().getStatusCode() == 403){
-				throw new javax.ws.rs.NotFoundException();
+				throw new ForbiddenException();
 			}
 			
 			BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
