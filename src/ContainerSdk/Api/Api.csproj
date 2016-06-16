@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="Client\IOFabricApiConnector.cs" />
     <Compile Include="Client\IOWebSocketConnector.cs" />
+    <Compile Include="Client\Logger.cs" />
     <Compile Include="Handler\IOContainerRESTAPIHandler.cs" />
     <Compile Include="Handler\IOContainerWSAPIHandler.cs" />
     <Compile Include="IOFabricClient.cs" />

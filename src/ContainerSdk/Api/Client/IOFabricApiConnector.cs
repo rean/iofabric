@@ -10,7 +10,13 @@ namespace Api.Client
 	{
 		// logger
 
-		protected Bootstrap bootstrap;
+		/*protected Bootstrap bootstrap;
 		protected EventLoopGroup workerGroup;
+
+		private Bootstrap init()
+		{
+			workerGroup = new NioEventLoopGroup();
+		}*/
+
 	}
 }
