@@ -466,7 +466,7 @@ public final class Configuration {
 						"Docker URL                : " + dockerUrl + "\n" + 
 						String.format("Disk Usage Limit          : %.2f GiB\n", diskLimit) + 
 						"Message Storage Directory : " + diskDirectory + "\n" + 
-						String.format("Memory Usage Limit        : %.2f MiB\n", memoryLimit) + 
+						String.format("Memory RAM Limit        : %.2f MiB\n", memoryLimit) + 
 						String.format("CPU Usage Limit           : %.2f%%\n", cpuLimit) + 
 						String.format("Log Disk Limit            : %.2f GiB\n", logDiskLimit) + 
 						"Log File Directory        : " + logDiskDirectory + "\n" + 

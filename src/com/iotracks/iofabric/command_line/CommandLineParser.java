@@ -44,7 +44,7 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
-			result.append("ioFabric 1.14");
+			result.append("ioFabric 1.15");
 			result.append("\nCopyright (C) 2016 iotracks, inc.");
 			result.append("\nLicense ######### http://iotracks.com/license");
 			result.append(
@@ -185,8 +185,9 @@ public class CommandLineParser {
 				"                                         that the software is allowed to use\n" + 
 				"                 -dl <dir>               Set the directory to use for disk\n" + 
 				"                                         storage\n" + 
-				"                 -m <#MB Limit>          Set the limit, in MiB, of memory that\n" + 
-				"                                         the software is allowed to use\n" + 
+				"                 -m <#MB Limit>          Set the limit, in MiB, of RAM memory that\n" + 
+				"                                         the software is allowed to use for\n" + 
+				"                                         messages\n" + 
 				"                 -p <#cpu % Limit>       Set the limit, in percentage, of CPU\n" + 
 				"                                         time that the software is allowed\n" + 
 				"                                         to use\n" + 
