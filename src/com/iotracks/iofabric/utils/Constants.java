@@ -63,5 +63,12 @@ public class Constants {
 	public static final long GET_USAGE_DATA_FREQ_SECONDS = osArch.equals("arm") ? 20 : 5;
 
 	public static int SET_SYSTEM_TIME_FREQ_SECONDS = 60;
+	
+	public static int getFabricType() {
+		if (osArch.equals("arm"))
+			return 2;
+		else
+			return 1;
+	}
 }
 
