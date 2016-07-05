@@ -737,25 +737,25 @@ public class FieldAgent {
 	 * @param key - provisioning key sent by command-line
 	 * @return String
 	 */
-	public String provision(String key) {
+	public JsonObject provision(String key) {
 		LoggingService.logInfo(MODULE_NAME, "provisioning");
+		JsonObject provisioningResult = null;
+		
 		try {
+			provisioningResult = orchestrator.provision(key);
 			
-			JsonObject result = orchestrator.provision(key);
-			
-			try{
-			if(result.getString("id").equals("")) return "";
-			}catch(Exception e){
-				return "";
-			}
-			
+//			try{
+//			if(provisioningResult.getString("id").equals("")) return "";
+//			}catch(Exception e){
+//				return "";
+//			}
 			if (!notProvisioned())
 				deProvision();
 
-			if (result.getString("status").equals("ok")) { 
+			if (provisioningResult.getString("status").equals("ok")) { 
 				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
-				Configuration.setInstanceId(result.getString("id"));
-				Configuration.setAccessToken(result.getString("token"));
+				Configuration.setInstanceId(provisioningResult.getString("id"));
+				Configuration.setAccessToken(provisioningResult.getString("token"));
 				try {
 					Configuration.saveConfigUpdates();
 				} catch (Exception e) {}
@@ -767,7 +767,6 @@ public class FieldAgent {
 				loadRoutes(false);
 				notifyModules();
 
-				return result.getString("id");
 			}
 		} catch (CertificateException|SSLHandshakeException e) {
 			verficationFailed();
@@ -776,7 +775,7 @@ public class FieldAgent {
 			StatusReporter.setFieldAgentStatus().setControllerVerified(true);
 			LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
 		}
-		return "";
+		return provisioningResult;
 	}
 
 	/**

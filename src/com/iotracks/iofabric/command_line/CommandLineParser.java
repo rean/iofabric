@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+
 import com.iotracks.iofabric.field_agent.FieldAgent;
 import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
@@ -79,11 +82,15 @@ public class CommandLineParser {
 			}
 			String provisionKey = args[1];
 			result.append("Provisioning with key \"" + provisionKey + "\"...");
-			String instanceId = FieldAgent.getInstance().provision(provisionKey); 
-			if (instanceId.equals(""))
+			JsonObject provisioningResult = FieldAgent.getInstance().provision(provisionKey);
+			if (provisioningResult == null) {
 				result.append("\nProvisioning failed");
-			else
+			} else if (provisioningResult.getString("status").equals("ok")) {
+				String instanceId = provisioningResult.getString("id");
 				result.append(String.format("\nSuccess - instance ID is %s", instanceId));
+			} else {
+				result.append(String.format("\nProvisioning failed - %s", provisioningResult.getString("errormessage")));
+			}
 
 			return result.toString();
 		}
