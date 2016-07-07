@@ -120,8 +120,7 @@ public class FieldAgent {
 	 * @throws	Exception
 	 */
 	private boolean controllerNotConnected() throws Exception {
-		connected = StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && ping(); 
-		return !connected; 
+		return !StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && !ping(); 
 	}
 
 	/**
@@ -144,6 +143,7 @@ public class FieldAgent {
 				//					continue;
 				//				}
 				if (controllerNotConnected()) {
+					connected = false;
 					if (StatusReporter.getFieldAgentStatus().isControllerVerified())
 						LoggingService.logWarning(MODULE_NAME, "connection to controller has broken");
 					else
@@ -167,10 +167,12 @@ public class FieldAgent {
 						deProvision();
 				} catch (Exception e) {
 					LoggingService.logWarning(MODULE_NAME, "unable to send status : " + e.getMessage());
+					connected = false;
 				}
 			} catch (CertificateException | SSLHandshakeException e) {
 				verficationFailed();
 			} catch (Exception e) {
+				connected = false;
 			}
 		}
 	};
