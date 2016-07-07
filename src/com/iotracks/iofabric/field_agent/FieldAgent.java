@@ -56,6 +56,7 @@ public class FieldAgent {
 	private ElementManager elementManager;
 	private static FieldAgent instance;
 	private boolean initialization;
+	private boolean connected = false;
 
 	private FieldAgent() {
 		lastGetChangesList = 0;
@@ -119,7 +120,8 @@ public class FieldAgent {
 	 * @throws	Exception
 	 */
 	private boolean controllerNotConnected() throws Exception {
-		return !StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && !ping(); 
+		connected = StatusReporter.getFieldAgentStatus().getContollerStatus().equals(ControllerStatus.OK) && ping(); 
+		return !connected; 
 	}
 
 	/**
@@ -156,6 +158,11 @@ public class FieldAgent {
 					if (!result.getString("status").equals("ok")){
 						throw new Exception("error from fabric controller");
 					}
+					
+					if (!connected) {
+						connected = true;
+						postFabricConfig();
+					}
 				} catch(ForbiddenException je){
 						deProvision();
 				} catch (Exception e) {
@@ -174,6 +181,7 @@ public class FieldAgent {
 	 * 
 	 */
 	private void verficationFailed() {
+		connected = false;
 		LoggingService.logWarning(MODULE_NAME, "controller certificate verification failed");
 		if (!notProvisioned())
 			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.BROKEN);
