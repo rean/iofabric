@@ -3,6 +3,7 @@ package com.iotracks.iofabric.field_agent;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -687,7 +688,7 @@ public class FieldAgent {
 				instanceConfig.put("lc", logFileCount);
 
 			if (!instanceConfig.isEmpty())
-				Configuration.setConfig(instanceConfig);
+				Configuration.setConfig(instanceConfig, false);
 
 		} catch (CertificateException|SSLHandshakeException e) {
 			verficationFailed();
@@ -778,12 +779,26 @@ public class FieldAgent {
 				notifyModules();
 
 			}
-		} catch (CertificateException|SSLHandshakeException e) {
-			verficationFailed();
 		} catch (Exception e) {
-			StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
-			StatusReporter.setFieldAgentStatus().setControllerVerified(true);
-			LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
+			
+			if (e instanceof CertificateException || e instanceof SSLHandshakeException) {
+				verficationFailed();
+				provisioningResult = Json.createObjectBuilder()
+						.add("status", "failed")
+						.add("errormessage", "Certificate error")
+						.build();
+			} else {
+				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
+				StatusReporter.setFieldAgentStatus().setControllerVerified(true);
+				LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
+				
+				if (e instanceof ConnectException) {
+					provisioningResult = Json.createObjectBuilder()
+							.add("status", "failed")
+							.add("errormessage", "Connection error: unable to connect to controller.")
+							.build();
+				}
+			}
 		}
 		return provisioningResult;
 	}

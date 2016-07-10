@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.ConnectException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -36,7 +37,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 
-import com.github.dockerjava.api.NotFoundException;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 
 /**
@@ -114,7 +114,7 @@ public class Orchestrator {
 		    }
 		} catch (Exception e) {
 		}
-		throw new Exception(String.format("unable to get ip address \"%s\"", eth));
+		throw new ConnectException(String.format("unable to get ip address \"%s\"", eth));
 	}
 	
 	private RequestConfig getRequestConfig() throws Exception {
@@ -190,7 +190,7 @@ public class Orchestrator {
 	 */
 	public JsonObject getJSON(String surl) throws Exception {
 		if (!surl.toLowerCase().startsWith("https"))
-			throw new Exception("unable to connect over non-secure connection");
+			throw new ConnectException("unable to connect over non-secure connection");
 		initialize();
 		RequestConfig config = getRequestConfig();
 		HttpPost post = new HttpPost(surl);

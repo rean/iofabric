@@ -1,6 +1,9 @@
 package com.iotracks.iofabric.utils.configuration;
 
 import java.io.File;
+import java.net.NetworkInterface;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +16,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.bouncycastle.math.ec.ECCurve.Config;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -48,8 +52,29 @@ public final class Configuration {
 	private static float logDiskLimit;
 	private static String logDiskDirectory;
 	private static int logFileCount;
-
+	private static Map<String, Object> defaultConfig;
+	
 	public static boolean debugging = false;
+	
+
+	static {
+		defaultConfig = new HashMap<>();
+		defaultConfig.put("d", "50");
+		defaultConfig.put("dl", "/var/lib/iofabric/");
+		defaultConfig.put("m", "4096");
+		defaultConfig.put("p", "80");
+		defaultConfig.put("a", "https://iotracks.com/api/v2/");
+		defaultConfig.put("ac", "/etc/iofabric/cert.crt");
+		defaultConfig.put("c", "unix:///var/run/docker.sock");
+		defaultConfig.put("n", "eth0");
+		defaultConfig.put("l", "10");
+		defaultConfig.put("ld", "/var/log/iofabric/");
+		defaultConfig.put("lc", "10");
+	}
+	
+	public static void resetToDefault() throws Exception {
+		setConfig(defaultConfig, true);
+	}
 
 	/**
 	 * return XML node value
@@ -158,7 +183,7 @@ public final class Configuration {
 	 * @param commandLineMap - map of config parameters
 	 * @throws Exception
 	 */
-	public static HashMap<String, String> setConfig(Map<String, Object> commandLineMap) throws Exception {
+	public static HashMap<String, String> setConfig(Map<String, Object> commandLineMap, boolean defaults) throws Exception {
 		
 		HashMap<String, String> messageMap = new HashMap<String, String>();
 				
@@ -231,8 +256,12 @@ public final class Configuration {
 				setDockerUrl(value);
 				break;
 			case "n":
-				setNode("network_interface", value);
-				setNetworkInterface(value);
+				if (defaults || isValidNetworkInterface(value.trim())) {
+					setNode("network_interface", value);
+					setNetworkInterface(value);
+				} else {
+					messageMap.put(option, "Invalid network interface"); break;
+				}
 				break;
 			case "l":
 				try{
@@ -272,7 +301,26 @@ public final class Configuration {
 		
 		return messageMap;
 	}
-
+	
+	/**
+	 * checks if given network interface is valid
+	 * 
+	 * @param eth - network interface
+	 * @return
+	 */
+	private static boolean isValidNetworkInterface(String eth) {
+		try {
+			Enumeration<NetworkInterface> networkInterfacs = NetworkInterface.getNetworkInterfaces();
+	        for (NetworkInterface networkInterface : Collections.list(networkInterfacs)) {
+	        	if (networkInterface.getName().equalsIgnoreCase(eth))
+	        		return true;
+	        }
+		} catch (Exception e) {
+		}
+        	
+		return false;
+	}
+	
 	/**
 	 * adds file separator to end of directory names, if not exists 
 	 * 
@@ -319,10 +367,6 @@ public final class Configuration {
 		setLogDiskDirectory(getNode("log_disk_directory"));
 		setLogDiskLimit(Float.parseFloat(getNode("log_disk_consumption_limit")));
 		setLogFileCount(Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent()));
-	}
-
-	private Configuration() {
-
 	}
 
 	public static String getAccessToken() {

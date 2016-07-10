@@ -47,7 +47,7 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
-			result.append("ioFabric 1.19");
+			result.append("ioFabric 1.20");
 			result.append("\nCopyright (C) 2016 iotracks, inc.");
 			result.append("\nLicense ######### http://iotracks.com/license");
 			result.append(
@@ -96,8 +96,19 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("config")) {
-			if (args.length < 3){
-				if(args.length != 2 || !args[1].equals("-ac")) 
+			if (args.length == 1) {
+				return showHelp();
+			}
+			
+			if (args.length == 2) {
+				if (args[1].equals("defaults")) {
+					try {
+						Configuration.resetToDefault();
+					} catch (Exception e) {
+						return "Error resetting configuration.";
+					}
+					return "Configuration has been reset to its defaults.";
+				} else if  (!args[1].equals("-ac"))
 					return showHelp();
 			}
 
@@ -130,7 +141,7 @@ public class CommandLineParser {
 			try {
 
 				HashMap<String, String> oldValuesMap = Configuration.getOldNodeValuesForParameters(config.keySet());
-				HashMap<String, String> errorMap = Configuration.setConfig(config);
+				HashMap<String, String> errorMap = Configuration.setConfig(config, false);
 
 				for (Entry<String, String> e : errorMap.entrySet())
 					result.append("\n\tError : " + e.getValue());
