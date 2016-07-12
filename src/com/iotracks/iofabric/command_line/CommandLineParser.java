@@ -47,7 +47,7 @@ public class CommandLineParser {
 		}
 
 		if (args[0].equals("version") || args[0].equals("--version") || args[0].equals("-v")) {
-			result.append("ioFabric 1.20");
+			result.append("ioFabric 1.21");
 			result.append("\nCopyright (C) 2016 iotracks, inc.");
 			result.append("\nLicense ######### http://iotracks.com/license");
 			result.append(
@@ -199,6 +199,7 @@ public class CommandLineParser {
 				"                                         software\n" + 
 				"config           [Parameter] [VALUE]     Change the software configuration\n" + 
 				"                                         according to the options provided\n" + 
+				"                 defaults                Reset configuration to default values\n" + 
 				"                 -d <#GB Limit>          Set the limit, in GiB, of disk space\n" + 
 				"                                         that the software is allowed to use\n" + 
 				"                 -dl <dir>               Set the directory to use for disk\n" + 

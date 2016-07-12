@@ -10,6 +10,7 @@ import java.net.ConnectException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -190,7 +191,7 @@ public class Orchestrator {
 	 */
 	public JsonObject getJSON(String surl) throws Exception {
 		if (!surl.toLowerCase().startsWith("https"))
-			throw new ConnectException("unable to connect over non-secure connection");
+			throw new UnknownHostException("unable to connect over non-secure connection");
 		initialize();
 		RequestConfig config = getRequestConfig();
 		HttpPost post = new HttpPost(surl);

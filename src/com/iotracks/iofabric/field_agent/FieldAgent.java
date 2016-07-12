@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -760,8 +761,8 @@ public class FieldAgent {
 //			}catch(Exception e){
 //				return "";
 //			}
-			if (!notProvisioned())
-				deProvision();
+//			if (!notProvisioned())
+//				deProvision();
 
 			if (provisioningResult.getString("status").equals("ok")) { 
 				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.OK);
@@ -788,14 +789,20 @@ public class FieldAgent {
 						.add("errormessage", "Certificate error")
 						.build();
 			} else {
-				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
-				StatusReporter.setFieldAgentStatus().setControllerVerified(true);
+//				StatusReporter.setFieldAgentStatus().setContollerStatus(ControllerStatus.NOT_PROVISIONED);
 				LoggingService.logWarning(MODULE_NAME, "provisioning failed - " + e.getMessage());
 				
 				if (e instanceof ConnectException) {
+					StatusReporter.setFieldAgentStatus().setControllerVerified(true);
 					provisioningResult = Json.createObjectBuilder()
 							.add("status", "failed")
-							.add("errormessage", "Connection error: unable to connect to controller.")
+							.add("errormessage", "Connection error: invalid network interface.")
+							.build();
+				} else if (e instanceof UnknownHostException) {
+					StatusReporter.setFieldAgentStatus().setControllerVerified(false);
+					provisioningResult = Json.createObjectBuilder()
+							.add("status", "failed")
+							.add("errormessage", "Connection error: unable to connect to fabric controller.")
 							.build();
 				}
 			}
