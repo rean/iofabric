@@ -208,27 +208,12 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 	}
 
 	private String findContextMapName(ChannelHandlerContext ctx) throws Exception{
-		String mapName = null;
-
-		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = controlMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				mapName = "control";
-				return mapName;
-			}
-		}
-
-		Hashtable<String, ChannelHandlerContext> messageMap = WebSocketMap.messageWebsocketMap;
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = messageMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				mapName = "message";
-				return mapName;
-			}
-		}
-
-		return mapName;
+		if (WebsocketUtil.hasContextInMap(ctx, WebSocketMap.controlWebsocketMap))
+			return "control";
+		else if (WebsocketUtil.hasContextInMap(ctx, WebSocketMap.messageWebsocketMap))
+			return "message";
+		else 
+			return null;
 	}
 
 	/**

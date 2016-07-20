@@ -21,7 +21,7 @@ public class WebsocketUtil {
 	 * @param ChannelHandlerContext, Hashtable<String, ChannelHandlerContext>
 	 * @return void
 	 */
-	public static void removeWebsocketContextFromMap(ChannelHandlerContext ctx, Hashtable<String, ChannelHandlerContext> socketMap){
+	public static synchronized void removeWebsocketContextFromMap(ChannelHandlerContext ctx, Hashtable<String, ChannelHandlerContext> socketMap){
 		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = socketMap.entrySet().iterator(); it.hasNext();) {
 			Map.Entry<String,ChannelHandlerContext> e = it.next();
 			if (ctx.equals(e.getValue())) {
@@ -37,14 +37,10 @@ public class WebsocketUtil {
 	 * @return boolean
 	 */
 	public static boolean hasContextInMap(ChannelHandlerContext ctx, Hashtable<String, ChannelHandlerContext> socketMap) throws Exception{
-		for (Iterator<Map.Entry<String,ChannelHandlerContext>> it = socketMap.entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String,ChannelHandlerContext> e = it.next();
-			if (ctx.equals(e.getValue())) {
-				LoggingService.logInfo(MODULE_NAME,"Context found as real-time websocket");
+		for (ChannelHandlerContext context: socketMap.values()) 
+			if (context.equals(ctx))
 				return true;
-			}
-		}
-		LoggingService.logInfo(MODULE_NAME,"Context found as real-time websocket");
+		
 		return false;
 	}
 	

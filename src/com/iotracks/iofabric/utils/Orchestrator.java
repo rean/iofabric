@@ -199,8 +199,12 @@ public class Orchestrator {
 		
 		CloseableHttpResponse response = client.execute(post);
 		
-		if (response.getStatusLine().getStatusCode() != 200)
-			throw new Exception("ERROR");
+		if (response.getStatusLine().getStatusCode() != 200) {
+			if (response.getStatusLine().getStatusCode() == 404)
+				throw new UnknownHostException();
+			else
+				throw new Exception();
+		}
 		
         Reader in = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
 
@@ -240,7 +244,10 @@ public class Orchestrator {
 		List<NameValuePair> postData = new ArrayList<NameValuePair>();		
 		if (postParams != null)
 			postParams.entrySet().forEach(entry -> {
-				postData.add(new BasicNameValuePair(entry.getKey(), entry.getValue().toString()));
+				String value = entry.getValue().toString();
+				if (value == null)
+					value = "";
+				postData.add(new BasicNameValuePair(entry.getKey(), value));
 			});
 		
 	

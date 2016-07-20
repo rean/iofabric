@@ -43,4 +43,16 @@ public class WebSocketMap {
 		}
 		return instance;
 	}
+	
+	public static void addWebsocket(char ws, String id, ChannelHandlerContext ctx) {
+		synchronized (WebSocketMap.class) {
+			switch (ws) {
+				case 'C':
+					controlWebsocketMap.put(id, ctx);
+					break;
+				case 'M':
+					messageWebsocketMap.put(id, ctx);
+			}
+		}
+	}
 }

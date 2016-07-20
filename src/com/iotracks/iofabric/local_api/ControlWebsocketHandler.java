@@ -70,8 +70,7 @@ public class ControlWebsocketHandler {
 			handshaker.handshake(ctx.channel(), req);
 		}
 
-		Hashtable<String, ChannelHandlerContext> controlMap = WebSocketMap.controlWebsocketMap;
-		controlMap.put(id, ctx);
+		WebSocketMap.addWebsocket('C', id, ctx);
 		StatusReporter.setLocalApiStatus().setOpenConfigSocketsCount(WebSocketMap.controlWebsocketMap.size());
 
 		return;
