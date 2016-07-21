@@ -243,13 +243,13 @@ public class FieldAgent {
 					loadRegistries(false);
 					ProcessManager.getInstance().update();
 				}
-				if (changes.getBoolean("containerlist") || initialization) {
-					loadElementsList(false);
-					ProcessManager.getInstance().update();
-				}
 				if (changes.getBoolean("containerconfig") || initialization) {
 					loadElementsConfig(false);
 					LocalApi.getInstance().update();
+				}
+				if (changes.getBoolean("containerlist") || initialization) {
+					loadElementsList(false);
+					ProcessManager.getInstance().update();
 				}
 				if (changes.getBoolean("routing") || initialization) {
 					loadRoutes(false);
