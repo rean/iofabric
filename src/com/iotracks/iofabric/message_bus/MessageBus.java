@@ -3,6 +3,7 @@ package com.iotracks.iofabric.message_bus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -232,11 +233,13 @@ public class MessageBus {
 								.collect(Collectors.toList()));
 					});
 			}
-
+			
 			publishers.entrySet().forEach(entry -> {
 				if (!newPublishers.contains(entry.getKey())) {
 					entry.getValue().close();
 					messageBusServer.removeProducer(entry.getKey());
+				} else {
+					entry.getValue().updateRoute(newRoutes.get(entry.getKey()));
 				}
 			});
 			publishers.entrySet().removeIf(entry -> !newPublishers.contains(entry.getKey()));

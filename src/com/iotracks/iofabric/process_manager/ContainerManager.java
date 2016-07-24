@@ -185,7 +185,7 @@ public class ContainerManager {
 			case REMOVE:
 				containerId = task.data.toString();
 				try {
-					stopContainer();
+//					stopContainer();
 					removeContainer();
 					return true;
 				} catch (Exception e) {

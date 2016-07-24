@@ -2,6 +2,7 @@ package com.iotracks.iofabric.process_manager;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,7 +33,7 @@ public class ProcessManager {
 	
 	private final String MODULE_NAME = "Process Manager";
 	private ElementManager elementManager;
-	private Queue<ContainerTask> tasks;
+	private PriorityQueue<ContainerTask> tasks;
 	public static Boolean updated = true;
 	private Object containersMonitorLock = new Object();
 	private Object checkTasksLock = new Object();
@@ -168,7 +169,7 @@ public class ProcessManager {
 		synchronized (tasks) {
 			if (!tasks.contains(task)) {
                 LoggingService.logInfo(MODULE_NAME, "NEW TASK ADDED");
-                tasks.add(task);
+                tasks.offer(task);
                 tasks.notifyAll();
             }
 		}
@@ -266,7 +267,7 @@ public class ProcessManager {
 			docker.connect();
 		} catch (Exception e) {}
 
-		tasks = new LinkedList<>();
+		tasks = new PriorityQueue<>(new TaskComparator());
 		elementManager = ElementManager.getInstance();
 		containerManager = new ContainerManager();
 		
