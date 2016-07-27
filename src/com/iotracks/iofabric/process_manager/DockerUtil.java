@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,7 @@ import com.github.dockerjava.api.model.Device;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.Info;
+import com.github.dockerjava.api.model.LogConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.RestartPolicy;
 import com.github.dockerjava.core.DockerClientBuilder;
@@ -441,13 +443,22 @@ public class DockerUtil {
 				exposedPorts.add(internal);
 			});
 		String[] extraHosts = { host };
+		
+		Map<String, String> containerLogConfig = new HashMap<String, String>();
+		containerLogConfig.put("max-size", "5m");
+		containerLogConfig.put("max-file", "10");
+		LogConfig containerLog = new LogConfig(LogConfig.LoggingType.DEFAULT, containerLogConfig);
+		
 		CreateContainerCmd cmd = dockerClient.createContainerCmd(element.getImageName())
+				.withLogConfig(containerLog)
 				.withCpuset("0")
 				.withExposedPorts(exposedPorts.toArray(new ExposedPort[0]))
 				.withPortBindings(portBindings)
 				.withEnv("SELFNAME=" + element.getElementId())
 				.withName(element.getElementId())
 				.withRestartPolicy(restartPolicy);
+		if (element.getImageName().startsWith("iotracks/catalog:core-networking"))
+			cmd = cmd.withMemoryLimit(128 * Constants.MiB);
 		if (StringUtil.isNullOrEmpty(host))
 			cmd = cmd.withNetworkMode("host");
 		else
