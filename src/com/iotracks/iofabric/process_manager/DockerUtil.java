@@ -22,10 +22,8 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.PullImageCmd;
-import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Container.Port;
-import com.github.dockerjava.api.model.Device;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.Info;
@@ -39,10 +37,8 @@ import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementStatus;
 import com.iotracks.iofabric.element.PortMapping;
 import com.iotracks.iofabric.element.Registry;
-import com.iotracks.iofabric.status_reporter.StatusReporter;
 import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementState;
-import com.iotracks.iofabric.utils.Constants.LinkStatus;
 import com.iotracks.iofabric.utils.configuration.Configuration;
 import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.sun.management.OperatingSystemMXBean;
@@ -158,7 +154,12 @@ public class DockerUtil {
 	 * @throws Exception
 	 */
 	public void connect() throws Exception {
-		dockerClient = DockerClientBuilder.getInstance(Configuration.getDockerUrl()).build();
+		DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder()
+				.withVersion(Constants.DOCKER_API_VERSION)
+				.withUri(Configuration.getDockerUrl())
+				.build();
+
+		dockerClient = DockerClientBuilder.getInstance(config).build();
 
 		try {
 			Info info = dockerClient.infoCmd().exec();
@@ -204,6 +205,7 @@ public class DockerUtil {
 		LoggingService.logInfo(MODULE_NAME, "logging in to registry");
 		try {
 			DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder()
+					.withVersion(Constants.DOCKER_API_VERSION)
 					.withUri(Configuration.getDockerUrl())
 					.withUsername(registry.getUserName())
 					.withPassword(registry.getPassword())
@@ -445,8 +447,12 @@ public class DockerUtil {
 		String[] extraHosts = { host };
 		
 		Map<String, String> containerLogConfig = new HashMap<String, String>();
-		containerLogConfig.put("max-size", "5m");
-		containerLogConfig.put("max-file", "10");
+		int logFiles = 1; 
+		if (element.getLogSize() > 2)
+			logFiles = (int) (element.getLogSize() / 2); 
+
+		containerLogConfig.put("max-file", String.valueOf(logFiles));
+		containerLogConfig.put("max-size", "2m");
 		LogConfig containerLog = new LogConfig(LogConfig.LoggingType.DEFAULT, containerLogConfig);
 		
 		CreateContainerCmd cmd = dockerClient.createContainerCmd(element.getImageName())
@@ -457,8 +463,8 @@ public class DockerUtil {
 				.withEnv("SELFNAME=" + element.getElementId())
 				.withName(element.getElementId())
 				.withRestartPolicy(restartPolicy);
-		if (element.getImageName().startsWith("iotracks/catalog:core-networking"))
-			cmd = cmd.withMemoryLimit(128 * Constants.MiB);
+//		if (element.getImageName().startsWith("iotracks/catalog:core-networking"))
+//			cmd = cmd.withMemoryLimit(256 * Constants.MiB);
 		if (StringUtil.isNullOrEmpty(host))
 			cmd = cmd.withNetworkMode("host");
 		else

@@ -22,6 +22,7 @@ public class Element {
 	private String containerIpAddress;
 	private boolean rebuild;
 	private boolean rootHostAccess;
+	private long logSize;
 
 	public Element(String elementId, String imageName) {
 		this.elementId = elementId;
@@ -110,6 +111,14 @@ public class Element {
 
 	public void setRootHostAccess(boolean rootHostAccess) {
 		this.rootHostAccess = rootHostAccess;
+	}
+
+	public long getLogSize() {
+		return logSize;
+	}
+
+	public void setLogSize(long logSize) {
+		this.logSize = logSize;
 	}
 
 }

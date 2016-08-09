@@ -29,7 +29,7 @@ public class Constants {
 		NOT_PROVISIONED, BROKEN, OK
 	}
 	
-	public static final String VERSION = "1.25";
+	public static final String VERSION = "1.26";
 	
 	public static final int NUMBER_OF_MODULES = 6;
 
@@ -63,6 +63,8 @@ public class Constants {
 	public static final int MONITOR_REGISTRIES_STATUS_FREQ_SECONDS = osArch.equals("arm") ? 120 : 60;
 
 	public static final long GET_USAGE_DATA_FREQ_SECONDS = osArch.equals("arm") ? 20 : 5;
+
+	public static final String DOCKER_API_VERSION = osArch.equals("arm") ? "1.22" : "1.23";
 
 	public static int SET_SYSTEM_TIME_FREQ_SECONDS = 60;
 	

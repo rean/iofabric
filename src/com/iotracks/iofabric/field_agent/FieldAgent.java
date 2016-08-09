@@ -484,6 +484,7 @@ public class FieldAgent {
 				element.setRootHostAccess(container.getBoolean("roothostaccess"));
 				element.setRegistry(container.getString("registryurl"));
 				element.setLastModified(container.getJsonNumber("lastmodified").longValue());
+				element.setLogSize(container.getJsonNumber("logsize").longValue());
 
 				JsonArray portMappingObjs = container.getJsonArray("portmappings");
 				List<PortMapping> pms = null;
