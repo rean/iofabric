@@ -148,6 +148,8 @@ This endpoint allows the ioFabric instance to send its status information to the
     messagespeed - The average speed, in milliseconds, of messages moving through the ioFabric instance (example: 84)
 
     lastcommandtime - Timestamp, in milliseconds, of the last update received by the ioFabric instance (example: 1234567890123)
+    
+    version - String representing the current version of the ioFabric software that is posting status (example: 1.24)
 </pre>
 
 
