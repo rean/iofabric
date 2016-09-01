@@ -466,7 +466,7 @@ public class DockerUtil {
 //		if (element.getImageName().startsWith("iotracks/catalog:core-networking"))
 //			cmd = cmd.withMemoryLimit(256 * Constants.MiB);
 		if (StringUtil.isNullOrEmpty(host))
-			cmd = cmd.withNetworkMode("host");
+			cmd = cmd.withNetworkMode("host").withPrivileged(true);
 		else
 			cmd = cmd.withExtraHosts(extraHosts);
 		CreateContainerResponse resp = cmd.exec();
