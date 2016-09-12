@@ -47,7 +47,7 @@ The ioFabric Instance ID provided by this endpoint is a 128-bit random ID format
 #####Endpoint
 
 <pre>
-	https://1.2.3.4/api/v2/instance/provision/key/A8842h
+	https://1.2.3.4/api/v2/instance/provision/key/A8842h/fabrictype/1
 </pre>
 
 #####Response
@@ -65,6 +65,7 @@ The ioFabric Instance ID provided by this endpoint is a 128-bit random ID format
 
 <pre>
 	key - the provisioning key provided via the command line (example shown here as a8842h)
+	fabrictype - an integer representing the system architecture of this ioFabric instance
 </pre>
 
 #####POST Parameters
@@ -147,6 +148,8 @@ This endpoint allows the ioFabric instance to send its status information to the
     messagespeed - The average speed, in milliseconds, of messages moving through the ioFabric instance (example: 84)
 
     lastcommandtime - Timestamp, in milliseconds, of the last update received by the ioFabric instance (example: 1234567890123)
+    
+    version - String representing the current version of the ioFabric software that is posting status (example: 1.24)
 </pre>
 
 
