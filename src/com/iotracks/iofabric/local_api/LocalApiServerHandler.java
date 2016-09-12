@@ -179,6 +179,13 @@ public class LocalApiServerHandler extends SimpleChannelInboundHandler<Object>{
 			runTask(callable, ctx, request);
 			return;
 		}
+
+		if (request.getUri().startsWith("/v2/restblue")) {
+			Callable<? extends Object> callable = new BluetoothApiHandler((FullHttpRequest) request, ctx.alloc().buffer(), content); 
+			runTask(callable, ctx, request);
+			return;
+		}
+
 		String uri = request.getUri();
 		uri = uri.substring(1);
 		String[] tokens = uri.split("/");
