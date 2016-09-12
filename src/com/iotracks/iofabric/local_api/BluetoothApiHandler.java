@@ -1,11 +1,6 @@
 package com.iotracks.iofabric.local_api;
 
-import java.io.StringReader;
-import java.net.InetSocketAddress;
 import java.util.concurrent.Callable;
-
-import javax.json.Json;
-import javax.json.JsonObject;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -22,15 +17,12 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
@@ -75,10 +67,9 @@ public class BluetoothApiHandler implements Callable<Object> {
 										FullHttpResponse res = (FullHttpResponse) msg;
 
 										outputBuffer.writeBytes(res.content());
-										/*FullHttpResponse*/ response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, res.getStatus(), outputBuffer);
+										response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, res.getStatus(), outputBuffer);
 										HttpHeaders.setContentLength(response, outputBuffer.readableBytes());
 										response.headers().set(res.headers());
-//									    response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
 										ctx.channel().close().sync();
 									}
 								}
@@ -92,11 +83,6 @@ public class BluetoothApiHandler implements Callable<Object> {
             String endpoint = req.getUri().substring(12);
             FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, req.getMethod(), endpoint, requestContent);
             request.headers().set(req.headers());
-//           	request.headers().set(HttpHeaders.Names.CONTENT_TYPE, req.headers().get(HttpHeaders.Names.CONTENT_TYPE));     
-//            request.headers().set(HttpHeaders.Names.HOST, req.headers().get(HttpHeaders.Names.HOST));
-//            request.headers().set(HttpHeaders.Names.CONNECTION, req.headers().get(HttpHeaders.Names.CONNECTION));
-//            request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, req.headers().get(HttpHeaders.Names.ACCEPT_ENCODING));
-//			request.content().writeBytes(content);
             channel.writeAndFlush(request);
             channel.closeFuture().sync();
         } catch (Exception e) {
