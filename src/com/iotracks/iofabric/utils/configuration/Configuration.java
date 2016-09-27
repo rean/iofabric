@@ -51,6 +51,8 @@ public final class Configuration {
 	private static float logDiskLimit;
 	private static String logDiskDirectory;
 	private static int logFileCount;
+	private static int statusUpdateFreq;
+	private static int getChangesFreq;
 	private static Map<String, Object> defaultConfig;
 	
 	public static boolean debugging = false;
@@ -69,8 +71,26 @@ public final class Configuration {
 		defaultConfig.put("l", "10");
 		defaultConfig.put("ld", "/var/log/iofabric/");
 		defaultConfig.put("lc", "10");
+		defaultConfig.put("sf", "10");
+		defaultConfig.put("cf", "20");
 	}
 	
+	public static int getStatusUpdateFreq() {
+		return statusUpdateFreq;
+	}
+
+	public static void setStatusUpdateFreq(int statusUpdateFreq) {
+		Configuration.statusUpdateFreq = statusUpdateFreq;
+	}
+
+	public static int getGetChangesFreq() {
+		return getChangesFreq;
+	}
+
+	public static void setGetChangesFreq(int getChangesFreq) {
+		Configuration.getChangesFreq = getChangesFreq;
+	}
+
 	public static void resetToDefault() throws Exception {
 		setConfig(defaultConfig, true);
 	}
@@ -146,6 +166,12 @@ public final class Configuration {
 				break;
 			case "lc":
 				result.put(option, getNode("log_file_count"));
+				break;
+			case "sf":
+				result.put(option, getNode("status_update_freq"));
+				break;
+			case "cf":
+				result.put(option, getNode("get_changes_freq"));
 				break;
 			default:
 				throw new ConfigurationItemException("Invalid parameter -" + option);
@@ -291,6 +317,30 @@ public final class Configuration {
 				setNode("log_file_count", value);
 				setLogFileCount(Integer.parseInt(value));
 				break;
+			case "sf":
+				try{
+					Integer.parseInt(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
+				}
+				if(Integer.parseInt(value) < 1){
+					messageMap.put(option, "Status update frequency must be greater than 1"); break;
+				}
+				setNode("status_update_freq", value);
+				setStatusUpdateFreq(Integer.parseInt(value));
+				break;
+			case "cf":
+				try{
+					Integer.parseInt(value);
+				}catch(Exception e){
+					messageMap.put(option, "Option -" + option + " has invalid value: " + value); break;
+				}
+				if(Integer.parseInt(value) < 1){
+					messageMap.put(option, "Get changes frequency must be greater than 1"); break;
+				}
+				setNode("get_changes_freq", value);
+				setGetChangesFreq(Integer.parseInt(value));
+				break;
 			default:
 				throw new ConfigurationItemException("Invalid parameter -" + option);
 			}
@@ -366,6 +416,8 @@ public final class Configuration {
 		setLogDiskDirectory(getNode("log_disk_directory"));
 		setLogDiskLimit(Float.parseFloat(getNode("log_disk_consumption_limit")));
 		setLogFileCount(Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent()));
+		setGetChangesFreq(Integer.parseInt(getNode("get_changes_freq")));
+		setStatusUpdateFreq(Integer.parseInt(getNode("status_update_freq")));
 	}
 
 	public static String getAccessToken() {
@@ -514,6 +566,8 @@ public final class Configuration {
 						String.format("Memory RAM Limit          : %.2f MiB\n", memoryLimit) + 
 						String.format("CPU Usage Limit           : %.2f%%\n", cpuLimit) + 
 						String.format("Log Disk Limit            : %.2f GiB\n", logDiskLimit) + 
+						"Status Update Frequency   : " + statusUpdateFreq + "\n" + 
+						"Get Changes Frequency     : " + getChangesFreq + "\n" + 
 						"Log File Directory        : " + logDiskDirectory + "\n" + 
 						String.format("Log Rolling File Count    : %d", logFileCount));
 		return result.toString();

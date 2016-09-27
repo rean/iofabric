@@ -119,6 +119,7 @@ public class CommandLineParser {
 					return showHelp();
 				if (!args[i].equals("-d") && !args[i].equals("-dl") && !args[i].equals("-m") && !args[i].equals("-p")
 						&& !args[i].equals("-a") && !args[i].equals("-ac") && !args[i].equals("-c")
+						&& !args[i].equals("-sf") && !args[i].equals("-cf")
 						&& !args[i].equals("-n") && !args[i].equals("-l") && !args[i].equals("-ld") && !args[i].equals("-lc"))
 					return showHelp();
 
@@ -129,6 +130,7 @@ public class CommandLineParser {
 				}
 				else if(option.equals("ac") && ((args[i+1].equals("-d") || args[i+1].equals("-dl") || args[i+1].equals("-m") || args[i+1].equals("-p")
 						|| args[i+1].equals("-a") || args[i+1].equals("-ac") || args[i+1].equals("-c")
+						|| args[i+1].equals("-sf") || args[i+1].equals("-cf")
 						|| args[i+1].equals("-n") || args[i+1].equals("-l") || args[i+1].equals("-ld") || args[i+1].equals("-lc")))){
 					value = ""; i += 1; 
 				}
@@ -226,6 +228,8 @@ public class CommandLineParser {
 				"                                         storage\n" + 
 				"                 -lc <#log files>        Set the number of log files to evenly\n" + 
 				"                                         split the log storage limit\n" + 
+				"                 -sf <#seconds>          Set the status update frequency\n" + 
+				"                 -cf <#seconds>          Set the get changes frequency\n" + 
 				"\n" + 
 				"\n" + 
 				"Report bugs to: kilton@iotracks.com\n" + 

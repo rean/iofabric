@@ -26,6 +26,8 @@ import javax.net.ssl.SSLHandshakeException;
 
 import javax.ws.rs.ForbiddenException;
 
+import org.bouncycastle.math.ec.ECCurve.Config;
+
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.PortMapping;
@@ -138,7 +140,7 @@ public class FieldAgent {
 				LoggingService.logInfo(MODULE_NAME, status.toString());
 			}
 			try {
-				Thread.sleep(Constants.POST_STATUS_FREQ_SECONDS * 1000);
+				Thread.sleep(Configuration.getStatusUpdateFreq() * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "post status");
 				//				if (notProvisioned()) {
@@ -201,7 +203,7 @@ public class FieldAgent {
 	private final Runnable getChangesList = () -> {
 		while (true) {
 			try {
-				Thread.sleep(Constants.GET_CHANGES_LIST_FREQ_SECONDS * 1000);
+				Thread.sleep(Configuration.getGetChangesFreq() * 1000);
 
 				LoggingService.logInfo(MODULE_NAME, "get changes list");
 				if (notProvisioned()) {
@@ -499,6 +501,7 @@ public class FieldAgent {
 				}
 				element.setPortMappings(pms);
 				elements.add(element);
+				LoggingService.setupElementLogger(element.getElementId(), element.getLogSize());
 			}
 			elementManager.setElements(elements);
 		} catch (CertificateException|SSLHandshakeException e) {
@@ -660,6 +663,8 @@ public class FieldAgent {
 			float logLimit = Float.parseFloat(configs.getString("loglimit"));
 			String logDirectory = configs.getString("logdirectory");
 			int logFileCount = Integer.parseInt(configs.getString("logfilecount"));
+			int statusUpdateFreq = configs.getInt("poststatusfreq");
+			int getChangesFreq = configs.getInt("getchangesfreq");
 
 			Map<String, Object> instanceConfig = new HashMap<>();
 
@@ -689,6 +694,12 @@ public class FieldAgent {
 
 			if (Configuration.getLogFileCount() != logFileCount)
 				instanceConfig.put("lc", logFileCount);
+
+			if (Configuration.getStatusUpdateFreq() != statusUpdateFreq)
+				instanceConfig.put("sf", statusUpdateFreq);
+
+			if (Configuration.getGetChangesFreq() != getChangesFreq)
+				instanceConfig.put("cf", getChangesFreq);
 
 			if (!instanceConfig.isEmpty())
 				Configuration.setConfig(instanceConfig, false);
@@ -731,6 +742,8 @@ public class FieldAgent {
 			postParams.put("loglimit", Configuration.getLogDiskLimit());
 			postParams.put("logdirectory", Configuration.getLogDiskDirectory());
 			postParams.put("logfilecount", Configuration.getLogFileCount());
+			postParams.put("poststatusfreq", Configuration.getStatusUpdateFreq());
+			postParams.put("getchangesfreq", Configuration.getGetChangesFreq());
 
 			JsonObject result = orchestrator.doCommand("config/changes", null, postParams);
 			if (!result.getString("status").equals("ok"))
