@@ -26,8 +26,6 @@ import javax.net.ssl.SSLHandshakeException;
 
 import javax.ws.rs.ForbiddenException;
 
-import org.bouncycastle.math.ec.ECCurve.Config;
-
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementManager;
 import com.iotracks.iofabric.element.PortMapping;

@@ -104,8 +104,10 @@ public final class Configuration {
 	 */
 	private static String getNode(String name) throws ConfigurationItemException {
 		NodeList nodes = configElement.getElementsByTagName(name);
-		if (nodes.getLength() != 1)
+		if (nodes.getLength() != 1) {
+			
 			throw new ConfigurationItemException("<" + name + "> item not found or defined more than once");
+		}
 
 		return nodes.item(0).getTextContent();
 	}
@@ -416,8 +418,34 @@ public final class Configuration {
 		setLogDiskDirectory(getNode("log_disk_directory"));
 		setLogDiskLimit(Float.parseFloat(getNode("log_disk_consumption_limit")));
 		setLogFileCount(Integer.parseInt(configElement.getElementsByTagName("log_file_count").item(0).getTextContent()));
-		setGetChangesFreq(Integer.parseInt(getNode("get_changes_freq")));
-		setStatusUpdateFreq(Integer.parseInt(getNode("status_update_freq")));
+		try {
+			setGetChangesFreq(Integer.parseInt(getNode("get_changes_freq")));
+		} catch (Exception e) {
+			setGetChangesFreq(20);
+			Element el = configFile.createElement("get_changes_freq");
+			el.appendChild(configFile.createTextNode("20"));
+			configElement.appendChild(el);
+			
+	        DOMSource source = new DOMSource(configFile);
+	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+	        Transformer transformer = transformerFactory.newTransformer();
+	        StreamResult result = new StreamResult("/etc/iofabric/config.xml");
+	        transformer.transform(source, result);
+		}
+		try {
+			setStatusUpdateFreq(Integer.parseInt(getNode("status_update_freq")));
+		} catch (Exception e) {
+			setStatusUpdateFreq(10);
+			Element el = configFile.createElement("status_update_freq");
+			el.appendChild(configFile.createTextNode("10"));
+			configElement.appendChild(el);
+			
+	        DOMSource source = new DOMSource(configFile);
+	        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+	        Transformer transformer = transformerFactory.newTransformer();
+	        StreamResult result = new StreamResult("/etc/iofabric/config.xml");
+	        transformer.transform(source, result);
+		}
 	}
 
 	public static String getAccessToken() {
