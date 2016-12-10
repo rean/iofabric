@@ -185,11 +185,11 @@ public class UkdUtil {
       List<Container> containers = getContainers();
       // Assumes containers is never null
       Optional<Container> result = containers.stream()
-				.filter(c -> c.getNames()[0].trim().substring(1)
-                        .equals(elementId)).findFirst();
-		if (result.isPresent())
-			return result.get();
-		else
-			return null;
+         .filter(c -> c.getNames()[0].trim().substring(1)
+                 .equals(elementId)).findFirst();
+      if (result.isPresent())
+         return result.get();
+      else
+         return null;
    }
 }
