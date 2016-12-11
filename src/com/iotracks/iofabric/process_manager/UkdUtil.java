@@ -45,6 +45,7 @@ public class UkdUtil {
     * Check whether Ukd is connected or not
     */
    public boolean isConnected() {
+      // Always return false because ukd is running locally
       return false;
    }
 
@@ -55,7 +56,8 @@ public class UkdUtil {
     */
    public void connect() throws Exception {
       try {
-         throw new Exception("No Ukd");
+         // Do nothing because ukd is running locally (that may change later)
+         // so leave the catch block
       } catch (Exception e) {
          StringBuffer msg = new StringBuffer();
          msg.append("connecting to ukd failed: ")
@@ -72,6 +74,7 @@ public class UkdUtil {
     *
     */
    public void close() {
+      // Do nothing because ukd is running locally (for now)
    }
 
    // We *should* be able to re-use the iotracks notion of a Registry.
@@ -96,7 +99,7 @@ public class UkdUtil {
       LoggingService.logInfo(MODULE_NAME, "logging in to registry");
 
       try {
-         throw new Exception("Can't login");
+         // Do nothing because ukd is running locally and we're the only user
       } catch (Exception e ) {
          StringBuffer msg = new StringBuffer();
          msg.append("login failed - " + e.getMessage());
@@ -154,7 +157,9 @@ public class UkdUtil {
     * @return boolean
     */
    public boolean comprarePorts(Element element) {
-      return false;
+      // Always return true (for now) so we don't need to change the
+      // ProcessManager
+      return true;
    }
 
    // The Container class here is provided by the java api model of Docker.
@@ -203,9 +208,7 @@ public class UkdUtil {
     * @throws Exception
     */
    public void pullImage(String imageName) throws Exception {
-      StringBuffer msg = new StringBuffer();
-      msg.append("Unable to pull image: ").append(imageName);
-      throw new Exception(msg.toString());
+      // Do nothing (for now)
    }
 
    /**
@@ -215,9 +218,7 @@ public class UkdUtil {
     * @throws Exception
     */
    public void removeImage(String imageName) throws Exception {
-      StringBuffer msg = new StringBuffer();
-      msg.append("Unable to remove image: ").append(imageName);
-      throw new Exception(msg.toString());
+      // Do nothing (for now)
    }
 
    /**
@@ -228,10 +229,10 @@ public class UkdUtil {
 	 * @return id of created {@link Container}
 	 * @throws Exception
 	 */
-   public String createContainer(Element Element, String host) throws Exception {
-      StringBuffer msg = new StringBuffer();
-      msg.append("Unable to create container on host ").append(host);
-      throw new Exception(msg.toString());
+   public String createContainer(Element Element, String host)
+      throws Exception {
+      // Return hardcorded (default) uk instance id
+      return "testApp1";
    }
 
    /**
@@ -241,19 +242,19 @@ public class UkdUtil {
     * @throws Exception
     */
    public void startContainer(String id) throws Exception {
+      // We may not want to do the mem check
       long totalMemory = ((OperatingSystemMXBean) ManagementFactory
                           .getOperatingSystemMXBean())
          .getTotalPhysicalMemorySize();
-		long jvmMemory = Runtime.getRuntime().maxMemory();
-		long requiredMemory = (long) Math
-           .min(totalMemory * 0.25, 256 * Constants.MiB);
+      long jvmMemory = Runtime.getRuntime().maxMemory();
+      long requiredMemory = (long) Math
+         .min(totalMemory * 0.25, 256 * Constants.MiB);
 
-        if (totalMemory - jvmMemory < requiredMemory)
-           throw new Exception("Not enough memory to start the container");
+      if (totalMemory - jvmMemory < requiredMemory)
+         throw new Exception("Not enough memory to start the container");
 
-        StringBuffer msg = new StringBuffer();
-        msg.append("Not starting uk instance: ").append(id);
-        throw new Exception(msg.toString());
+      // [Call out] to ukdctl and well known image with pre-decided name
+      // ukdctl start --image-location "/tmp/update-test2/c/old.img" --name testApp1
    }
 
    /**
@@ -263,9 +264,8 @@ public class UkdUtil {
     * @throws Exception
     */
    public void stopContainer(String id) throws Exception {
-      StringBuffer msg = new StringBuffer();
-      msg.append("Not stopping uk instance: ").append(id);
-      throw new Exception(msg.toString());
+      // [Call out] to ukdctl
+      // ukdctl stop --name testApp1
    }
 
    /**
@@ -275,8 +275,6 @@ public class UkdUtil {
     * @throws Exception
     */
    public void removeContainer(String id) throws Exception {
-      StringBuffer msg = new StringBuffer();
-      msg.append("Not removing uk instance: ").append(id);
-      throw new Exception(msg.toString());
+      // Do nothing (for now)
    }
 }
