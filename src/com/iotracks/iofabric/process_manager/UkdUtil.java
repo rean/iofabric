@@ -1,5 +1,6 @@
 package com.iotracks.iofabric.process_manager;
 
+import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -8,7 +9,9 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.iotracks.iofabric.element.Registry;
 import com.iotracks.iofabric.element.Element;
 import com.iotracks.iofabric.element.ElementStatus;
+import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementState;
+import com.sun.management.OperatingSystemMXBean;
 
 // This is one hard-to-avoid import
 import com.github.dockerjava.api.model.Container;
@@ -191,5 +194,89 @@ public class UkdUtil {
          return result.get();
       else
          return null;
+   }
+
+   /**
+    * pulls {@link Image} from {@link Registry}
+    *
+    * @param imageName - imageName of {@link Element}
+    * @throws Exception
+    */
+   public void pullImage(String imageName) throws Exception {
+      StringBuffer msg = new StringBuffer();
+      msg.append("Unable to pull image: ").append(imageName);
+      throw new Exception(msg.toString());
+   }
+
+   /**
+    * removes a ukd {@link Image}
+    *
+    * @param imageName - imageName of {@link Element}
+    * @throws Exception
+    */
+   public void removeImage(String imageName) throws Exception {
+      StringBuffer msg = new StringBuffer();
+      msg.append("Unable to remove image: ").append(imageName);
+      throw new Exception(msg.toString());
+   }
+
+   /**
+	 * creates {@link Container}
+	 *
+	 * @param element - {@link Element}
+	 * @param host - host ip address
+	 * @return id of created {@link Container}
+	 * @throws Exception
+	 */
+   public String createContainer(Element Element, String host) throws Exception {
+      StringBuffer msg = new StringBuffer();
+      msg.append("Unable to create container on host ").append(host);
+      throw new Exception(msg.toString());
+   }
+
+   /**
+    * starts a {@link Container}
+    *
+    * @param id - id of {@link Container}
+    * @throws Exception
+    */
+   public void startContainer(String id) throws Exception {
+      long totalMemory = ((OperatingSystemMXBean) ManagementFactory
+                          .getOperatingSystemMXBean())
+         .getTotalPhysicalMemorySize();
+		long jvmMemory = Runtime.getRuntime().maxMemory();
+		long requiredMemory = (long) Math
+           .min(totalMemory * 0.25, 256 * Constants.MiB);
+
+        if (totalMemory - jvmMemory < requiredMemory)
+           throw new Exception("Not enough memory to start the container");
+
+        StringBuffer msg = new StringBuffer();
+        msg.append("Not starting uk instance: ").append(id);
+        throw new Exception(msg.toString());
+   }
+
+   /**
+    * stops a {@link Container}
+    *
+    * @param id - id of {@link Container}
+    * @throws Exception
+    */
+   public void stopContainer(String id) throws Exception {
+      StringBuffer msg = new StringBuffer();
+      msg.append("Not stopping uk instance: ").append(id);
+      throw new Exception(msg.toString());
+   }
+
+   /**
+    * removes a {@link Container}
+    *
+    * @param id - id of {@link Container}
+    * @throws Exception
+    */
+   public void removeContainer(String id) throws Exception {
+      StringBuffer msg = new StringBuffer();
+      msg.append("Not removing uk instance: ").append(id);
+      throw new Exception(msg.toString());
    }
 }
