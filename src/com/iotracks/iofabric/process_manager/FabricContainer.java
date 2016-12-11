@@ -20,7 +20,7 @@ public class FabricContainer {
 	private String elementId = "";
 	private ElementStatus status;
 	private Tasks task;
-	private DockerUtil docker;
+	private UkdUtil docker;
 	private String MODULE_NAME = "";
 	
 	public FabricContainer(String elementId) {
@@ -155,7 +155,7 @@ public class FabricContainer {
 	}
 	
 	public void init() {
-		docker = DockerUtil.getInstance();
+		docker = UkdUtil.getInstance();
 		try {
 			docker.connect();
 		} catch (Exception e) {}

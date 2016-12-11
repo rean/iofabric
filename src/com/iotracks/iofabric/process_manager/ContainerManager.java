@@ -18,7 +18,7 @@ import com.iotracks.iofabric.utils.logging.LoggingService;
  */
 public class ContainerManager {
 
-	private DockerUtil docker;
+	private UkdUtil docker;
 	private String containerId;
 	private ContainerTask task;
 	private ElementManager elementManager;
@@ -161,7 +161,7 @@ public class ContainerManager {
 	 * @return result
 	 */
 	public boolean execute(ContainerTask task) {
-		docker = DockerUtil.getInstance();
+		docker = UkdUtil.getInstance();
 		if (!docker.isConnected()) {
 			try {
 				docker.connect();
