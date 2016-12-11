@@ -4,6 +4,10 @@ import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
 
 import com.iotracks.iofabric.utils.logging.LoggingService;
 import com.iotracks.iofabric.element.Registry;
@@ -255,6 +259,15 @@ public class UkdUtil {
 
       // [Call out] to ukdctl and well known image with pre-decided name
       // ukdctl start --image-location "/tmp/update-test2/c/old.img" --name testApp1
+      // Overwrite is with default app name - testApp1
+      id = "testApp1";
+      String imageLocation = "/tmp/update-test2/c";
+      String imageName = "old.img";
+      StringBuffer cmd = new StringBuffer();
+      cmd.append(String.format("ukdctl start --image-location %s/%s --name %s",
+                               imageLocation, imageName, id));
+      ExecutionResponse res = runCommand(cmd.toString());
+      // Parse the response - if it's not what we expect then throw an exception
    }
 
    /**
@@ -266,6 +279,58 @@ public class UkdUtil {
    public void stopContainer(String id) throws Exception {
       // [Call out] to ukdctl
       // ukdctl stop --name testApp1
+
+      // Overwrite id with the default app name - testApp1
+      id = "testApp1";
+      StringBuffer cmd = new StringBuffer();
+      cmd.append(String.format("ukdctl stop --name %s", id));
+      ExecutionResponse res = runCommand(cmd.toString());
+      // Parse the response - if it's not what we expect then throw an exception
+   }
+
+   /**
+    * Helper routine for running commands
+    */
+   private ExecutionResponse runCommand(String cmd)
+      throws IOException, InterruptedException {
+      // Debugging
+      System.out.println(String.format("Cmd: %s", cmd));
+      Process p = Runtime.getRuntime().exec(cmd);
+      // Wait for process to finish
+      p.waitFor();
+      StringBuffer stdoutBuf = new StringBuffer();
+      StringBuffer stderrBuf = new StringBuffer();
+      // stdout is connected to the inputstream of the process
+      BufferedReader stdout =
+         new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+      // stderr is connected to the errorstream of the process
+      BufferedReader stderr =
+         new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+      while(stdout.ready()) {
+         String line = stdout.readLine();
+         if (line != null) {
+            stdoutBuf.append(line).append("\n");
+         }
+      }
+
+      while(stderr.ready()) {
+         String line = stderr.readLine();
+         if (line != null) {
+            stderrBuf.append(line).append("\n");
+         }
+      }
+      // Debugging
+      System.out.println(String
+                         .format("Process exit code %d, stdout: %s, stderr: %s",
+                                 p.exitValue(),
+                                 stdoutBuf.toString(),
+                                 stderrBuf.toString()));
+
+      return new ExecutionResponse(p.exitValue(),
+                                   stdoutBuf.toString(),
+                                   stderrBuf.toString());
    }
 
    /**
@@ -276,5 +341,18 @@ public class UkdUtil {
     */
    public void removeContainer(String id) throws Exception {
       // Do nothing (for now)
+   }
+
+   // Simple test
+   public static void main(String[] args) {
+      System.out.println("UdkUtil test");
+
+      try {
+         UkdUtil ukd = UkdUtil.getInstance();
+         ukd.startContainer("foo");
+         ukd.stopContainer("foo");
+      } catch (Exception e) {
+         System.out.println("Exception: " + e.toString());
+      }
    }
 }
