@@ -223,6 +223,7 @@ public class FieldAgent {
 				JsonObject result = null;
 				try {
 					result = orchestrator.doCommand("changes", queryParams, null);
+                                        LoggingService.logWarning(MODULE_NAME, result.toString());
 					if (!result.getString("status").equals("ok"))
 						throw new Exception("error from fabric controller");
 				} catch (CertificateException|SSLHandshakeException e) {

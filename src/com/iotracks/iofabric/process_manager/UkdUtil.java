@@ -17,6 +17,8 @@ import com.iotracks.iofabric.utils.Constants;
 import com.iotracks.iofabric.utils.Constants.ElementState;
 import com.sun.management.OperatingSystemMXBean;
 
+import com.iotracks.iofabric.utils.logging.LoggingService;
+
 // This is one hard-to-avoid import
 import com.github.dockerjava.api.model.Container;
 /**
@@ -120,8 +122,16 @@ public class UkdUtil {
     * @throws Exception
     */
    public ElementStatus getContainerStatus(String id) throws Exception {
+      id = "HelloWorldApp";
+      StringBuffer cmd = new StringBuffer();
+      cmd.append(String.format("/root/gostuff/bin/ukdctl status --name %s", id));
+      ExecutionResponse res = runCommand(cmd.toString());
       ElementStatus result = new ElementStatus();
       result.setStatus(ElementState.STOPPED);
+      LoggingService.logWarning(MODULE_NAME, res.getStdout());
+      if (res.getStdout().contains("RUNNING")) {
+          result.setStatus(ElementState.RUNNING);
+      }
       return result;
    }
 
@@ -142,7 +152,8 @@ public class UkdUtil {
 
    public String getContainerIpAddress(String id) throws Exception {
       try {
-         throw new Exception("Assuming default uk IP address: 192.168.122.89");
+         return "192.168.122.89";
+         // throw new Exception("Assuming default uk IP address: 192.168.122.89");
       } catch (Exception e) {
          throw e;
       }
@@ -236,7 +247,7 @@ public class UkdUtil {
    public String createContainer(Element Element, String host)
       throws Exception {
       // Return hardcorded (default) uk instance id
-      return "testApp1";
+      return "HelloWorldApp";
    }
 
    /**
@@ -258,15 +269,18 @@ public class UkdUtil {
          throw new Exception("Not enough memory to start the container");
 
       // [Call out] to ukdctl and well known image with pre-decided name
-      // ukdctl start --image-location "/tmp/update-test2/c/old.img" --name testApp1
-      // Overwrite is with default app name - testApp1
-      id = "testApp1";
-      String imageLocation = "/tmp/update-test2/c";
-      String imageName = "old.img";
+      // ukdctl start --image-location "/tmp/update-test2/c/old.img" --name HelloWorldApp
+      // Overwrite is with default app name - HelloWorldApp
+      id = "HelloWorldApp";
+      String imageLocation = "/osv-images";
+      String imageName = "aarch64-loader.img";
       StringBuffer cmd = new StringBuffer();
-      cmd.append(String.format("ukdctl start --image-location %s/%s --name %s",
+      cmd.append(String.format("/root/gostuff/bin/ukdctl start --image-location %s/%s --name %s",
                                imageLocation, imageName, id));
+    
       ExecutionResponse res = runCommand(cmd.toString());
+      LoggingService.logInfo(MODULE_NAME, cmd.toString());
+      LoggingService.logInfo(MODULE_NAME, res.getStdout());
       // Parse the response - if it's not what we expect then throw an exception
    }
 
@@ -278,12 +292,12 @@ public class UkdUtil {
     */
    public void stopContainer(String id) throws Exception {
       // [Call out] to ukdctl
-      // ukdctl stop --name testApp1
+      // ukdctl stop --name HelloWorldApp
 
-      // Overwrite id with the default app name - testApp1
-      id = "testApp1";
+      // Overwrite id with the default app name - HelloWorldApp
+      id = "HelloWorldApp";
       StringBuffer cmd = new StringBuffer();
-      cmd.append(String.format("ukdctl stop --name %s", id));
+      cmd.append(String.format("/root/gostuff/bin/ukdctl stop --name %s", id));
       ExecutionResponse res = runCommand(cmd.toString());
       // Parse the response - if it's not what we expect then throw an exception
    }
