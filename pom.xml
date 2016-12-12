@@ -2,8 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.iotracks</groupId>
   <artifactId>iofabric</artifactId>
-  <version>1.0</version>
+  <version>1.29</version>
   <build>
+    <finalName>iofabric</finalName>
     <sourceDirectory>src</sourceDirectory>
     <plugins>
       <plugin>
@@ -14,8 +15,33 @@
           <target>1.8</target>
         </configuration>
       </plugin>
+      <plugin>
+	      <artifactId>maven-assembly-plugin</artifactId>
+	      <configuration>
+	        <archive>
+	          <manifest>
+	            <mainClass>com.iotracks.iofabric.Start</mainClass>
+	          </manifest>
+	        </archive>
+	        <descriptorRefs>
+	          <descriptorRef>jar-with-dependencies</descriptorRef>
+	        </descriptorRefs>
+	      </configuration>
+	      <executions>
+			  <execution>
+				<id>make-assembly</id>
+				<phase>package</phase>
+				<goals>
+					<goal>single</goal>
+				</goals>
+			  </execution>
+		  </executions>
+      </plugin>
     </plugins>
   </build>
+  <properties>
+    <java.version>1.8</java.version>
+  </properties>
   <dependencies>
   	<dependency>
   		<groupId>com.github.docker-java</groupId>
