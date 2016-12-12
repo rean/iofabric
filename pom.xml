@@ -20,7 +20,7 @@
 	      <configuration>
 	        <archive>
 	          <manifest>
-	            <mainClass>org.eclipse.iofog.Start</mainClass>
+	            <mainClass>com.iotracks.iofabric.Start</mainClass>
 	          </manifest>
 	        </archive>
 	        <descriptorRefs>
