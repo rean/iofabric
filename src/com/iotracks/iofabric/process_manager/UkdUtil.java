@@ -122,13 +122,12 @@ public class UkdUtil {
     * @throws Exception
     */
    public ElementStatus getContainerStatus(String id) throws Exception {
-      id = "HelloWorldApp";
       StringBuffer cmd = new StringBuffer();
-      cmd.append(String.format("/root/gostuff/bin/ukdctl status --name %s", id));
+      cmd.append(String.format("ukdctl status --name %s", id));
       ExecutionResponse res = runCommand(cmd.toString());
       ElementStatus result = new ElementStatus();
       result.setStatus(ElementState.STOPPED);
-      LoggingService.logWarning(MODULE_NAME, res.getStdout());
+      LoggingService.logInfo(MODULE_NAME, res.getStdout());
       if (res.getStdout().contains("RUNNING")) {
           result.setStatus(ElementState.RUNNING);
       }
@@ -275,7 +274,7 @@ public class UkdUtil {
       String imageLocation = "/osv-images";
       String imageName = "aarch64-loader.img";
       StringBuffer cmd = new StringBuffer();
-      cmd.append(String.format("/root/gostuff/bin/ukdctl start --image-location %s/%s --name %s",
+      cmd.append(String.format("ukdctl start --image-location %s/%s --name %s",
                                imageLocation, imageName, id));
     
       ExecutionResponse res = runCommand(cmd.toString());
@@ -291,13 +290,10 @@ public class UkdUtil {
     * @throws Exception
     */
    public void stopContainer(String id) throws Exception {
-      // [Call out] to ukdctl
-      // ukdctl stop --name HelloWorldApp
+      // ukdctl stop --name {id}
 
-      // Overwrite id with the default app name - HelloWorldApp
-      id = "HelloWorldApp";
       StringBuffer cmd = new StringBuffer();
-      cmd.append(String.format("/root/gostuff/bin/ukdctl stop --name %s", id));
+      cmd.append(String.format("ukdctl stop --name %s", id));
       ExecutionResponse res = runCommand(cmd.toString());
       // Parse the response - if it's not what we expect then throw an exception
    }
