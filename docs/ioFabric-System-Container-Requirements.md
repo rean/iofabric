@@ -19,7 +19,7 @@ The third system container is called Stream Viewer. Its primary purpose is to pr
 The Stream Viewer stores output files with timestamps as the names. They are stored in folders with the names of the publishers. This allows Stream Viewer to identify the proper files when generating responses for its REST API. And speaking of REST APIs... the Stream Viewer provides a REST API on port 80 that allows developers to ask for the list of files for a particular publisher within a particular timeframe. The Stream Viewer also provides an HTTP Web server that serves out the files from the publisher folders when they are directly requested on port 80. By providing both of these services, Stream Viewer gives developers the ability to see what files are available to view and then retrieve them for direct viewing. As an example, let's assume we have a camera connected to ioFabric. The photos coming from the camera are routed into Stream Viewer. The Stream Viewer saves them as their native PNG file type and keeps them in a folder. The developer asks the Stream Viewer REST API for the list of files belonging to that camera and generated in the last 5 minutes. The Stream Viewer gives the file list as JSON output and then the developer loops through the file list and retrieves the PNG files directly from the Stream Viewer like a regular Web server. Now the developer can see what the camera saw in the last 5 minutes... and they can do it from anywhere on the planet!
 
 
-####Core Networking Container Requirements
+#### Core Networking Container Requirements
 
 * Hold a pool of socket connections to the ComSat specified in the configuration
 
@@ -94,7 +94,7 @@ The Stream Viewer stores output files with timestamps as the names. They are sto
 </pre>
 
 
-####Debug Console Container Requirements
+#### Debug Console Container Requirements
 
 * Get the current container configuration from the ioFabric Local API immediately when the container starts
 
@@ -127,7 +127,7 @@ The Stream Viewer stores output files with timestamps as the names. They are sto
 * Use the Java Container SDK to build the container
 
 
-####Stream Viewer Container Requirements
+#### Stream Viewer Container Requirements
 
 * Get the current container configuration from the ioFabric Local API immediately when the container starts
 
