@@ -1,4 +1,4 @@
-#ioFabric Architecture
+# ioFabric Architecture
 
 The ioFabric application is a background service that runs on x86 Linux machines. The application is written using Java Enterprise Edition. The base of the application is a .jar file that is turned into a service on the host Linux machine via an install script. This .jar file runs the *supervisor module* when started.
 
@@ -6,7 +6,7 @@ The *supervisor module* is responsible for providing the base stability of the a
 
 A list of the modules in the ioFabric application can be found immediately below. A detailed description of all modules can be found later in this document. Each section contains a discussion of the module's purpose and functional requirements.
 
-###ioFabric Modules (functional sections of the application)
+### ioFabric Modules (functional sections of the application)
 
 * Supervisor
 * Resource Consumption Manager
@@ -16,7 +16,7 @@ A list of the modules in the ioFabric application can be found immediately below
 * Message Bus
 * Field Agent
 
-###Application Purpose
+### Application Purpose
 
 ioFabric exists to turn static Linux compute instances into independently controllable nodes of a dynamic processing fabric. Iotracks, inc. provides several software products that work in tandem to create this fabric and the tools needed to orchestrate it. The Linux ioFabric product is a major piece. It's the part that runs the local processing on the Linux instance and stands up and takes down the containers that do the actual processing of information.
 
@@ -30,13 +30,13 @@ For each computing platform, a version of ioFabric must be built to fit the nati
 
 <img src="ioFabric-Architecture-Diagram.png" />
 
-##Module Details
+## Module Details
 
 The following breakdown of functional modules gives detailed descriptions and functional requirements. Even though the functionality of ioFabric has been split into modules, that does not mean that the actual code should contain separate libraries or separately compiled components. In some cases it might, but this is not necessary. The goal is to keep the duties of the application clearly categorized so repeat code is minimized and so coding tasks are grouped.
 
 Implement the functional requirements for each module and across modules in a way that fits the underlying compute platform (such as x86 Linux) in the best way possible.
 
-###Supervisor
+### Supervisor
 
 The supervisor module is the root thread of the ioFabric application. It is repsonsible for launching the other modules and monitoring them to make sure they are always running. The supervisor module should never stop running unless the user stops the ioFabric application service. It should start when the system boots unless the user manually removes the automatic starting of the ioFabric service.
 
@@ -44,7 +44,7 @@ The supervisor doesn't provide much of the actual ioFabric functionality but it 
 
 The supervisor module exposes several command-line interactions that the Linux system user can use to set up, monitor, and control ioFabric.
 
-####Functional Requirements
+#### Functional Requirements
 
 * Be the main executable process of the ioFabric product (the main thread)
 * Parse the product's configuration XML file
@@ -67,14 +67,14 @@ The supervisor module exposes several command-line interactions that the Linux s
 * Log configuration changes
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Start immediately (as fast as possible)
 * Use as little memory, disk space, and CPU time as possible
 * Monitor modules frequently enough to be performant but also keep CPU consumption to a minimum
 
 
-###Resource Consumption Manager
+### Resource Consumption Manager
 
 The Resource Consumption Manager is in charge of monitoring the usage behavior of the whole application. Timeliness and efficiency are more important than precision. It is easy to monitor resources with heavy code. The problem is, this precise monitoring drags on system performance and consumes significant resources itself.
 
@@ -84,7 +84,7 @@ In some cases, the Resource Consumption Manager needs to tell another module to 
 
 In production systems, users will be expecting ioFabric to stay within certain resource consumption boundaries. The ioFabric product needs to be reliable in its self-management so it will operate peacefully with other software.
 
-####Functional Requirements
+#### Functional Requirements
 
 * Check how much RAM the program is using
 * Check what percentage of CPU time the program is using
@@ -95,19 +95,19 @@ In production systems, users will be expecting ioFabric to stay within certain r
 * Tell the Message Bus to curtail its CPU and/or RAM usage
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Use minimal resources to monitor resource consumption
 * Catch resource usage violations within a few seconds
 
 
-###Status Reporter
+### Status Reporter
 
 The Status Reporter is the central place for finding the program's status. It can be thought of as both a place to deposit status (if you are a module) and a place to get the status information you need. Some types of status are measurements of progress. Some types of status are boolean (we just need to know if something is running or not). By centralizing the management of status in the application, we simplify current usage across the code base and make it much easier to track more status in the future.
 
 Other than serving as the status repository, the only activity that the Status Reporter performs is to judge whether or not newly updated status information should be sent to the fabric controller. This happens via the Field Agent, so the Status Reporter is just repsonsible for juding the importance of the information and, if needed, telling the Field Agent to report new information to the fabric controller.
 
-####Functional Requirements
+#### Functional Requirements
 
 * Store status information centrally for all modules and parts of the program
 * Allow all modules and parts of the program to update their status
@@ -118,13 +118,13 @@ Other than serving as the status repository, the only activity that the Status R
 * Allow all modules and parts of the program to access the status information
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Store status information quickly when changes are submitted
 * Access and deliver status information quickly when it is requested
 
 
-###Process Manager
+### Process Manager
 
 The Process Manager module is in charge of starting, stopping, and generally controlling the processes that run in ioFabric. In the case of this particular ioFabric version, the processes take the form of Linux kernel containers running via Docker. These processes are often called ioElement containers or sometimes just elements in the overall iotracks system. They are the actual computing tasks that are taking place on the iotracks I/O compute fabric. There is no need for ioFabric to have any awareness of what the processes might be. It only needs to manage them properly and manage them all exactly the same. Through that standardization, all ioElement containers become portable and re-usable from one part of the fabric to another.
 
@@ -132,7 +132,7 @@ The Process Manager needs to interface with the Docker daemon to get a lot of it
 
 This module needs to be aware of the containers that are supposed to be running, and it also needs to figure out what to start up and what to shut down when the list of containers changes. It should leverage Docker's functionality as much as possible, leaving almost 100% of the container handling to the Docker daemon but telling Docker what exactly it should do.
 
-####Functional Requirements
+#### Functional Requirements
 
 * Maintain a list of containers that are supposed to be running on this ioFabric instance
 * Add and remove containers from the list as updates to the list are provided
@@ -157,7 +157,7 @@ This module needs to be aware of the containers that are supposed to be running,
 * Report Process Manager status information to the Status Reporter module according to the Status Information Specification document
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Docker caches container images and the sub-images within them - leverage the speed of Docker's caching whenever possible (such as getting the Ubuntu 14.04 container once on the first container before starting up the other Ubuntu containers)
 
@@ -173,7 +173,7 @@ This module needs to be aware of the containers that are supposed to be running,
 * Do not let errors interrupt or corrupt the remaining tasks that Process Manager is performing - such as when the Docker daemon throws an error on building a container... you should still make sure to build all of the other containers
 
 
-###Local API
+### Local API
 
 The Local API module is the part of ioFabric that creates an interface for ioElement containers to interact with the system (and therefore with other containers indirectly). Many systems allow plugins and 3rd party modules to be built, but they usually require a certain language or an SDK library to be compiled into the plugin. The Internet of Things needs a more general interaction model than that. Processes running on the I/O Compute Layer (made up of ioFabric instances) should have the same flexibility as processes running on the general Internet. But how can this be accomplished?
 
@@ -188,7 +188,7 @@ When using the REST API, containers need to transact in JSON. This means that an
 To send and receive information in real time, containers must use the Websockets. In addition to having messages "pushed" to them instead of "polling", the containers also receive the messages as pure bytes. No base64 encoding and decoding is required. For streaming media messages such as photos and video, the Websockets are the most appropriate choice.
 
 
-####Functional Requirements
+#### Functional Requirements
 
 * Report Local API status information to the Status Reporter module according to the Status Information Specification document
 * Provide a REST API on port 54321 according to the Local API Specification document
@@ -206,7 +206,7 @@ To send and receive information in real time, containers must use the Websockets
 * Handle erroneous API inputs gracefully and give proper responses back to the offending containers
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Handle dozens of simultaneous maintained Websocket connections
 * Handle at least 20,000 REST API requests per minute
@@ -215,14 +215,14 @@ To send and receive information in real time, containers must use the Websockets
 * Be available to containers at all times
 
 
-###Field Agent
+### Field Agent
 
 The Field Agent module handles all of the communication with the fabric controller. It serves as the provider of updates to the other modules. It also sends updates to the fabric controller on behalf of the other modules. The Field Agent is in charge of establishing and maintaining a connection to the fabric controller at all times, and it must report a change in connection status when it occurs. In addition, the Field Agent is in charge of verifying the identity of the configured fabric controller before communicating with it.
 
 In this version of ioFabric, the Field Agent learns about new commands from the fabric controller through simple polling of the fabric controller REST API. In order to be performant, the ioFabric instance must poll somewhat frequently. In future versions of ioFabric, a Websocket connection will allow real-time delivery of changes and commands from the fabric controller without cyclical polling.
 
 
-####Functional Requirements
+#### Functional Requirements
 
 * Validate the identity of the fabric controller using the certificate path in the ioFabric configuration
 * Update the fabric controller identity verification status when it changes
@@ -258,7 +258,7 @@ In this version of ioFabric, the Field Agent learns about new commands from the 
 * Store the updated list of registries in memory in the common code class
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Retrieve detailed changes immediately when a type of changes is indicated by the fabric controller
 * Check the fabric controller connection every 60 seconds or more frequently
@@ -267,7 +267,7 @@ In this version of ioFabric, the Field Agent learns about new commands from the 
 * Post ioFabric configuration changes immediately when they occur
 
 
-###Message Bus
+### Message Bus
 
 The Message Bus module moves the actual data messages around the ioFabric system. Through the Local API, it can receive new messages and deliver messages to the recipient containers. The Message Bus must be as fast as possible in order to avoid adding latency to data moving through ioFabric. The Message Bus maintains a routing table that it uses to determine the recipients of each message. The routing table is subject to change, with new routing information coming through the operations of the Field Agent module.
 
@@ -276,7 +276,7 @@ The Message Bus is a combination of a disk spooling message bus and an in-memory
 The Message Bus must assign a unique message ID to each newly posted message. The specification for message IDs can be found in the ioMessage Specification document. Because these unique IDs are rather large, the Message Bus might be best implemented having a ready pool of pre-calculated but unused message IDs to draw from in real-time processing.
 
 
-####Functional Requirements
+#### Functional Requirements
 
 * Hold routing information in memory in a way that facilitates rapid routing of messages
 * Store the current unread messages for each container in memory
@@ -309,7 +309,7 @@ The Message Bus must assign a unique message ID to each newly posted message. Th
 * Store, send, and receive messages according to the ioMessage Specification document
 
 
-####Performance Requirements
+#### Performance Requirements
 
 * Apply unique message IDs and respond to message post operations as quickly as possible
 * Calculate message recipients (from routing configuration) and deliver real-time messages as quickly as possible
