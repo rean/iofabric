@@ -2,7 +2,7 @@
 
 The Stream Viewer system container receives configuration through the ioFabric Local API just like every other container. The configuration is specified here. It hosts a REST API and a standard HTTP Web server that are also specified here.
 
-####Container Configuration Example
+#### Container Configuration Example
 <pre>
 	{"accesstoken":"fshkuewwre89ysdkSDFHKJwe9ywiuhfsdkhj","foldersizelimit":200.0}
 
@@ -12,15 +12,15 @@ The Stream Viewer system container receives configuration through the ioFabric L
 </pre>
 
 
-###REST API Endpoints
+### REST API Endpoints
 
 All endpoints are hosted on port 80 as regular HTTP REST API that provide JSON outputs (MIME type of application/json). All endpoints require that the current access token be passed in the query otherwise the response should be a "404 not found" HTTP response code.
 
-####Get File List For Publisher Within Timeframe
+#### Get File List For Publisher Within Timeframe
 
 This endpoint takes in the access token, publisher ID, timeframe start, and timeframe end parameters and gives out a JSON array of files. The files are all messages that have been received by the Stream Viewer container and converted into files and stored in a folder for this particular publisher.
 
-#####Endpoint
+##### Endpoint
 
 <pre>
 	http://1.2.3.4:80/v2/viewer/files/publisher/dfshigu4wedsuiohdsf/starttime/1234567890123/endtime/1234567890123/accesstoken/fshkuewwre89ysdkSDFHKJwe9ywiuhfsdkhj
@@ -28,7 +28,7 @@ This endpoint takes in the access token, publisher ID, timeframe start, and time
 	Note that the example IP address of 1.2.3.4 will be replaced by the real container IP address and the container itself does not need to know the address
 </pre>
 
-#####Response
+##### Response
 
 <pre>
 	{
@@ -44,7 +44,7 @@ This endpoint takes in the access token, publisher ID, timeframe start, and time
 	}
 </pre>
 
-#####Querystring Parameters
+##### Querystring Parameters
 
 <pre>
 	publisher - the Publisher ID from which to return files
@@ -56,14 +56,14 @@ This endpoint takes in the access token, publisher ID, timeframe start, and time
 	accesstoken - the current access token for getting access to the REST API endpoints
 </pre>
 
-#####POST Parameters
+##### POST Parameters
 
 <pre>
 	None
 </pre>
 
 
-###HTTP Web Server
+### HTTP Web Server
 
 Standard HTTP Web server allow clients to request files that reside on the server. In the case of the Stream Viewer system container, the files are in the different publisher folders. The code for providing the files as output is the same as the code that would be used to provide Web content files as output. The URLs for the files will therefore look something like this:
 
