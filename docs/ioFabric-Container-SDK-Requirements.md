@@ -6,7 +6,7 @@ But while the API is easy to work with, it is always nice to skip some coding ef
 
 The number of SDKs will grow over time as new languages are added. And developers across the world are welcome to create their own SDKs if we don't yet offer one for their favorite language. The requirements here are for the starting SDKs that we will provide for everyone. They reflect the most popular languages for building IoT components.
 
-####Java
+#### Java
 
 * Provide a class for messages according to the ioMessage Specification document
 * Provide a standard listener (Observer) pattern for developers to receive incoming real-time control and message communication
@@ -17,7 +17,7 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
-####Node.js
+#### Node.js
 
 * Treat messages as standard JavaScript objects according to the ioMessage Specification document
 * Provide standard callbacks for developers to receive incoming real-time control and message communication
@@ -28,7 +28,7 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
-####Python
+#### Python
 
 * Provide a class for messages according to the ioMessage Specification document
 * Provide standard callbacks for developers to receive incoming real-time control and message communication
@@ -39,7 +39,7 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
-####C
+#### C
 
 * Provide a struct for messages according to the ioMessage Specification document
 * Use the 'curl' library to avoid re-writing low-level networking
@@ -50,7 +50,7 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
-####C++
+#### C++
 
 * Provide a class for messages according to the ioMessage Specification document
 * Use the 'curl' library to avoid re-writing low-level networking
@@ -61,7 +61,7 @@ The number of SDKs will grow over time as new languages are added. And developer
 * Encode (from raw bytes to base64) the ContextData and ContentData fields of messages being send to the REST API
 
 
-####C&#35;
+#### C&#35;
 
 * Provide a class for messages according to the ioMessage Specification document
 * Provide a standard observer pattern implementation for developers to receive incoming real-time control and message communication
