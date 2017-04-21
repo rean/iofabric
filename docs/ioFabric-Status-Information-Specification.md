@@ -2,7 +2,7 @@
 
 Each module has specific status information associated with it, including the Status Reporter module itself. Some of the pieces of information must be sent to the fabric controller through the Field Agent module. Those pieces of information are marked with a "(FC)" after the name.
 
-####Supervisor
+#### Supervisor
 
 * Daemon status (FC) - what is the ioFabric daemon condition? Values are "starting", "running", and "stopped"
 * Module status - what is the status for each module? Values are "starting", "running", and "stopped"
@@ -10,7 +10,7 @@ Each module has specific status information associated with it, including the St
 * Timestamp of last start (FC) - what is the UTC timestamp of when the daemon was last started?
 
 
-####Resource Consumption Manager
+#### Resource Consumption Manager
 
 * Memory usage (FC) - how much RAM is ioFabric using?
 * Disk usage (FC) - how much disk space is ioFabric using (do not include log file disk measurements here)?
@@ -20,7 +20,7 @@ Each module has specific status information associated with it, including the St
 * CPU in violation (FC) - is the CPU usage in violation of the consumption limit?
 
 
-####Process Manager
+#### Process Manager
 
 * Number of running elements - how many elements are running right now?
 * Docker status - what is the condition of Docker on this machine? Values are "not present", "running", and "stopped"
@@ -35,20 +35,20 @@ Each module has specific status information associated with it, including the St
 	* Link status - what is the condition of the connection to this repository? Values are "failed verification", "failed login", and "connected"
 
 
-####Status Reporter
+#### Status Reporter
 
 * System time (FC) - what is the current system time in ioFabric? This only needs to be measured and reported about every minute
 * Last status update time (FC) - what is the UTC timestamp of the newest piece of status information?
 
 
-####Local API
+#### Local API
 
 * Current IP address (FC) - what is the IP address of the machine running ioFabric? It should be the address assigned to the configured network adapter
 * Number of active real-time configuration sockets - how many real-time configuration sockets are being held open on the Local API?
 * Number of active real-time data sockets - how many real-time data sockets are being held open on the Local API?
 
 
-####Message Bus
+#### Message Bus
 
 * Processed messages (FC) - how many total messages (approximate) have been processed by ioFabric?
 * Messages published per element (FC) - how many messages (approximate) have been published by each element? Use the following breakdown to represent the information:
@@ -57,7 +57,7 @@ Each module has specific status information associated with it, including the St
 * Average message speed (FC) - what is the average speed of messages moving through ioFabric?
 
 
-####Field Agent
+#### Field Agent
 
 * Controller connection status - what is the status of the connection to the configured fabric controller? Values are "not provisioned", "broken", and "ok"
 * Last command time (FC) - what is the UTC timestamp of the newest command received by the field agent?
