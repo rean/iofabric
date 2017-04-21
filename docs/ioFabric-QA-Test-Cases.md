@@ -2,7 +2,7 @@
 
 To perform quality assurance testing on the ioFabric product, the same test steps need to be executed again and again on different Linux versions, different hardware machines, and after each update to the ioFabric product itself. Use these steps to perform proper testing. The tests validate the product functionality, the installation instructions, and the hosted installation packages.
 
-####Installation
+#### Installation
 
 * Choose one of the following supported Linux versions
 
