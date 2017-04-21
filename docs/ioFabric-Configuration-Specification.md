@@ -4,7 +4,7 @@ The ioFabric product is configured using an XML file called config.xml located i
 
 ioFabric can also be configured using the command line or using the fabric controller to which the ioFabric instance has been provisioned. But in either of these cases, the config.xml file will be updated and will still be the only stable local source of configuration.
 
-####Configuration Items
+#### Configuration Items
 
 * access_token - the access token granted by a fabric controller to the ioFabric instance during the provisioning process
 * instance_id - the unique identifier given to this ioFabric instance by the fabric controller
