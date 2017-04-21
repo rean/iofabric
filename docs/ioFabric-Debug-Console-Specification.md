@@ -2,7 +2,7 @@
 
 The Debug Console system container receives configuration through the ioFabric Local API just like every other container. The configuration is specified here. It hosts a REST API that is also specified here.
 
-####Container Configuration Example
+#### Container Configuration Example
 <pre>
 	{"accesstoken":"fshkuewwre89ysdkSDFHKJwe9ywiuhfsdkhj","filesizelimit":200.0}
 
@@ -12,15 +12,15 @@ The Debug Console system container receives configuration through the ioFabric L
 </pre>
 
 
-###REST API Endpoints
+### REST API Endpoints
 
 All endpoints are hosted on port 80 as regular HTTP REST API that provide JSON outputs (MIME type of application/json). All endpoints require that the current access token be passed in the query otherwise the response should be a "404 not found" HTTP response code.
 
-####Get Debug Messages For Publisher Within Timeframe
+#### Get Debug Messages For Publisher Within Timeframe
 
 This endpoint takes in the access token, publisher ID, timeframe start, and timeframe end parameters and gives out a JSON array of messages. The messages are all messages that have been received by the Debug Console container and stored in a file for this particular publisher.
 
-#####Endpoint
+##### Endpoint
 
 <pre>
 	http://1.2.3.4:80/v2/debug/messages/publisher/dfshigu4wedsuiohdsf/starttime/1234567890123/endtime/1234567890123/accesstoken/fshkuewwre89ysdkSDFHKJwe9ywiuhfsdkhj
@@ -28,7 +28,7 @@ This endpoint takes in the access token, publisher ID, timeframe start, and time
 	Note that the example IP address of 1.2.3.4 will be replaced by the real container IP address and the container itself does not need to know the address
 </pre>
 
-#####Response
+##### Response
 
 <pre>
 	{
@@ -84,7 +84,7 @@ This endpoint takes in the access token, publisher ID, timeframe start, and time
 	}
 </pre>
 
-#####Querystring Parameters
+##### Querystring Parameters
 
 <pre>
 	publisher - the Publisher ID from which to return messages
@@ -96,7 +96,7 @@ This endpoint takes in the access token, publisher ID, timeframe start, and time
 	accesstoken - the current access token for getting access to the REST API endpoints
 </pre>
 
-#####POST Parameters
+##### POST Parameters
 
 <pre>
 	None
