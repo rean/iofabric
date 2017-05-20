@@ -6,7 +6,7 @@ That's why we are putting the challenge of creating a great installation experie
 
 The packaging mechanisms and install scripts can grow and change, but the requirements of a great product installation experience don't waver. If we follow these requirements from the start, we will be able to overcome the challenges.
 
-####Officially Supported Linux Versions
+#### Officially Supported Linux Versions
 
 * CentOS 7
 * RHEL (Red Hat Enterprise Linux) 7
@@ -18,7 +18,7 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 * Fedora 22
 * Fedora 23
 
-####Package Installation Requirements
+#### Package Installation Requirements
 
 * Set up the ioFabric daemon to run as a service on system boot
 	* For Ubuntu - define the service as /etc/init.d/iofabric and register it using update-rc.d
@@ -70,7 +70,7 @@ The packaging mechanisms and install scripts can grow and change, but the requir
 * Register the ioFabric command line utility for auto-complete functionality
 	* For all Linux versions - make sure there is an auto-complete script copied into the /etc/bash_completion.d/ directory
 
-####Convenience Installation Script Requirements
+#### Convenience Installation Script Requirements
 
 * Focus on Ubuntu 14.04 first, then produce convenience scripts for the other Linux versions
 * Create a shell script that can be downloaded and run by a root user or by anyone who can use "sudo"

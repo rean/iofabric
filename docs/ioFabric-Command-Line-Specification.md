@@ -12,9 +12,9 @@ The root command keyword for the ioFabric product is "iofabric" in all lowercase
 
 The ioFabric command line should have auto-complete functionality. The user should be able to type the start of an ioFabric command and hit [TAB] to use the auto-complete.
 
-####Help Menu
+#### Help Menu
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric
@@ -24,7 +24,7 @@ iofabric -h
 iofabric -?
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 Usage: iofabric [OPTIONS] COMMAND [arg...]
@@ -66,9 +66,9 @@ ioFabric home page: http://iotracks.com
 
 
 
-####Display ioFabric Version
+#### Display ioFabric Version
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric version
@@ -76,7 +76,7 @@ iofabric --version
 iofabric -v
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 ioFabric 1.0
@@ -88,15 +88,15 @@ There is NO WARRANTY, to the extent permitted by law.
 
 
 
-####Display ioFabric Status
+#### Display ioFabric Status
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric status
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 ioFabric daemon             : [running][stopped]
@@ -111,15 +111,15 @@ System Time                 : Feb 08 2016 20:14:32.873
 
 
 
-####Start ioFabric
+#### Start ioFabric
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric start
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 ioFabric daemon already started
@@ -134,15 +134,15 @@ started
 
 
 
-####Stop ioFabric
+#### Stop ioFabric
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric stop
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 ioFabric daemon already stopped
@@ -156,15 +156,15 @@ stopped
 
 
 
-####Restart ioFabric
+#### Restart ioFabric
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric restart
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 ioFabric daemon restarting...
@@ -177,9 +177,9 @@ restarted
 
 
 
-####Provision this ioFabric instance to a controller 
+#### Provision this ioFabric instance to a controller 
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric provision D98we4sd
@@ -187,7 +187,7 @@ iofabric provision D98we4sd
 * The provisioning key entered by the user takes the place of the D98we4sd above
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 Provisioning with key s734sH9J...
@@ -198,15 +198,15 @@ Provisioning with key s734sH9J...
 
 
 
-####De-provision this ioFabric instance (removed from any controller)
+#### De-provision this ioFabric instance (removed from any controller)
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric deprovision
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 Deprovisioning from controller...
@@ -215,15 +215,15 @@ Success - tokens and identifiers and keys removed
 
 
 
-####Show ioFabric information
+#### Show ioFabric information
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric info
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 Instance ID               : sdfh43t9EFHSD98hwefiuwefkshd890she
@@ -243,9 +243,9 @@ Log File Count            : 10
 
 
 
-####Change ioFabric configuration
+#### Change ioFabric configuration
 
-#####Accepted Inputs
+##### Accepted Inputs
 
 <pre>
 iofabric config -d 17.5
@@ -264,7 +264,7 @@ iofabric config -lc 10
 * for example, iofabric config -m 2048 -p 80.0 -n wlan0
 </pre>
 
-#####Output
+##### Output
 
 <pre>
 Invalid parameter &lt;-X&gt; &lt;VALUE&gt;

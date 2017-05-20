@@ -2,11 +2,11 @@
 
 Every time the ioFabric software gets updated, the installation packages must also be updated. This document lists all of the steps required in order to build and publish the packages. It requires login credentials for the build server and for the code GitHub repository. The credentials are not included in this document for security reasons.
 
-####Build and check in the latest .jar file
+#### Build and check in the latest .jar file
 
 A new .jar file must be compiled and then checked into the GitHub repository in the root directory of the project. This is because the package build server needs to use Git for fetching the latest .jar to put in the packages.
 
-####SSH into the package build server
+#### SSH into the package build server
 
 Using the credentials that were provided to you, SSH into the server at 166.78.135.165. Login as the root user, so the command is:
 
@@ -15,7 +15,7 @@ Using the credentials that were provided to you, SSH into the server at 166.78.1
 </pre>
 
 
-####Retrieve the latest .jar file and code base
+#### Retrieve the latest .jar file and code base
 
 Change directories to the repository local folder and then pull the latest code using the GitHub account password provided to you, and make sure that the iofabric.jar file has changed:
 
@@ -25,7 +25,7 @@ Change directories to the repository local folder and then pull the latest code 
 </pre>
 
 
-####Copy the new iofabric.jar file
+#### Copy the new iofabric.jar file
 
 The new iofabric.jar file needs to be copied to 2 packaging directories. One is for Debian-based Linux packages and the other is for Red Hat-based Linux packages:
 
@@ -35,7 +35,7 @@ The new iofabric.jar file needs to be copied to 2 packaging directories. One is 
 </pre>
 
 
-####Build the new Debian package and publish it
+#### Build the new Debian package and publish it
 
 Change directories into the Debian packaging folder. Make a new package build, and BE SURE to increment the version number by .01 every time you do this. Otherwise the publishing will not work properly.
 
@@ -81,7 +81,7 @@ Change directories into the Debian packaging folder. Make a new package build, a
 </pre>
 
 
-####Build the new RPM package and publish it
+#### Build the new RPM package and publish it
 
 Change directories into the RPM packaging folder. Make a new package build, and BE SURE to increment the version number by .01 every time you do this. Otherwise the publishing will not work properly.
 

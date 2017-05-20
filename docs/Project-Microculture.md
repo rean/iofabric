@@ -8,7 +8,7 @@ In order to contribute to ioFabric, you must buy into the project's microculture
 
 A good way to capture the essence of a microculture is to put it in the form of belief statements. The statements may be refined or changed over time by the microculture administrator (usually the owner of the project) in order to serve the project better. For the most part, however, the statements are stable and should be treated as the project's code of conduct.
 
-###Our Microculture Statements (in no particular order)
+### Our Microculture Statements (in no particular order)
 
 * We use the minimal amount of code for the job
 * We believe that nobody will ever reuse our classes so we code for our own efficiency

@@ -6,7 +6,7 @@ To facilitate development, we need to have a surrogate version of the ioFabric L
 
 A developer can precisely mimic the production environment on their build machine by mapping a host. If they map "127.0.0.1" with the host name "iofabric" then their local code will be able to operate with the same "http://iofabric:54321/" endpoints found in the SDKs and described in the API specification.
 
-####Functional Requirements
+#### Functional Requirements
 
 * Allow the developer to set up a list of fully defined ioMessages that the Test Message Generator will output
 
@@ -37,7 +37,7 @@ A developer can precisely mimic the production environment on their build machin
 * Read the Test Message Generator configuration from a local file called "configuration.xml"
 
 
-####Configuration Example
+#### Configuration Example
 
 Developers can set the Test Message Generator to provide messages at a certain rate. The message that is sent will be randomly selected from the list of defined ioMessages. Setting up the behavior of the Test Message Generator is done with a local configuration XML file. Interval times are in milliseconds, allowing developers to test their container code with fast message rates.
 

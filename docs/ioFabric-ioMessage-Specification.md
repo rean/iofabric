@@ -10,9 +10,9 @@ The fields listed here do not contain any formatting information except for the 
 
 A listing for JSON, XML, and raw bytes is included in this document after the main field listing.
 
-###Fields of an ioMessage
+### Fields of an ioMessage
 
-####ID
+#### ID
 | | |
 |---|---|
 |*Data Type*|Text|
@@ -20,7 +20,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Required*|Yes|
 |*Description*|A 256-bit universally unique identifier per message allows for portability and globe-wide verification of events. The ID string is formatted in base58 for readability, transmission safety between systems, and compactness.|
 
-####Tag
+#### Tag
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -29,7 +29,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is an open field for associating a message with a particular device or any other interesting thing. It should be queryable later, making this a high-value field for some applications.|
 </pre>
 
-####Message Group ID
+#### Message Group ID
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -38,7 +38,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is how messages can be allocated to a sequence or stream.|
 </pre>
 
-####Sequence Number
+#### Sequence Number
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -47,7 +47,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|What number in the sequence is this current message?|
 </pre>
 
-####Sequence Total
+#### Sequence Total
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -56,7 +56,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|How many total messages are in the sequence? Absence of a total count while sequence numbers and a message group ID are present may be used to indicate a stream with indeterminate length.|
 </pre>
 
-####Priority
+#### Priority
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -65,7 +65,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|The lower the number, the higher the priority. This is a simple quality of service (QoS) indicator. Emergency messages or system error logs might get the highest priority. Self-contained messages (such as a button push or a temperature reading) might get very high priority. Media stream messages (such as one second of audio) might get very low priority ranking in order to allow message slowing or dropping as needed in a busy system.|
 </pre>
 
-####Timestamp
+#### Timestamp
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -74,7 +74,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|Universal timecode including milliseconds. Milliseconds can be entered as zeroes if needed.|
 </pre>
 
-####Publisher
+#### Publisher
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -83,7 +83,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is the identifier of the element that is sending the message. It can be used to determine routing or guarantee privacy and security. Because each element is assigned a UUID during configuration, even across ioFabric instances no message should be received by an unintended entity.|
 </pre>
 
-####Authentication Identifier
+#### Authentication Identifier
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -92,7 +92,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is an open field to pass along authentication information about the particular authorized entity generating the message, such as an employee ID number or a user ID in the application.|
 </pre>
 
-####Authentication Group
+#### Authentication Group
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -101,7 +101,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is an open field to pass authentication group information. This allows pieces of the application to know they are dealing with a message from an authenticated user of a particular type (such as “employee” or “system admin”) without needing to know the actual identification information.|
 </pre>
 
-####ioMessage Version
+#### ioMessage Version
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -110,7 +110,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|Which version of the ioMessage format does this particular message comply with?|
 </pre>
 
-####Chain Position
+#### Chain Position
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -119,7 +119,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|When using cryptographic message chaining, this field represents the position in the message chain that this paricular message occupies. It is similar to the "block height" value found in blockchain technology.|
 </pre>
 
-####Hash
+#### Hash
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -128,7 +128,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|When using cryptographic message chaining, a hash of this entire message can be included here.|
 </pre>
 
-####Previous Message Hash
+#### Previous Message Hash
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -137,7 +137,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|When using cryptographic message chaining, the hash value of the previous message is included here. This forms the cryptographic link from the prior message to this one.|
 </pre>
 
-####Nonce
+#### Nonce
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -146,7 +146,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|When using cryptographic message chaining, an open field is needed to achieve the correct hash value. The information in this field will not be meaningful, but will be necessary to produce the final hash of the message.|
 </pre>
 
-####Difficulty Target
+#### Difficulty Target
 |   |   |
 |---|---|
 |*Data Type*|Integer|
@@ -155,7 +155,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|When using cryptographic message chaining, this field represents the hashing workload required to cryptographically seal the chain.|
 </pre>
 
-####Information Type
+#### Information Type
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -164,7 +164,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is like a MIME type. It describes what type of information is contained in the content data field.|
 </pre>
 
-####Information Format
+#### Information Format
 |   |   |
 |---|---|
 |*Data Type*|Text|
@@ -173,7 +173,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|This is a sub-field of the Information Type. It defines the format of the data content in this message. If the information type is “Temperature”, for example, then the information format might be “Degrees Kelvin”.|
 </pre>
 
-####Context Data
+#### Context Data
 |   |   |
 |---|---|
 |*Data Type*|Any (including binary, text, integer, etc.)|
@@ -182,7 +182,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 |*Description*|Context data in raw bytes. This field can be used to embed any information desired and will likely be very different from one solution to the next. It is the responsibility of the receiving element(s) to understand the context data format and the meaning of the context information.|
 </pre>
 
-####Data Content
+#### Data Content
 |   |   |
 |---|---|
 |*Data Type*|Any (including binary, text, integer, etc.)|
@@ -192,7 +192,7 @@ A listing for JSON, XML, and raw bytes is included in this document after the ma
 </pre>
 
 
-###JSON Embodiment of an ioMessage
+### JSON Embodiment of an ioMessage
 
 The ContextData and ContentData fields of an ioMessage, when embodied in JSON, will always be base64 encoded. This is because these fields contain raw bytes and there is no other way to represent raw bytes in the utf-8 structure that JSON uses. Upon receiving a JSON ioMessage, you must base64 decode those two fields. Before sending a JSON ioMessage, you must base64 encode those two fields.
 
@@ -222,7 +222,7 @@ The ContextData and ContentData fields of an ioMessage, when embodied in JSON, w
 </pre>
 
 
-###XML Embodiment of an ioMessage
+### XML Embodiment of an ioMessage
 
 The ContextData and ContentData fields of an ioMessage, when embodied in XML, will always be base64 encoded. This is because these fields contain raw bytes and there is no other way to represent raw bytes in the text formats that XML uses. Upon receiving an XML ioMessage, you must base64 decode those two fields. Before sending an XML ioMessage, you must base64 encode those two fields.
 
@@ -252,7 +252,7 @@ The ContextData and ContentData fields of an ioMessage, when embodied in XML, wi
 </pre>
 
 
-###Binary Embodiment of an ioMessage
+### Binary Embodiment of an ioMessage
 
 Bytes are octets here. No funny business. Just good old 8-bit bytes. The sequence of bytes here must be followed strictly so the message can be parsed by the receiver.
 
